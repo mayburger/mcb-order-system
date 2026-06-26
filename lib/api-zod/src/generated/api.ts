@@ -61,6 +61,22 @@ export const ListMenuItemsResponseItem = zod.object({
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
+  "variants": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})).optional(),
+  "extras": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 export const ListMenuItemsResponse = zod.array(ListMenuItemsResponseItem)
@@ -93,6 +109,22 @@ export const GetMenuItemResponse = zod.object({
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
+  "variants": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})).optional(),
+  "extras": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -103,8 +135,8 @@ export const GetMenuItemResponse = zod.object({
 export const GetRestaurantInfoResponse = zod.object({
   "name": zod.string(),
   "tagline": zod.string().nullish(),
-  "address": zod.string(),
-  "phone": zod.string(),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
   "email": zod.string().nullish(),
   "deliveryEnabled": zod.boolean().optional(),
   "pickupEnabled": zod.boolean().optional(),
@@ -163,7 +195,12 @@ export const CreateOrderBody = zod.object({
   "couponCode": zod.string().nullish(),
   "items": zod.array(zod.object({
   "menuItemId": zod.number(),
-  "quantity": zod.number().min(1)
+  "quantity": zod.number().min(1),
+  "variantId": zod.number().optional().describe('ID of the chosen variant (e.g. pizza size)'),
+  "selectedExtras": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })).min(1)
 })
 
@@ -190,7 +227,12 @@ export const CreateOrderResponse = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })
@@ -226,7 +268,12 @@ export const GetOrderStatusResponse = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })
@@ -411,6 +458,22 @@ export const ListAdminItemsResponseItem = zod.object({
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
+  "variants": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})).optional(),
+  "extras": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdminItemsResponse = zod.array(ListAdminItemsResponseItem)
@@ -455,6 +518,22 @@ export const CreateAdminMenuItemResponse = zod.object({
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
+  "variants": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})).optional(),
+  "extras": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -466,15 +545,10 @@ export const UpdateAdminMenuItemParams = zod.object({
   "id": zod.coerce.number()
 })
 
-
-export const updateAdminMenuItemBodyPriceMin = 0;
-
-
-
 export const UpdateAdminMenuItemBody = zod.object({
-  "name": zod.string().min(1).optional(),
+  "name": zod.string().optional(),
   "description": zod.string().optional(),
-  "price": zod.number().min(updateAdminMenuItemBodyPriceMin).optional(),
+  "price": zod.number().optional(),
   "categoryId": zod.number().optional(),
   "available": zod.boolean().optional(),
   "featured": zod.boolean().optional(),
@@ -502,6 +576,22 @@ export const UpdateAdminMenuItemResponse = zod.object({
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
 }).optional(),
+  "variants": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})).optional(),
+  "extras": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -514,6 +604,166 @@ export const DeleteAdminMenuItemParams = zod.object({
 })
 
 export const DeleteAdminMenuItemResponse = zod.void()
+
+
+/**
+ * @summary List variants for a menu item
+ */
+export const ListItemVariantsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListItemVariantsResponseItem = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})
+export const ListItemVariantsResponse = zod.array(ListItemVariantsResponseItem)
+
+
+/**
+ * @summary Create a variant for a menu item
+ */
+export const CreateItemVariantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const createItemVariantBodyPriceMin = 0;
+
+
+
+export const CreateItemVariantBody = zod.object({
+  "name": zod.string().min(1),
+  "price": zod.number().min(createItemVariantBodyPriceMin),
+  "sortOrder": zod.number().optional()
+})
+
+export const CreateItemVariantResponse = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Update a variant
+ */
+export const UpdateItemVariantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateItemVariantBody = zod.object({
+  "name": zod.string().optional(),
+  "price": zod.number().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateItemVariantResponse = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Delete a variant
+ */
+export const DeleteItemVariantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteItemVariantResponse = zod.void()
+
+
+/**
+ * @summary List extras for a menu item
+ */
+export const ListItemExtrasParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListItemExtrasResponseItem = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const ListItemExtrasResponse = zod.array(ListItemExtrasResponseItem)
+
+
+/**
+ * @summary Create an extra for a menu item
+ */
+export const CreateItemExtraParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const createItemExtraBodyPriceMin = 0;
+
+
+
+export const CreateItemExtraBody = zod.object({
+  "name": zod.string().min(1),
+  "price": zod.number().min(createItemExtraBodyPriceMin).optional(),
+  "available": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const CreateItemExtraResponse = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Update an extra
+ */
+export const UpdateItemExtraParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateItemExtraBody = zod.object({
+  "name": zod.string().optional(),
+  "price": zod.number().optional(),
+  "available": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateItemExtraResponse = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "categoryId": zod.number().nullish(),
+  "name": zod.string(),
+  "price": zod.number(),
+  "available": zod.boolean(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Delete an extra
+ */
+export const DeleteItemExtraParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteItemExtraResponse = zod.void()
 
 
 /**
@@ -548,7 +798,12 @@ export const ListAdminOrdersResponseItem = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })
@@ -585,7 +840,12 @@ export const GetAdminOrderResponse = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })
@@ -626,7 +886,12 @@ export const UpdateAdminOrderResponse = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })
@@ -938,7 +1203,12 @@ export const ListKitchenOrdersResponseItem = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })
@@ -979,7 +1249,12 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
   "itemName": zod.string(),
   "itemPrice": zod.number(),
   "quantity": zod.number(),
-  "lineTotal": zod.number()
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional()
 })),
   "createdAt": zod.coerce.date()
 })

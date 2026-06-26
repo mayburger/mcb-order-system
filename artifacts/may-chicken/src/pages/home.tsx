@@ -73,7 +73,7 @@ export default function Home() {
                     className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-4 right-4 bg-primary text-white font-bold py-1 px-3 text-sm uppercase tracking-wider">
-                    £{(item.price / 100).toFixed(2)}
+                    {item.price.toFixed(2)} €
                   </div>
                 </div>
                 <div className="p-6 flex-1 flex flex-col">

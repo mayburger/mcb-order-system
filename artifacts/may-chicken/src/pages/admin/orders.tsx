@@ -88,7 +88,7 @@ export default function AdminOrders() {
                   <p className="text-sm text-muted-foreground mt-0.5">{order.customerName} · {order.customerPhone}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-white">£{order.total.toFixed(2)}</p>
+                  <p className="font-bold text-white">{order.total.toFixed(2)} €</p>
                   <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr</p>
                 </div>
                 {expanded === order.id ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
@@ -105,7 +105,7 @@ export default function AdminOrders() {
                     {order.items.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{item.itemName} × {item.quantity}</span>
-                        <span className="text-white">£{item.lineTotal.toFixed(2)}</span>
+                        <span className="text-white">{item.lineTotal.toFixed(2)} €</span>
                       </div>
                     ))}
                   </div>

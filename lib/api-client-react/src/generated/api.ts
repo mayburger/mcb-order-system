@@ -37,6 +37,12 @@ import type {
   DeliveryAreaInput,
   DeliveryAreaUpdate,
   HealthStatus,
+  ItemExtra,
+  ItemExtraInput,
+  ItemExtraUpdate,
+  ItemVariant,
+  ItemVariantInput,
+  ItemVariantUpdate,
   KitchenOrderStatusPatch,
   ListAdminItemsParams,
   ListAdminOrdersParams,
@@ -1717,6 +1723,584 @@ export const useDeleteAdminMenuItem = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteAdminMenuItemMutationOptions(options));
+    }
+
+export const getListItemVariantsUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/items/${id}/variants`
+}
+
+/**
+ * @summary List variants for a menu item
+ */
+export const listItemVariants = async (id: number, options?: RequestInit): Promise<ItemVariant[]> => {
+
+  return customFetch<ItemVariant[]>(getListItemVariantsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListItemVariantsQueryKey = (id: number,) => {
+    return [
+    `/api/admin/items/${id}/variants`
+    ] as const;
+    }
+
+
+export const getListItemVariantsQueryOptions = <TData = Awaited<ReturnType<typeof listItemVariants>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listItemVariants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListItemVariantsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listItemVariants>>> = ({ signal }) => listItemVariants(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listItemVariants>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListItemVariantsQueryResult = NonNullable<Awaited<ReturnType<typeof listItemVariants>>>
+export type ListItemVariantsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List variants for a menu item
+ */
+
+export function useListItemVariants<TData = Awaited<ReturnType<typeof listItemVariants>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listItemVariants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListItemVariantsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateItemVariantUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/items/${id}/variants`
+}
+
+/**
+ * @summary Create a variant for a menu item
+ */
+export const createItemVariant = async (id: number,
+    itemVariantInput: ItemVariantInput, options?: RequestInit): Promise<ItemVariant> => {
+
+  return customFetch<ItemVariant>(getCreateItemVariantUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(itemVariantInput)
+  }
+);}
+
+
+
+
+export const getCreateItemVariantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItemVariant>>, TError,{id: number;data: BodyType<ItemVariantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createItemVariant>>, TError,{id: number;data: BodyType<ItemVariantInput>}, TContext> => {
+
+const mutationKey = ['createItemVariant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createItemVariant>>, {id: number;data: BodyType<ItemVariantInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createItemVariant(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateItemVariantMutationResult = NonNullable<Awaited<ReturnType<typeof createItemVariant>>>
+    export type CreateItemVariantMutationBody = BodyType<ItemVariantInput>
+    export type CreateItemVariantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a variant for a menu item
+ */
+export const useCreateItemVariant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItemVariant>>, TError,{id: number;data: BodyType<ItemVariantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createItemVariant>>,
+        TError,
+        {id: number;data: BodyType<ItemVariantInput>},
+        TContext
+      > => {
+      return useMutation(getCreateItemVariantMutationOptions(options));
+    }
+
+export const getUpdateItemVariantUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/variants/${id}`
+}
+
+/**
+ * @summary Update a variant
+ */
+export const updateItemVariant = async (id: number,
+    itemVariantUpdate: ItemVariantUpdate, options?: RequestInit): Promise<ItemVariant> => {
+
+  return customFetch<ItemVariant>(getUpdateItemVariantUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(itemVariantUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateItemVariantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItemVariant>>, TError,{id: number;data: BodyType<ItemVariantUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateItemVariant>>, TError,{id: number;data: BodyType<ItemVariantUpdate>}, TContext> => {
+
+const mutationKey = ['updateItemVariant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItemVariant>>, {id: number;data: BodyType<ItemVariantUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateItemVariant(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateItemVariantMutationResult = NonNullable<Awaited<ReturnType<typeof updateItemVariant>>>
+    export type UpdateItemVariantMutationBody = BodyType<ItemVariantUpdate>
+    export type UpdateItemVariantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a variant
+ */
+export const useUpdateItemVariant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItemVariant>>, TError,{id: number;data: BodyType<ItemVariantUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateItemVariant>>,
+        TError,
+        {id: number;data: BodyType<ItemVariantUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateItemVariantMutationOptions(options));
+    }
+
+export const getDeleteItemVariantUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/variants/${id}`
+}
+
+/**
+ * @summary Delete a variant
+ */
+export const deleteItemVariant = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteItemVariantUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteItemVariantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItemVariant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteItemVariant>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteItemVariant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteItemVariant>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteItemVariant(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteItemVariantMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItemVariant>>>
+
+    export type DeleteItemVariantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a variant
+ */
+export const useDeleteItemVariant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItemVariant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteItemVariant>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteItemVariantMutationOptions(options));
+    }
+
+export const getListItemExtrasUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/items/${id}/extras`
+}
+
+/**
+ * @summary List extras for a menu item
+ */
+export const listItemExtras = async (id: number, options?: RequestInit): Promise<ItemExtra[]> => {
+
+  return customFetch<ItemExtra[]>(getListItemExtrasUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListItemExtrasQueryKey = (id: number,) => {
+    return [
+    `/api/admin/items/${id}/extras`
+    ] as const;
+    }
+
+
+export const getListItemExtrasQueryOptions = <TData = Awaited<ReturnType<typeof listItemExtras>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listItemExtras>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListItemExtrasQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listItemExtras>>> = ({ signal }) => listItemExtras(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listItemExtras>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListItemExtrasQueryResult = NonNullable<Awaited<ReturnType<typeof listItemExtras>>>
+export type ListItemExtrasQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List extras for a menu item
+ */
+
+export function useListItemExtras<TData = Awaited<ReturnType<typeof listItemExtras>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listItemExtras>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListItemExtrasQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateItemExtraUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/items/${id}/extras`
+}
+
+/**
+ * @summary Create an extra for a menu item
+ */
+export const createItemExtra = async (id: number,
+    itemExtraInput: ItemExtraInput, options?: RequestInit): Promise<ItemExtra> => {
+
+  return customFetch<ItemExtra>(getCreateItemExtraUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(itemExtraInput)
+  }
+);}
+
+
+
+
+export const getCreateItemExtraMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItemExtra>>, TError,{id: number;data: BodyType<ItemExtraInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createItemExtra>>, TError,{id: number;data: BodyType<ItemExtraInput>}, TContext> => {
+
+const mutationKey = ['createItemExtra'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createItemExtra>>, {id: number;data: BodyType<ItemExtraInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createItemExtra(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateItemExtraMutationResult = NonNullable<Awaited<ReturnType<typeof createItemExtra>>>
+    export type CreateItemExtraMutationBody = BodyType<ItemExtraInput>
+    export type CreateItemExtraMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an extra for a menu item
+ */
+export const useCreateItemExtra = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createItemExtra>>, TError,{id: number;data: BodyType<ItemExtraInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createItemExtra>>,
+        TError,
+        {id: number;data: BodyType<ItemExtraInput>},
+        TContext
+      > => {
+      return useMutation(getCreateItemExtraMutationOptions(options));
+    }
+
+export const getUpdateItemExtraUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/extras/${id}`
+}
+
+/**
+ * @summary Update an extra
+ */
+export const updateItemExtra = async (id: number,
+    itemExtraUpdate: ItemExtraUpdate, options?: RequestInit): Promise<ItemExtra> => {
+
+  return customFetch<ItemExtra>(getUpdateItemExtraUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(itemExtraUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateItemExtraMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItemExtra>>, TError,{id: number;data: BodyType<ItemExtraUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateItemExtra>>, TError,{id: number;data: BodyType<ItemExtraUpdate>}, TContext> => {
+
+const mutationKey = ['updateItemExtra'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateItemExtra>>, {id: number;data: BodyType<ItemExtraUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateItemExtra(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateItemExtraMutationResult = NonNullable<Awaited<ReturnType<typeof updateItemExtra>>>
+    export type UpdateItemExtraMutationBody = BodyType<ItemExtraUpdate>
+    export type UpdateItemExtraMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update an extra
+ */
+export const useUpdateItemExtra = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateItemExtra>>, TError,{id: number;data: BodyType<ItemExtraUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateItemExtra>>,
+        TError,
+        {id: number;data: BodyType<ItemExtraUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateItemExtraMutationOptions(options));
+    }
+
+export const getDeleteItemExtraUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/extras/${id}`
+}
+
+/**
+ * @summary Delete an extra
+ */
+export const deleteItemExtra = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteItemExtraUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteItemExtraMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItemExtra>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteItemExtra>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteItemExtra'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteItemExtra>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteItemExtra(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteItemExtraMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItemExtra>>>
+
+    export type DeleteItemExtraMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an extra
+ */
+export const useDeleteItemExtra = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItemExtra>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteItemExtra>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteItemExtraMutationOptions(options));
     }
 
 export const getListAdminOrdersUrl = (params?: ListAdminOrdersParams,) => {

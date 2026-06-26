@@ -10,8 +10,10 @@ export interface RestaurantInfo {
   name: string;
   /** @nullable */
   tagline?: string | null;
-  address: string;
-  phone: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone?: string | null;
   /** @nullable */
   email?: string | null;
   deliveryEnabled?: boolean;

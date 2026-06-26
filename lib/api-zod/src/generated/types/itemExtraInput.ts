@@ -6,13 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MenuItemUpdate {
-  name?: string;
-  description?: string;
+export interface ItemExtraInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 0 */
   price?: number;
-  categoryId?: number;
   available?: boolean;
-  featured?: boolean;
-  imageUrl?: string;
   sortOrder?: number;
 }

@@ -112,24 +112,24 @@ export default function OrderStatusPage() {
           {order.items.map((item) => (
             <div key={item.id} className="flex justify-between text-sm py-2 border-b border-border last:border-0">
               <span className="text-muted-foreground">{item.itemName} × {item.quantity}</span>
-              <span className="text-white">£{item.lineTotal.toFixed(2)}</span>
+              <span className="text-white">{item.lineTotal.toFixed(2)} €</span>
             </div>
           ))}
           {order.discountAmount > 0 && (
             <div className="flex justify-between text-primary text-sm pt-2">
               <span>Rabatt ({order.couponCode})</span>
-              <span>-£{order.discountAmount.toFixed(2)}</span>
+              <span>-{order.discountAmount.toFixed(2)} €</span>
             </div>
           )}
           {order.deliveryFee > 0 && (
             <div className="flex justify-between text-muted-foreground text-sm pt-1">
               <span>Liefergebühr</span>
-              <span>£{order.deliveryFee.toFixed(2)}</span>
+              <span>{order.deliveryFee.toFixed(2)} €</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-white text-lg pt-3 border-t border-border mt-2">
             <span>Gesamt</span>
-            <span>£{order.total.toFixed(2)}</span>
+            <span>{order.total.toFixed(2)} €</span>
           </div>
         </div>
 

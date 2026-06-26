@@ -87,8 +87,8 @@ export default function AdminDeliveryAreas() {
                 <tr key={a.id} className="hover:bg-secondary/20">
                   <td className="px-4 py-3 text-white font-mono font-medium">{a.postalCode}</td>
                   <td className="px-4 py-3 text-white">{a.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">£{a.deliveryFee.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">£{a.minOrder.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{a.deliveryFee.toFixed(2)} €</td>
+                  <td className="px-4 py-3 text-muted-foreground">{a.minOrder.toFixed(2)} €</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs font-bold uppercase ${a.active ? "text-green-400" : "text-muted-foreground"}`}>{a.active ? "Ja" : "Nein"}</span>
                   </td>
@@ -122,8 +122,8 @@ export default function AdminDeliveryAreas() {
               {[
                 { label: "PLZ *", key: "postalCode" as const, type: "text" },
                 { label: "Gebietsname *", key: "name" as const, type: "text" },
-                { label: "Liefergebühr (£)", key: "deliveryFee" as const, type: "number" },
-                { label: "Mind. Bestellung (£)", key: "minOrder" as const, type: "number" },
+                { label: "Liefergebühr (€)", key: "deliveryFee" as const, type: "number" },
+                { label: "Mind. Bestellung (€)", key: "minOrder" as const, type: "number" },
               ].map(({ label, key, type }) => (
                 <div key={key}>
                   <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">{label}</label>

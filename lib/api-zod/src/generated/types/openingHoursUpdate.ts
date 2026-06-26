@@ -5,8 +5,8 @@
  * May Chicken & Burger Restaurant API
  * OpenAPI spec version: 0.1.0
  */
-import type { DayHoursInput } from './dayHoursInput';
+import type { OpeningHoursUpdateHoursItem } from './openingHoursUpdateHoursItem';
 
 export interface OpeningHoursUpdate {
-  hours: DayHoursInput[];
+  hours: OpeningHoursUpdateHoursItem[];
 }

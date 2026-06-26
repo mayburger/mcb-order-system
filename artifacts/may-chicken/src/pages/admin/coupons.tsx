@@ -99,9 +99,9 @@ export default function AdminCoupons() {
                     {c.description && <p className="text-muted-foreground text-xs">{c.description}</p>}
                   </td>
                   <td className="px-4 py-3 text-primary font-semibold">
-                    {c.discountType === "percentage" ? `${c.discountValue}%` : `£${c.discountValue.toFixed(2)}`}
+                    {c.discountType === "percentage" ? `${c.discountValue}%` : `${c.discountValue.toFixed(2)} €`}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">£{(c.minOrder ?? 0).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{(c.minOrder ?? 0).toFixed(2)} €</td>
                   <td className="px-4 py-3 text-muted-foreground">{c.usageCount}{c.maxUsage ? `/${c.maxUsage}` : ""}</td>
                   <td className="px-4 py-3 text-muted-foreground text-sm">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString("de-DE") : "—"}</td>
                   <td className="px-4 py-3">
@@ -147,7 +147,7 @@ export default function AdminCoupons() {
                 <select value={dialog.form.discountType} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, discountType: e.target.value as any } })}
                   className="w-full bg-background border border-border text-white text-sm px-3 py-2 rounded-none focus:outline-none focus:border-primary">
                   <option value="percentage">Prozent (%)</option>
-                  <option value="fixed">Festbetrag (£)</option>
+                  <option value="fixed">Festbetrag (€)</option>
                 </select>
               </div>
               <div>
@@ -156,7 +156,7 @@ export default function AdminCoupons() {
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, discountValue: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Mind. Bestellung (£)</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Mind. Bestellung (€)</label>
                 <Input type="number" step="0.01" value={dialog.form.minOrder} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, minOrder: e.target.value } })} />
               </div>

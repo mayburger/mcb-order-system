@@ -4,10 +4,11 @@ import {
   orders,
   orderItems,
   menuItems,
+  itemVariants,
   deliveryAreas,
   coupons,
 } from "@workspace/db/schema";
-import { eq, and, gte, isNull, isNotNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getSettingsMap } from "./restaurant";
 
 const router = Router();
@@ -19,7 +20,10 @@ function generateOrderNumber(): string {
   return `MCB-${date}-${rand}`;
 }
 
-function serializeOrder(order: typeof orders.$inferSelect, items: Array<typeof orderItems.$inferSelect>) {
+function serializeOrder(
+  order: typeof orders.$inferSelect,
+  items: Array<typeof orderItems.$inferSelect>,
+) {
   return {
     id: order.id,
     orderNumber: order.orderNumber,
@@ -45,6 +49,8 @@ function serializeOrder(order: typeof orders.$inferSelect, items: Array<typeof o
       itemPrice: Number(i.itemPrice),
       quantity: i.quantity,
       lineTotal: Number(i.lineTotal),
+      variantName: i.variantName ?? null,
+      extrasSnapshot: (i.extrasSnapshot as Array<{ name: string; price: number }> | null) ?? [],
     })),
   };
 }
@@ -88,7 +94,12 @@ router.post("/restaurant/orders", async (req, res) => {
       city?: string;
       notes?: string;
       couponCode?: string;
-      items: Array<{ menuItemId: number; quantity: number }>;
+      items: Array<{
+        menuItemId: number;
+        quantity: number;
+        variantId?: number;
+        selectedExtras?: Array<{ name: string; price: number }>;
+      }>;
     };
 
     if (!body.items || body.items.length === 0)
@@ -100,26 +111,58 @@ router.post("/restaurant/orders", async (req, res) => {
     // Fetch menu items
     const itemIds = body.items.map((i) => i.menuItemId);
     const dbItems = await db.query.menuItems.findMany({
+      with: { variants: true },
       where: (item, { inArray }) => inArray(item.id, itemIds),
     });
 
     const itemMap = new Map(dbItems.map((i) => [i.id, i]));
     let subtotal = 0;
-    const resolvedItems: Array<{ menuItemId: number; itemName: string; itemPrice: number; quantity: number; lineTotal: number }> = [];
+    const resolvedItems: Array<{
+      menuItemId: number;
+      itemName: string;
+      itemPrice: number;
+      quantity: number;
+      lineTotal: number;
+      variantName: string | null;
+      extrasSnapshot: Array<{ name: string; price: number }>;
+    }> = [];
 
     for (const ordered of body.items) {
       const dbItem = itemMap.get(ordered.menuItemId);
       if (!dbItem) return res.status(400).json({ error: `Item ${ordered.menuItemId} not found` });
       if (!dbItem.available) return res.status(400).json({ error: `${dbItem.name} is not available` });
-      const price = Number(dbItem.price);
-      const lineTotal = price * ordered.quantity;
+
+      let price = Number(dbItem.price);
+      let variantName: string | null = null;
+
+      // Use variant price if a variantId was provided
+      if (ordered.variantId) {
+        const variant = dbItem.variants.find((v) => v.id === ordered.variantId);
+        if (!variant) return res.status(400).json({ error: `Variant ${ordered.variantId} not found for ${dbItem.name}` });
+        price = Number(variant.price);
+        variantName = variant.name;
+      } else if (dbItem.variants.length > 0) {
+        // If item has variants but none selected, use the first (cheapest) variant
+        const sorted = [...dbItem.variants].sort((a, b) => a.sortOrder - b.sortOrder);
+        price = Number(sorted[0]!.price);
+        variantName = sorted[0]!.name;
+      }
+
+      // Add extras price
+      const extras = ordered.selectedExtras ?? [];
+      const extrasTotal = extras.reduce((sum, e) => sum + e.price, 0);
+      const unitPrice = price + extrasTotal;
+      const lineTotal = unitPrice * ordered.quantity;
       subtotal += lineTotal;
+
       resolvedItems.push({
         menuItemId: ordered.menuItemId,
         itemName: dbItem.name,
-        itemPrice: price,
+        itemPrice: unitPrice,
         quantity: ordered.quantity,
         lineTotal,
+        variantName,
+        extrasSnapshot: extras,
       });
     }
 
@@ -190,6 +233,8 @@ router.post("/restaurant/orders", async (req, res) => {
           itemPrice: i.itemPrice.toFixed(2),
           quantity: i.quantity,
           lineTotal: i.lineTotal.toFixed(2),
+          variantName: i.variantName,
+          extrasSnapshot: i.extrasSnapshot.length > 0 ? i.extrasSnapshot : null,
         })),
       )
       .returning();

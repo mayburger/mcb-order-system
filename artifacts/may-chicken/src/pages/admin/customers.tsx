@@ -44,7 +44,7 @@ export default function AdminCustomers() {
                   <td className="px-4 py-3 text-muted-foreground">{c.phone}</td>
                   <td className="px-4 py-3 text-muted-foreground">{c.email ?? "—"}</td>
                   <td className="px-4 py-3 text-white text-right font-mono">{c.orderCount}</td>
-                  <td className="px-4 py-3 text-white text-right font-mono">£{c.totalSpent.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-white text-right font-mono">{c.totalSpent.toFixed(2)} €</td>
                   <td className="px-4 py-3 text-muted-foreground text-sm">
                     {c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString("de-DE") : "—"}
                   </td>

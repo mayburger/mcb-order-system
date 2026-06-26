@@ -7,6 +7,7 @@ import {
   numeric,
   timestamp,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -52,6 +53,31 @@ export const menuItems = pgTable("restaurant_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ── ITEM VARIANTS (z.B. Pizza 29cm / 32cm) ───────────────────────────────────
+// Each variant has a name (e.g. "29 cm") and its own price.
+// If an item has variants, the base item price is ignored on the frontend.
+export const itemVariants = pgTable("restaurant_item_variants", {
+  id: serial("id").primaryKey(),
+  menuItemId: integer("menu_item_id")
+    .notNull()
+    .references(() => menuItems.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),        // e.g. "29 cm", "32 cm", "Groß"
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+// ── ITEM EXTRAS (z.B. extra Käse, Jalapenos) ────────────────────────────────
+// Extras can be scoped to a specific item or to a whole category (categoryId set).
+export const itemExtras = pgTable("restaurant_item_extras", {
+  id: serial("id").primaryKey(),
+  menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").references(() => categories.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),        // e.g. "Extra Käse", "Jalapenos"
+  price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  available: boolean("available").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
 // ── ORDERS ────────────────────────────────────────────────────────────────────
 export const orders = pgTable("restaurant_orders", {
   id: serial("id").primaryKey(),
@@ -90,15 +116,18 @@ export const orderItems = pgTable("restaurant_order_items", {
   itemPrice: numeric("item_price", { precision: 10, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
   lineTotal: numeric("line_total", { precision: 10, scale: 2 }).notNull(),
+  // Snapshot of chosen variant & extras at order time
+  variantName: text("variant_name"),
+  extrasSnapshot: jsonb("extras_snapshot").$type<Array<{ name: string; price: number }>>(),
 });
 
 // ── OPENING HOURS ─────────────────────────────────────────────────────────────
 export const openingHours = pgTable("restaurant_opening_hours", {
   id: serial("id").primaryKey(),
-  dayOfWeek: integer("day_of_week").notNull().unique(), // 0=Sun, 1=Mon, …, 6=Sat
+  dayOfWeek: integer("day_of_week").notNull().unique(),
   dayName: text("day_name").notNull(),
-  openTime: text("open_time"), // "09:00"
-  closeTime: text("close_time"), // "22:00"
+  openTime: text("open_time"),
+  closeTime: text("close_time"),
   isClosed: boolean("is_closed").notNull().default(false),
 });
 
@@ -141,11 +170,32 @@ export const settings = pgTable("restaurant_settings", {
 // ── RELATIONS ─────────────────────────────────────────────────────────────────
 export const categoriesRelations = relations(categories, ({ many }) => ({
   items: many(menuItems),
+  extras: many(itemExtras),
 }));
 
-export const menuItemsRelations = relations(menuItems, ({ one }) => ({
+export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
   category: one(categories, {
     fields: [menuItems.categoryId],
+    references: [categories.id],
+  }),
+  variants: many(itemVariants),
+  extras: many(itemExtras),
+}));
+
+export const itemVariantsRelations = relations(itemVariants, ({ one }) => ({
+  menuItem: one(menuItems, {
+    fields: [itemVariants.menuItemId],
+    references: [menuItems.id],
+  }),
+}));
+
+export const itemExtrasRelations = relations(itemExtras, ({ one }) => ({
+  menuItem: one(menuItems, {
+    fields: [itemExtras.menuItemId],
+    references: [menuItems.id],
+  }),
+  category: one(categories, {
+    fields: [itemExtras.categoryId],
     references: [categories.id],
   }),
 }));

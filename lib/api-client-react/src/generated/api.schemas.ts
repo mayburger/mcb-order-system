@@ -41,6 +41,56 @@ export interface CategoryUpdate {
   sortOrder?: number;
 }
 
+export interface ItemVariant {
+  id: number;
+  menuItemId: number;
+  name: string;
+  price: number;
+  sortOrder: number;
+}
+
+export interface ItemVariantInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 0 */
+  price: number;
+  sortOrder?: number;
+}
+
+export interface ItemVariantUpdate {
+  name?: string;
+  price?: number;
+  sortOrder?: number;
+}
+
+export interface ItemExtra {
+  id: number;
+  /** @nullable */
+  menuItemId?: number | null;
+  /** @nullable */
+  categoryId?: number | null;
+  name: string;
+  price: number;
+  available: boolean;
+  sortOrder: number;
+}
+
+export interface ItemExtraInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 0 */
+  price?: number;
+  available?: boolean;
+  sortOrder?: number;
+}
+
+export interface ItemExtraUpdate {
+  name?: string;
+  price?: number;
+  available?: boolean;
+  sortOrder?: number;
+}
+
 export interface MenuItem {
   id: number;
   name: string;
@@ -54,6 +104,8 @@ export interface MenuItem {
   imageUrl?: string | null;
   sortOrder: number;
   category?: Category;
+  variants?: ItemVariant[];
+  extras?: ItemExtra[];
   createdAt: string;
 }
 
@@ -71,10 +123,8 @@ export interface MenuItemInput {
 }
 
 export interface MenuItemUpdate {
-  /** @minLength 1 */
   name?: string;
   description?: string;
-  /** @minimum 0 */
   price?: number;
   categoryId?: number;
   available?: boolean;
@@ -87,8 +137,10 @@ export interface RestaurantInfo {
   name: string;
   /** @nullable */
   tagline?: string | null;
-  address: string;
-  phone: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone?: string | null;
   /** @nullable */
   email?: string | null;
   deliveryEnabled?: boolean;
@@ -109,15 +161,15 @@ export interface DayHours {
   isClosed: boolean;
 }
 
-export interface DayHoursInput {
+export type OpeningHoursUpdateHoursItem = {
   dayOfWeek: number;
   openTime?: string;
   closeTime?: string;
   isClosed: boolean;
-}
+};
 
 export interface OpeningHoursUpdate {
-  hours: DayHoursInput[];
+  hours: OpeningHoursUpdateHoursItem[];
 }
 
 export interface DeliveryArea {
@@ -220,10 +272,18 @@ export interface CouponValidationInput {
   orderTotal: number;
 }
 
+export interface SelectedExtra {
+  name: string;
+  price: number;
+}
+
 export interface OrderItemInput {
   menuItemId: number;
   /** @minimum 1 */
   quantity: number;
+  /** ID of the chosen variant (e.g. pizza size) */
+  variantId?: number;
+  selectedExtras?: SelectedExtra[];
 }
 
 export interface OrderItem {
@@ -234,6 +294,9 @@ export interface OrderItem {
   itemPrice: number;
   quantity: number;
   lineTotal: number;
+  /** @nullable */
+  variantName?: string | null;
+  extrasSnapshot?: SelectedExtra[];
 }
 
 export type OrderInputOrderType = typeof OrderInputOrderType[keyof typeof OrderInputOrderType];

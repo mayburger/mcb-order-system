@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Category } from './category';
+import type { ItemExtra } from './itemExtra';
+import type { ItemVariant } from './itemVariant';
 
 export interface MenuItem {
   id: number;
@@ -20,5 +22,7 @@ export interface MenuItem {
   imageUrl?: string | null;
   sortOrder: number;
   category?: Category;
+  variants?: ItemVariant[];
+  extras?: ItemExtra[];
   createdAt: Date;
 }

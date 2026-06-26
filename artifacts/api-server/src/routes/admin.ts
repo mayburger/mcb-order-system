@@ -3,6 +3,8 @@ import { db } from "@workspace/db";
 import {
   categories,
   menuItems,
+  itemVariants,
+  itemExtras,
   orders,
   orderItems,
   openingHours,
@@ -182,6 +184,137 @@ router.patch("/admin/items/:id", async (req, res) => {
 router.delete("/admin/items/:id", async (req, res) => {
   try {
     await db.delete(menuItems).where(eq(menuItems.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── VARIANTS ──────────────────────────────────────────────────────────────────
+router.get("/admin/items/:id/variants", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const rows = await db
+      .select()
+      .from(itemVariants)
+      .where(eq(itemVariants.menuItemId, menuItemId))
+      .orderBy(asc(itemVariants.sortOrder), asc(itemVariants.id));
+    res.json(rows.map((v) => ({ ...v, price: Number(v.price) })));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/items/:id/variants", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const body = req.body as { name: string; price: number; sortOrder?: number };
+    const [row] = await db
+      .insert(itemVariants)
+      .values({
+        menuItemId,
+        name: body.name,
+        price: body.price.toFixed(2),
+        sortOrder: body.sortOrder ?? 0,
+      })
+      .returning();
+    res.status(201).json({ ...row, price: Number(row!.price) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/variants/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const body = req.body as Partial<{ name: string; price: number; sortOrder: number }>;
+    const update: Record<string, unknown> = { ...body };
+    if (body.price !== undefined) update["price"] = body.price.toFixed(2);
+    const [row] = await db
+      .update(itemVariants)
+      .set(update)
+      .where(eq(itemVariants.id, id))
+      .returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json({ ...row, price: Number(row.price) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/variants/:id", async (req, res) => {
+  try {
+    await db.delete(itemVariants).where(eq(itemVariants.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── EXTRAS ────────────────────────────────────────────────────────────────────
+router.get("/admin/items/:id/extras", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const rows = await db
+      .select()
+      .from(itemExtras)
+      .where(eq(itemExtras.menuItemId, menuItemId))
+      .orderBy(asc(itemExtras.sortOrder), asc(itemExtras.id));
+    res.json(rows.map((e) => ({ ...e, price: Number(e.price) })));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/items/:id/extras", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const body = req.body as { name: string; price?: number; available?: boolean; sortOrder?: number };
+    const [row] = await db
+      .insert(itemExtras)
+      .values({
+        menuItemId,
+        name: body.name,
+        price: (body.price ?? 0).toFixed(2),
+        available: body.available ?? true,
+        sortOrder: body.sortOrder ?? 0,
+      })
+      .returning();
+    res.status(201).json({ ...row, price: Number(row!.price) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/extras/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const body = req.body as Partial<{ name: string; price: number; available: boolean; sortOrder: number }>;
+    const update: Record<string, unknown> = { ...body };
+    if (body.price !== undefined) update["price"] = body.price.toFixed(2);
+    const [row] = await db
+      .update(itemExtras)
+      .set(update)
+      .where(eq(itemExtras.id, id))
+      .returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json({ ...row, price: Number(row.price) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/extras/:id", async (req, res) => {
+  try {
+    await db.delete(itemExtras).where(eq(itemExtras.id, Number(req.params["id"])));
     res.status(204).send();
   } catch (err) {
     req.log.error(err);

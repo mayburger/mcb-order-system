@@ -414,6 +414,172 @@ paths:
         "204":
           description: Deleted
 
+  # ── ADMIN – VARIANTS ──────────────────────────────────────────────────────
+  /admin/items/{id}/variants:
+    get:
+      operationId: listItemVariants
+      tags: [admin]
+      summary: List variants for a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Variants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemVariant"
+    post:
+      operationId: createItemVariant
+      tags: [admin]
+      summary: Create a variant for a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemVariantInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemVariant"
+
+  /admin/variants/{id}:
+    patch:
+      operationId: updateItemVariant
+      tags: [admin]
+      summary: Update a variant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemVariantUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemVariant"
+    delete:
+      operationId: deleteItemVariant
+      tags: [admin]
+      summary: Delete a variant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── ADMIN – EXTRAS ────────────────────────────────────────────────────────
+  /admin/items/{id}/extras:
+    get:
+      operationId: listItemExtras
+      tags: [admin]
+      summary: List extras for a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Extras
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemExtra"
+    post:
+      operationId: createItemExtra
+      tags: [admin]
+      summary: Create an extra for a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemExtraInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemExtra"
+
+  /admin/extras/{id}:
+    patch:
+      operationId: updateItemExtra
+      tags: [admin]
+      summary: Update an extra
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemExtraUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemExtra"
+    delete:
+      operationId: deleteItemExtra
+      tags: [admin]
+      summary: Delete an extra
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ── ADMIN – ORDERS ────────────────────────────────────────────────────────
   /admin/orders:
     get:
@@ -817,6 +983,91 @@ components:
         sortOrder:
           type: integer
 
+    # ── VARIANTS & EXTRAS ─────────────────────────────────────────────────
+    ItemVariant:
+      type: object
+      required: [id, menuItemId, name, price, sortOrder]
+      properties:
+        id:
+          type: integer
+        menuItemId:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        sortOrder:
+          type: integer
+
+    ItemVariantInput:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        price:
+          type: number
+          minimum: 0
+        sortOrder:
+          type: integer
+
+    ItemVariantUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        sortOrder:
+          type: integer
+
+    ItemExtra:
+      type: object
+      required: [id, name, price, available, sortOrder]
+      properties:
+        id:
+          type: integer
+        menuItemId:
+          type: ["integer", "null"]
+        categoryId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    ItemExtraInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        price:
+          type: number
+          minimum: 0
+        available:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    ItemExtraUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+        sortOrder:
+          type: integer
+
     # ── MENU ITEM ─────────────────────────────────────────────────────────
     MenuItem:
       type: object
@@ -842,6 +1093,14 @@ components:
           type: integer
         category:
           $ref: "#/components/schemas/Category"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemVariant"
+        extras:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemExtra"
         createdAt:
           type: string
           format: date-time
@@ -874,12 +1133,10 @@ components:
       properties:
         name:
           type: string
-          minLength: 1
         description:
           type: string
         price:
           type: number
-          minimum: 0
         categoryId:
           type: integer
         available:
@@ -894,16 +1151,16 @@ components:
     # ── RESTAURANT INFO ───────────────────────────────────────────────────
     RestaurantInfo:
       type: object
-      required: [name, address, phone]
+      required: [name]
       properties:
         name:
           type: string
         tagline:
           type: ["string", "null"]
         address:
-          type: string
+          type: ["string", "null"]
         phone:
-          type: string
+          type: ["string", "null"]
         email:
           type: ["string", "null"]
         deliveryEnabled:
@@ -917,7 +1174,6 @@ components:
         estimatedPickupTime:
           type: integer
 
-    # ── OPENING HOURS ─────────────────────────────────────────────────────
     DayHours:
       type: object
       required: [id, dayOfWeek, dayName, isClosed]
@@ -935,19 +1191,6 @@ components:
         isClosed:
           type: boolean
 
-    DayHoursInput:
-      type: object
-      required: [dayOfWeek, isClosed]
-      properties:
-        dayOfWeek:
-          type: integer
-        openTime:
-          type: string
-        closeTime:
-          type: string
-        isClosed:
-          type: boolean
-
     OpeningHoursUpdate:
       type: object
       required: [hours]
@@ -955,9 +1198,18 @@ components:
         hours:
           type: array
           items:
-            $ref: "#/components/schemas/DayHoursInput"
+            type: object
+            required: [dayOfWeek, isClosed]
+            properties:
+              dayOfWeek:
+                type: integer
+              openTime:
+                type: string
+              closeTime:
+                type: string
+              isClosed:
+                type: boolean
 
-    # ── DELIVERY AREAS ────────────────────────────────────────────────────
     DeliveryArea:
       type: object
       required: [id, name, postalCode, minOrder, deliveryFee, active]
@@ -1097,6 +1349,15 @@ components:
           type: number
 
     # ── ORDERS ────────────────────────────────────────────────────────────
+    SelectedExtra:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+
     OrderItemInput:
       type: object
       required: [menuItemId, quantity]
@@ -1106,6 +1367,13 @@ components:
         quantity:
           type: integer
           minimum: 1
+        variantId:
+          type: integer
+          description: ID of the chosen variant (e.g. pizza size)
+        selectedExtras:
+          type: array
+          items:
+            $ref: "#/components/schemas/SelectedExtra"
 
     OrderItem:
       type: object
@@ -1123,6 +1391,12 @@ components:
           type: integer
         lineTotal:
           type: number
+        variantName:
+          type: ["string", "null"]
+        extrasSnapshot:
+          type: array
+          items:
+            $ref: "#/components/schemas/SelectedExtra"
 
     OrderInput:
       type: object

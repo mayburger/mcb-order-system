@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface DayHoursInput {
-  dayOfWeek: number;
-  openTime?: string;
-  closeTime?: string;
-  isClosed: boolean;
+export interface ItemVariantUpdate {
+  name?: string;
+  price?: number;
+  sortOrder?: number;
 }

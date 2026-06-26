@@ -3,6 +3,8 @@ import { db } from "@workspace/db";
 import {
   categories,
   menuItems,
+  itemVariants,
+  itemExtras,
 } from "@workspace/db/schema";
 import { eq, asc, count } from "drizzle-orm";
 
@@ -52,7 +54,7 @@ router.get("/menu/items", async (req, res) => {
         : undefined;
 
     const rows = await db.query.menuItems.findMany({
-      with: { category: true },
+      with: { category: true, variants: true, extras: true },
       where: (item, { and, eq: eqFn }) => {
         const conditions = [];
         if (categoryId !== undefined) conditions.push(eqFn(item.categoryId, categoryId));
@@ -67,9 +69,9 @@ router.get("/menu/items", async (req, res) => {
       rows.map((i) => ({
         ...i,
         price: Number(i.price),
-        category: i.category
-          ? { ...i.category }
-          : undefined,
+        variants: i.variants.map((v) => ({ ...v, price: Number(v.price) })),
+        extras: i.extras.map((e) => ({ ...e, price: Number(e.price) })),
+        category: i.category ? { ...i.category } : undefined,
       })),
     );
   } catch (err) {
@@ -82,11 +84,16 @@ router.get("/menu/items/:id", async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const item = await db.query.menuItems.findFirst({
-      with: { category: true },
+      with: { category: true, variants: true, extras: true },
       where: (i, { eq: eqFn }) => eqFn(i.id, id),
     });
     if (!item) return res.status(404).json({ error: "Not found" });
-    res.json({ ...item, price: Number(item.price) });
+    res.json({
+      ...item,
+      price: Number(item.price),
+      variants: item.variants.map((v) => ({ ...v, price: Number(v.price) })),
+      extras: item.extras.map((e) => ({ ...e, price: Number(e.price) })),
+    });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

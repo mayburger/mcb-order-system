@@ -50,8 +50,8 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <StatCard label="Bestellungen heute" value={String(stats?.todayOrders ?? 0)} icon={ShoppingBag} accent />
             <StatCard label="Offene Bestellungen" value={String(stats?.pendingOrders ?? 0)} icon={Clock} sub="Benötigen Aufmerksamkeit" />
-            <StatCard label="Umsatz heute" value={`£${(stats?.todayRevenue ?? 0).toFixed(2)}`} icon={DollarSign} />
-            <StatCard label="Wochenumsatz" value={`£${(stats?.weekRevenue ?? 0).toFixed(2)}`} icon={TrendingUp} />
+            <StatCard label="Umsatz heute" value={`${(stats?.todayRevenue ?? 0).toFixed(2)} €`} icon={DollarSign} />
+            <StatCard label="Wochenumsatz" value={`${(stats?.weekRevenue ?? 0).toFixed(2)} €`} icon={TrendingUp} />
           </div>
 
           {stats?.popularItems && stats.popularItems.length > 0 && (
