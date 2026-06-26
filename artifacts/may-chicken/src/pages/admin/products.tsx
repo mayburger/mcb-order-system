@@ -239,7 +239,7 @@ export default function AdminProducts() {
   const updateItem = useUpdateAdminMenuItem();
   const deleteItem = useDeleteAdminMenuItem();
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListAdminItemsQueryKey(params) });
 

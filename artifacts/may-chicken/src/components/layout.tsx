@@ -123,7 +123,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/menu" className="hover:text-primary">Speisekarte</Link></li>
               <li><Link href="/opening-hours" className="hover:text-primary">Öffnungszeiten</Link></li>
-              <li><Link href="/admin" className="hover:text-primary">Admin-Login</Link></li>
             </ul>
           </div>
         </div>

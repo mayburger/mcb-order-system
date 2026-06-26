@@ -27,7 +27,7 @@ export default function AdminCategories() {
   const updateCat = useUpdateCategory();
   const deleteCat = useDeleteCategory();
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListAdminCategoriesQueryKey() });
 

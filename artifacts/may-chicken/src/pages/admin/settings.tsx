@@ -29,7 +29,7 @@ export default function AdminSettings() {
     if (info) setForm({ restaurantName: info.name ?? "", tagline: info.tagline ?? "", address: info.address ?? "", phone: info.phone ?? "", email: info.email ?? "" });
   }, [info]);
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const handleSaveInfo = () => {
     updateSettings.mutate(

@@ -8,7 +8,7 @@ export default function AdminCustomers() {
   const { data: session, isLoading: sl } = useGetAdminSession({ query: { queryKey: getGetAdminSessionQueryKey() } });
   const { data: customers, isLoading } = useListCustomers({ query: { queryKey: getListCustomersQueryKey() } });
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   return (
     <AdminLayout>

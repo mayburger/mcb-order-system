@@ -27,7 +27,7 @@ export default function AdminDeliveryAreas() {
   const updateArea = useUpdateDeliveryArea();
   const deleteArea = useDeleteDeliveryArea();
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListAdminDeliveryAreasQueryKey() });
 

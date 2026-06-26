@@ -23,7 +23,7 @@ export default function AdminOpeningHours() {
   const updateHours = useUpdateOpeningHours();
   const [edits, setEdits] = useState<Record<number, RowEdit>>({});
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const getRow = (dayOfWeek: number, def: RowEdit): RowEdit =>
     edits[dayOfWeek] ?? { openTime: def.openTime ?? "09:00", closeTime: def.closeTime ?? "22:00", isClosed: def.isClosed };

@@ -52,17 +52,17 @@ function Router() {
       <Route path="/kitchen" component={KitchenPage} />
 
       {/* Admin routes */}
-      <Route path="/admin" component={AdminLoginPage} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/orders" component={AdminOrders} />
-      <Route path="/admin/products" component={AdminProducts} />
-      <Route path="/admin/categories" component={AdminCategories} />
-      <Route path="/admin/customers" component={AdminCustomers} />
-      <Route path="/admin/delivery-areas" component={AdminDeliveryAreas} />
-      <Route path="/admin/opening-hours" component={AdminOpeningHours} />
-      <Route path="/admin/coupons" component={AdminCoupons} />
-      <Route path="/admin/settings" component={AdminSettings} />
-      <Route path="/admin/option-groups" component={AdminOptionGroups} />
+      <Route path="/backstage" component={AdminLoginPage} />
+      <Route path="/backstage/dashboard" component={AdminDashboard} />
+      <Route path="/backstage/orders" component={AdminOrders} />
+      <Route path="/backstage/products" component={AdminProducts} />
+      <Route path="/backstage/categories" component={AdminCategories} />
+      <Route path="/backstage/customers" component={AdminCustomers} />
+      <Route path="/backstage/delivery-areas" component={AdminDeliveryAreas} />
+      <Route path="/backstage/opening-hours" component={AdminOpeningHours} />
+      <Route path="/backstage/coupons" component={AdminCoupons} />
+      <Route path="/backstage/settings" component={AdminSettings} />
+      <Route path="/backstage/option-groups" component={AdminOptionGroups} />
 
       <Route component={NotFound} />
     </Switch>

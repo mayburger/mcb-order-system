@@ -25,22 +25,22 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const handleLogout = () => {
     logout.mutate(undefined, {
       onSuccess: () => {
-        setLocation("/admin");
+        setLocation("/backstage");
       }
     });
   };
 
   const navItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/orders", label: "Bestellungen", icon: ShoppingBag },
-    { href: "/admin/products", label: "Produkte", icon: UtensilsCrossed },
-    { href: "/admin/categories", label: "Kategorien", icon: Tags },
-    { href: "/admin/option-groups", label: "Optionsgruppen", icon: SlidersHorizontal },
-    { href: "/admin/customers", label: "Kunden", icon: Users },
-    { href: "/admin/delivery-areas", label: "Liefergebiete", icon: MapPin },
-    { href: "/admin/opening-hours", label: "Öffnungszeiten", icon: Clock },
-    { href: "/admin/coupons", label: "Gutscheine", icon: TicketPercent },
-    { href: "/admin/settings", label: "Einstellungen", icon: Settings },
+    { href: "/backstage/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/backstage/orders", label: "Bestellungen", icon: ShoppingBag },
+    { href: "/backstage/products", label: "Produkte", icon: UtensilsCrossed },
+    { href: "/backstage/categories", label: "Kategorien", icon: Tags },
+    { href: "/backstage/option-groups", label: "Optionsgruppen", icon: SlidersHorizontal },
+    { href: "/backstage/customers", label: "Kunden", icon: Users },
+    { href: "/backstage/delivery-areas", label: "Liefergebiete", icon: MapPin },
+    { href: "/backstage/opening-hours", label: "Öffnungszeiten", icon: Clock },
+    { href: "/backstage/coupons", label: "Gutscheine", icon: TicketPercent },
+    { href: "/backstage/settings", label: "Einstellungen", icon: Settings },
   ];
 
   const SidebarContent = () => (

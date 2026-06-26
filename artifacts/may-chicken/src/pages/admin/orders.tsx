@@ -43,7 +43,7 @@ export default function AdminOrders() {
   });
   const updateOrder = useUpdateAdminOrder();
 
-  if (!sessionLoading && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sessionLoading && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const handleStatusChange = (id: number, status: string) => {
     updateOrder.mutate(

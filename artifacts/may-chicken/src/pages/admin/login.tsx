@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
   });
 
   if (!isLoading && session?.authenticated) {
-    navigate("/admin/dashboard");
+    navigate("/backstage/dashboard");
     return null;
   }
 
@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: getGetAdminSessionQueryKey() });
-          navigate("/admin/dashboard");
+          navigate("/backstage/dashboard");
         },
         onError: () => setError("Ungültiger Benutzername oder Passwort"),
       }
@@ -76,9 +76,6 @@ export default function AdminLoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Standard-Zugangsdaten: admin / admin123
-        </p>
       </div>
     </div>
   );

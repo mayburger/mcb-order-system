@@ -28,7 +28,7 @@ export default function AdminDashboard() {
   });
 
   if (!sessionLoading && !session?.authenticated) {
-    navigate("/admin");
+    navigate("/backstage");
     return null;
   }
 

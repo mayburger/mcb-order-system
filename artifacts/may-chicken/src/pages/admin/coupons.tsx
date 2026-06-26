@@ -31,7 +31,7 @@ export default function AdminCoupons() {
   const updateCoupon = useUpdateCoupon();
   const deleteCoupon = useDeleteCoupon();
 
-  if (!sl && !session?.authenticated) { navigate("/admin"); return null; }
+  if (!sl && !session?.authenticated) { navigate("/backstage"); return null; }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListCouponsQueryKey() });
 
