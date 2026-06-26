@@ -41,20 +41,20 @@ export default function AdminProducts() {
   const handleSave = () => {
     if (!dialog) return;
     const { name, description, price, categoryId, available, featured, imageUrl, sortOrder } = dialog.form;
-    if (!name.trim() || !price || !categoryId) { toast({ title: "Name, price and category required", variant: "destructive" }); return; }
+    if (!name.trim() || !price || !categoryId) { toast({ title: "Name, Preis und Kategorie erforderlich", variant: "destructive" }); return; }
     const priceNum = parseFloat(price);
-    if (isNaN(priceNum)) { toast({ title: "Invalid price", variant: "destructive" }); return; }
+    if (isNaN(priceNum)) { toast({ title: "Ungültiger Preis", variant: "destructive" }); return; }
 
     const data = { name, description, price: priceNum, categoryId, available, featured, imageUrl: imageUrl || undefined, sortOrder };
     if (dialog.mode === "create") {
       createItem.mutate({ data }, {
-        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Item created" }); },
-        onError: () => toast({ title: "Failed to create", variant: "destructive" }),
+        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Artikel erstellt" }); },
+        onError: () => toast({ title: "Fehler beim Erstellen", variant: "destructive" }),
       });
     } else {
       updateItem.mutate({ id: dialog.id!, data }, {
-        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Item updated" }); },
-        onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Artikel aktualisiert" }); },
+        onError: () => toast({ title: "Fehler beim Aktualisieren", variant: "destructive" }),
       });
     }
   };
@@ -66,25 +66,25 @@ export default function AdminProducts() {
   };
 
   const handleDelete = (id: number, name: string) => {
-    if (!confirm(`Delete "${name}"?`)) return;
+    if (!confirm(`„${name}" wirklich löschen?`)) return;
     deleteItem.mutate({ id }, {
-      onSuccess: () => { invalidate(); toast({ title: "Item deleted" }); },
+      onSuccess: () => { invalidate(); toast({ title: "Artikel gelöscht" }); },
     });
   };
 
   return (
     <AdminLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-display font-bold uppercase text-white">Products</h1>
+        <h1 className="text-3xl font-display font-bold uppercase text-white">Produkte</h1>
         <div className="flex items-center gap-3">
           <select value={catFilter ?? ""} onChange={(e) => setCatFilter(e.target.value ? Number(e.target.value) : undefined)}
             className="bg-card border border-border text-white text-sm px-3 py-2 rounded-none focus:outline-none focus:border-primary">
-            <option value="">All Categories</option>
+            <option value="">Alle Kategorien</option>
             {cats?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <Button className="rounded-none uppercase tracking-wider text-xs font-bold bg-primary hover:bg-primary/90 shrink-0"
             onClick={() => setDialog({ mode: "create", form: { ...EMPTY, categoryId: catFilter ?? (cats?.[0]?.id ?? 0) } })}>
-            <Plus className="h-4 w-4 mr-2" /> New Item
+            <Plus className="h-4 w-4 mr-2" /> Neuer Artikel
           </Button>
         </div>
       </div>
@@ -97,10 +97,10 @@ export default function AdminProducts() {
             <thead className="border-b border-border">
               <tr className="text-left">
                 <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Name</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Category</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Price</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Available</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Featured</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Kategorie</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Preis</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Verfügbar</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Empfohlen</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -120,7 +120,7 @@ export default function AdminProducts() {
                     </button>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 ${item.featured ? "bg-primary/20 text-primary" : "text-muted-foreground"}`}>{item.featured ? "Yes" : "No"}</span>
+                    <span className={`text-xs px-2 py-0.5 ${item.featured ? "bg-primary/20 text-primary" : "text-muted-foreground"}`}>{item.featured ? "Ja" : "Nein"}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-end">
@@ -141,12 +141,11 @@ export default function AdminProducts() {
         </div>
       )}
 
-      {/* Dialog */}
       {dialog && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "New Item" : "Edit Item"}</h2>
+              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "Neuer Artikel" : "Artikel bearbeiten"}</h2>
               <button onClick={() => setDialog(null)}><X className="h-5 w-5 text-muted-foreground hover:text-white" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -156,48 +155,48 @@ export default function AdminProducts() {
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, name: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Price (£) *</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Preis (£) *</label>
                 <Input type="number" step="0.01" value={dialog.form.price} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, price: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Category *</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Kategorie *</label>
                 <select value={dialog.form.categoryId} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, categoryId: Number(e.target.value) } })}
                   className="w-full bg-background border border-border text-white text-sm px-3 py-2 rounded-none focus:outline-none focus:border-primary">
-                  <option value={0}>Select...</option>
+                  <option value={0}>Auswählen...</option>
                   {cats?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Description</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Beschreibung</label>
                 <textarea value={dialog.form.description} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, description: e.target.value } })}
                   className="w-full rounded-none border border-border bg-background text-white p-3 h-20 resize-none focus:outline-none focus:border-primary text-sm" />
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Image URL</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Bild-URL</label>
                 <Input value={dialog.form.imageUrl} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, imageUrl: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Sort Order</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Reihenfolge</label>
                 <Input type="number" value={dialog.form.sortOrder} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, sortOrder: Number(e.target.value) } })} />
               </div>
               <div className="flex flex-col gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={dialog.form.available} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, available: e.target.checked } })} className="accent-primary" />
-                  <span className="text-sm text-white">Available</span>
+                  <span className="text-sm text-white">Verfügbar</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={dialog.form.featured} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, featured: e.target.checked } })} className="accent-primary" />
-                  <span className="text-sm text-white">Featured</span>
+                  <span className="text-sm text-white">Empfohlen</span>
                 </label>
               </div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button className="flex-1 rounded-none uppercase font-bold bg-primary hover:bg-primary/90" onClick={handleSave}
-                disabled={createItem.isPending || updateItem.isPending}>Save</Button>
-              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Cancel</Button>
+                disabled={createItem.isPending || updateItem.isPending}>Speichern</Button>
+              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Abbrechen</Button>
             </div>
           </div>
         </div>

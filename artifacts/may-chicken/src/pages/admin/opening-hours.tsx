@@ -39,8 +39,8 @@ export default function AdminOpeningHours() {
     updateHours.mutate(
       { data: { hours: allHours } },
       {
-        onSuccess: () => { qc.invalidateQueries({ queryKey: getGetAdminOpeningHoursQueryKey() }); toast({ title: "Saved" }); },
-        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: getGetAdminOpeningHoursQueryKey() }); toast({ title: "Gespeichert" }); },
+        onError: () => toast({ title: "Fehler beim Speichern", variant: "destructive" }),
       }
     );
   };
@@ -48,8 +48,8 @@ export default function AdminOpeningHours() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-3xl font-display font-bold uppercase text-white">Opening Hours</h1>
-        <p className="text-muted-foreground mt-1">Set your restaurant's opening times for each day.</p>
+        <h1 className="text-3xl font-display font-bold uppercase text-white">Öffnungszeiten</h1>
+        <p className="text-muted-foreground mt-1">Lege die Öffnungszeiten für jeden Wochentag fest.</p>
       </div>
 
       {isLoading ? (
@@ -71,7 +71,7 @@ export default function AdminOpeningHours() {
                       onClick={() => setEdits({ ...edits, [day.dayOfWeek]: { ...row, isClosed: !row.isClosed } })}>
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${row.isClosed ? "left-0.5" : "right-0.5"}`} />
                     </button>
-                    <span className={`text-sm ${row.isClosed ? "text-destructive" : "text-muted-foreground"}`}>{row.isClosed ? "Closed" : "Open"}</span>
+                    <span className={`text-sm ${row.isClosed ? "text-destructive" : "text-muted-foreground"}`}>{row.isClosed ? "Geschlossen" : "Geöffnet"}</span>
                   </label>
 
                   {!row.isClosed && (
@@ -88,7 +88,7 @@ export default function AdminOpeningHours() {
                 <Button size="sm" className="rounded-none uppercase tracking-wider text-xs font-bold bg-primary hover:bg-primary/90 shrink-0"
                   disabled={!edits[day.dayOfWeek] || updateHours.isPending}
                   onClick={() => handleSave(day.dayOfWeek)}>
-                  Save
+                  Speichern
                 </Button>
               </div>
             );

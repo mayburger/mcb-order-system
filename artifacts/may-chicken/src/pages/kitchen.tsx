@@ -8,17 +8,17 @@ import { Clock, ChefHat, Package, CheckCircle2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: React.ElementType; next?: string; nextLabel?: string }> = {
-  confirmed:  { label: "To Prepare", color: "border-blue-500/50 bg-blue-500/5", icon: Clock, next: "preparing", nextLabel: "Start Preparing" },
-  preparing:  { label: "Preparing", color: "border-orange-500/50 bg-orange-500/5", icon: ChefHat, next: "ready", nextLabel: "Mark Ready" },
-  ready:      { label: "Ready", color: "border-green-500/50 bg-green-500/5", icon: Package, next: "delivering", nextLabel: "Out for Delivery" },
-  delivering: { label: "Delivering", color: "border-purple-500/50 bg-purple-500/5", icon: Truck, next: "completed", nextLabel: "Delivered" },
+  confirmed:  { label: "Warteschlange", color: "border-blue-500/50 bg-blue-500/5",   icon: Clock,    next: "preparing",  nextLabel: "Zubereitung starten" },
+  preparing:  { label: "Zubereitung",   color: "border-orange-500/50 bg-orange-500/5", icon: ChefHat,  next: "ready",      nextLabel: "Als bereit markieren" },
+  ready:      { label: "Bereit",        color: "border-green-500/50 bg-green-500/5",  icon: Package,  next: "delivering", nextLabel: "In Auslieferung" },
+  delivering: { label: "Auslieferung",  color: "border-purple-500/50 bg-purple-500/5", icon: Truck,    next: "completed",  nextLabel: "Geliefert" },
 };
 
 function timeAgo(dateStr: string) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-  if (diff < 1) return "just now";
-  if (diff === 1) return "1 min ago";
-  return `${diff} min ago`;
+  if (diff < 1) return "gerade eben";
+  if (diff === 1) return "vor 1 Min.";
+  return `vor ${diff} Min.`;
 }
 
 export default function KitchenPage() {
@@ -40,19 +40,19 @@ export default function KitchenPage() {
   };
 
   const tabs = [
-    { key: "confirmed",  label: "Queue",      icon: Clock },
-    { key: "preparing",  label: "Preparing",  icon: ChefHat },
-    { key: "ready",      label: "Ready",      icon: Package },
-    { key: "delivering", label: "Delivering", icon: Truck },
+    { key: "confirmed",  label: "Warteschlange", icon: Clock },
+    { key: "preparing",  label: "Zubereitung",   icon: ChefHat },
+    { key: "ready",      label: "Bereit",         icon: Package },
+    { key: "delivering", label: "Auslieferung",   icon: Truck },
   ];
 
   return (
     <div className="min-h-screen bg-background text-white">
-      {/* Header */}
+      {/* Kopfzeile */}
       <div className="sticky top-0 z-40 bg-card border-b border-border">
         <div className="flex items-center justify-between px-6 py-4">
           <span className="text-2xl font-display font-bold uppercase tracking-tight">
-            KITCHEN<span className="text-primary">.</span>
+            KÜCHE<span className="text-primary">.</span>
           </span>
           <div className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-3 py-1">
             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
@@ -60,7 +60,7 @@ export default function KitchenPage() {
           </div>
         </div>
 
-        {/* Tab bar */}
+        {/* Tab-Leiste */}
         <div className="flex border-t border-border">
           {tabs.map((tab) => {
             const count = tab.key === statusFilter ? orders?.length : 0;
@@ -79,7 +79,7 @@ export default function KitchenPage() {
         </div>
       </div>
 
-      {/* Orders */}
+      {/* Bestellungen */}
       <div className="p-4">
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -88,7 +88,7 @@ export default function KitchenPage() {
         ) : orders?.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
             <CheckCircle2 className="h-16 w-16 mb-4 opacity-30" />
-            <p className="text-lg font-medium">No orders in this queue</p>
+            <p className="text-lg font-medium">Keine Bestellungen in dieser Warteschlange</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -97,11 +97,12 @@ export default function KitchenPage() {
               const Icon = meta?.icon ?? Clock;
               return (
                 <div key={order.id} className={`border ${meta?.color ?? "border-border"} p-4 flex flex-col gap-3`}>
-                  {/* Header */}
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-mono font-bold text-xl text-white leading-none">{order.orderNumber}</p>
-                      <p className="text-muted-foreground text-xs mt-1 uppercase">{order.orderType}</p>
+                      <p className="text-muted-foreground text-xs mt-1 uppercase">
+                        {order.orderType === "delivery" ? "Lieferung" : "Abholung"}
+                      </p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <Icon className="h-5 w-5 text-muted-foreground" />
@@ -109,7 +110,6 @@ export default function KitchenPage() {
                     </div>
                   </div>
 
-                  {/* Customer */}
                   <div className="border-t border-border pt-3">
                     <p className="font-semibold text-white text-sm">{order.customerName}</p>
                     {order.orderType === "delivery" && order.deliveryAddress && (
@@ -117,7 +117,6 @@ export default function KitchenPage() {
                     )}
                   </div>
 
-                  {/* Items */}
                   <div className="flex-1 space-y-1">
                     {order.items.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm">
@@ -127,14 +126,12 @@ export default function KitchenPage() {
                     ))}
                   </div>
 
-                  {/* Notes */}
                   {order.notes && (
                     <div className="bg-yellow-500/10 border border-yellow-500/30 p-2 text-yellow-300 text-xs">
                       {order.notes}
                     </div>
                   )}
 
-                  {/* Action */}
                   {meta?.next && (
                     <Button className="w-full rounded-none uppercase tracking-wider font-bold text-xs bg-primary hover:bg-primary/90 mt-auto"
                       onClick={() => handleNext(order.id, meta.next!)} disabled={updateStatus.isPending}>

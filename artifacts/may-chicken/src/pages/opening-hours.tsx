@@ -12,8 +12,8 @@ export default function OpeningHoursPage() {
       <div className="container mx-auto px-4 py-20 max-w-2xl">
         <div className="text-center mb-12">
           <Clock className="h-12 w-12 text-primary mx-auto mb-4" />
-          <h1 className="text-5xl font-display font-bold uppercase tracking-tight text-white">Opening Hours</h1>
-          <p className="text-muted-foreground mt-3">Come hungry, leave satisfied.</p>
+          <h1 className="text-5xl font-display font-bold uppercase tracking-tight text-white">Öffnungszeiten</h1>
+          <p className="text-muted-foreground mt-3">Komm hungrig, geh glücklich.</p>
         </div>
 
         <div className="bg-card border border-border overflow-hidden">
@@ -38,11 +38,11 @@ export default function OpeningHoursPage() {
                         {day.dayName}
                       </span>
                       {isToday && (
-                        <span className="text-xs bg-primary text-white px-2 py-0.5 uppercase font-bold">Today</span>
+                        <span className="text-xs bg-primary text-white px-2 py-0.5 uppercase font-bold">Heute</span>
                       )}
                     </div>
                     <span className={`font-medium ${day.isClosed ? "text-destructive" : "text-muted-foreground"}`}>
-                      {day.isClosed ? "Closed" : `${day.openTime} – ${day.closeTime}`}
+                      {day.isClosed ? "Geschlossen" : `${day.openTime} – ${day.closeTime} Uhr`}
                     </span>
                   </div>
                 );

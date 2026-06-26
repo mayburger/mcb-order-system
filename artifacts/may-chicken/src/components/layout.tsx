@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Menu, X } from "lucide-react";
+import { ShoppingBag, Menu } from "lucide-react";
 import { useGetRestaurantInfo } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -12,10 +12,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: restaurant } = useGetRestaurantInfo();
 
   const links = [
-    { href: "/", label: "Home" },
-    { href: "/menu", label: "Menu" },
-    { href: "/opening-hours", label: "Hours" },
-    { href: "/contact", label: "Contact" },
+    { href: "/", label: "Startseite" },
+    { href: "/menu", label: "Speisekarte" },
+    { href: "/opening-hours", label: "Öffnungszeiten" },
+    { href: "/contact", label: "Kontakt" },
   ];
 
   return (
@@ -45,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </nav>
               </SheetContent>
             </Sheet>
-            
+
             <Link href="/" className="flex items-center gap-2">
               <span className="text-2xl font-display font-bold uppercase tracking-tight text-white">
                 {restaurant?.name || "MAY CHICKEN"}
@@ -72,7 +72,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/cart">
               <Button variant="outline" className="relative border-border bg-background/50">
                 <ShoppingBag className="h-4 w-4 mr-2" />
-                <span>Cart</span>
+                <span>Warenkorb</span>
                 {totalItems > 0 && (
                   <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
                     {totalItems}
@@ -96,24 +96,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-primary">.</span>
             </span>
             <p className="mt-4 text-muted-foreground text-sm">
-              {restaurant?.tagline || "Unapologetically premium fast food."}
+              {restaurant?.tagline || "Unnachgiebig premium. Schnell & lecker."}
             </p>
           </div>
           <div>
-            <h4 className="font-display font-bold uppercase text-white mb-4">Location</h4>
+            <h4 className="font-display font-bold uppercase text-white mb-4">Standort</h4>
             <p className="text-muted-foreground text-sm">{restaurant?.address}</p>
           </div>
           <div>
-            <h4 className="font-display font-bold uppercase text-white mb-4">Contact</h4>
+            <h4 className="font-display font-bold uppercase text-white mb-4">Kontakt</h4>
             <p className="text-muted-foreground text-sm">{restaurant?.phone}</p>
             <p className="text-muted-foreground text-sm">{restaurant?.email}</p>
           </div>
           <div>
             <h4 className="font-display font-bold uppercase text-white mb-4">Links</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/menu" className="hover:text-primary">Full Menu</Link></li>
-              <li><Link href="/opening-hours" className="hover:text-primary">Opening Hours</Link></li>
-              <li><Link href="/admin" className="hover:text-primary">Admin Login</Link></li>
+              <li><Link href="/menu" className="hover:text-primary">Speisekarte</Link></li>
+              <li><Link href="/opening-hours" className="hover:text-primary">Öffnungszeiten</Link></li>
+              <li><Link href="/admin" className="hover:text-primary">Admin-Login</Link></li>
             </ul>
           </div>
         </div>

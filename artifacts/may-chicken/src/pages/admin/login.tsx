@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
           qc.invalidateQueries({ queryKey: getGetAdminSessionQueryKey() });
           navigate("/admin/dashboard");
         },
-        onError: () => setError("Invalid username or password"),
+        onError: () => setError("Ungültiger Benutzername oder Passwort"),
       }
     );
   };
@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           <span className="text-4xl font-display font-bold uppercase tracking-tight text-white">
             MAY CHICKEN<span className="text-primary">.</span>
           </span>
-          <p className="text-muted-foreground mt-2 uppercase tracking-wider text-xs">Admin Portal</p>
+          <p className="text-muted-foreground mt-2 uppercase tracking-wider text-xs">Admin-Portal</p>
         </div>
 
         <div className="bg-card border border-border p-8">
@@ -57,13 +57,13 @@ export default function AdminLoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Username</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Benutzername</label>
               <Input value={username} onChange={(e) => setUsername(e.target.value)}
                 required autoComplete="username"
                 className="rounded-none border-border bg-background text-white" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Password</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Passwort</label>
               <Input value={password} onChange={(e) => setPassword(e.target.value)}
                 type="password" required autoComplete="current-password"
                 className="rounded-none border-border bg-background text-white" />
@@ -71,13 +71,13 @@ export default function AdminLoginPage() {
             {error && <p className="text-destructive text-sm">{error}</p>}
             <Button type="submit" disabled={login.isPending}
               className="w-full rounded-none h-11 uppercase tracking-widest font-bold bg-primary hover:bg-primary/90 text-white">
-              {login.isPending ? "Signing in..." : "Sign In"}
+              {login.isPending ? "Anmeldung läuft..." : "Anmelden"}
             </Button>
           </form>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Default credentials: admin / admin123
+          Standard-Zugangsdaten: admin / admin123
         </p>
       </div>
     </div>

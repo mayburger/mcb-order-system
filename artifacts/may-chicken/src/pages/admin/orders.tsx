@@ -6,7 +6,6 @@ import {
 } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -18,6 +17,11 @@ const STATUS_COLORS: Record<string, string> = {
   delivering: "bg-purple-500/10 text-purple-400 border-purple-500/30",
   completed:  "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
   cancelled:  "bg-red-500/10 text-red-400 border-red-500/30",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Ausstehend", confirmed: "Bestätigt", preparing: "Zubereitung",
+  ready: "Bereit", delivering: "Auslieferung", completed: "Abgeschlossen", cancelled: "Storniert",
 };
 
 const STATUSES = ["", "pending", "confirmed", "preparing", "ready", "delivering", "completed", "cancelled"];
@@ -51,12 +55,12 @@ export default function AdminOrders() {
   return (
     <AdminLayout>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-display font-bold uppercase text-white">Orders</h1>
+        <h1 className="text-3xl font-display font-bold uppercase text-white">Bestellungen</h1>
         <div className="flex gap-2 flex-wrap">
           {STATUSES.map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-colors ${statusFilter === s ? "bg-primary border-primary text-white" : "border-border text-muted-foreground hover:border-white hover:text-white"}`}>
-              {s || "All"}
+              {s ? (STATUS_LABELS[s] ?? s) : "Alle"}
             </button>
           ))}
         </div>
@@ -65,7 +69,7 @@ export default function AdminOrders() {
       {isLoading ? (
         <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-card border border-border animate-pulse" />)}</div>
       ) : orders?.length === 0 ? (
-        <div className="bg-card border border-border p-12 text-center text-muted-foreground">No orders found.</div>
+        <div className="bg-card border border-border p-12 text-center text-muted-foreground">Keine Bestellungen gefunden.</div>
       ) : (
         <div className="space-y-2">
           {orders?.map((order) => (
@@ -74,14 +78,18 @@ export default function AdminOrders() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-bold text-white font-mono">{order.orderNumber}</span>
-                    <span className={`text-xs px-2 py-0.5 border font-bold uppercase ${STATUS_COLORS[order.status]}`}>{order.status}</span>
-                    <span className="text-xs text-muted-foreground uppercase">{order.orderType}</span>
+                    <span className={`text-xs px-2 py-0.5 border font-bold uppercase ${STATUS_COLORS[order.status]}`}>
+                      {STATUS_LABELS[order.status] ?? order.status}
+                    </span>
+                    <span className="text-xs text-muted-foreground uppercase">
+                      {order.orderType === "delivery" ? "Lieferung" : "Abholung"}
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{order.customerName} · {order.customerPhone}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-bold text-white">£{order.total.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr</p>
                 </div>
                 {expanded === order.id ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
               </div>
@@ -89,11 +97,11 @@ export default function AdminOrders() {
               {expanded === order.id && (
                 <div className="border-t border-border p-4 space-y-4 bg-background/50">
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    {order.deliveryAddress && <div><p className="text-muted-foreground text-xs uppercase">Address</p><p className="text-white">{order.deliveryAddress}</p></div>}
-                    {order.notes && <div><p className="text-muted-foreground text-xs uppercase">Notes</p><p className="text-white">{order.notes}</p></div>}
+                    {order.deliveryAddress && <div><p className="text-muted-foreground text-xs uppercase">Adresse</p><p className="text-white">{order.deliveryAddress}</p></div>}
+                    {order.notes && <div><p className="text-muted-foreground text-xs uppercase">Anmerkungen</p><p className="text-white">{order.notes}</p></div>}
                   </div>
                   <div>
-                    <p className="text-muted-foreground text-xs uppercase mb-2">Items</p>
+                    <p className="text-muted-foreground text-xs uppercase mb-2">Artikel</p>
                     {order.items.map((item) => (
                       <div key={item.id} className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{item.itemName} × {item.quantity}</span>
@@ -106,14 +114,14 @@ export default function AdminOrders() {
                       <Button size="sm" className="rounded-none uppercase tracking-wider text-xs font-bold bg-primary hover:bg-primary/90"
                         disabled={updateOrder.isPending}
                         onClick={() => handleStatusChange(order.id, NEXT_STATUS[order.status]!)}>
-                        Mark as {NEXT_STATUS[order.status]}
+                        Als „{STATUS_LABELS[NEXT_STATUS[order.status]!]}" markieren
                       </Button>
                     )}
                     {order.status !== "cancelled" && order.status !== "completed" && (
                       <Button size="sm" variant="outline" className="rounded-none uppercase tracking-wider text-xs font-bold border-destructive/50 text-destructive hover:bg-destructive/10"
                         disabled={updateOrder.isPending}
                         onClick={() => handleStatusChange(order.id, "cancelled")}>
-                        Cancel
+                        Stornieren
                       </Button>
                     )}
                   </div>

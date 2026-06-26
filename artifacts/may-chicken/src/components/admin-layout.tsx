@@ -1,15 +1,15 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, 
-  ShoppingBag, 
-  UtensilsCrossed, 
-  Tags, 
-  Users, 
-  MapPin, 
-  Clock, 
-  TicketPercent, 
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  UtensilsCrossed,
+  Tags,
+  Users,
+  MapPin,
+  Clock,
+  TicketPercent,
   Settings,
   LogOut,
   Menu
@@ -31,14 +31,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
-    { href: "/admin/products", label: "Products", icon: UtensilsCrossed },
-    { href: "/admin/categories", label: "Categories", icon: Tags },
-    { href: "/admin/customers", label: "Customers", icon: Users },
-    { href: "/admin/delivery-areas", label: "Delivery Areas", icon: MapPin },
-    { href: "/admin/opening-hours", label: "Opening Hours", icon: Clock },
-    { href: "/admin/coupons", label: "Coupons", icon: TicketPercent },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/orders", label: "Bestellungen", icon: ShoppingBag },
+    { href: "/admin/products", label: "Produkte", icon: UtensilsCrossed },
+    { href: "/admin/categories", label: "Kategorien", icon: Tags },
+    { href: "/admin/customers", label: "Kunden", icon: Users },
+    { href: "/admin/delivery-areas", label: "Liefergebiete", icon: MapPin },
+    { href: "/admin/opening-hours", label: "Öffnungszeiten", icon: Clock },
+    { href: "/admin/coupons", label: "Gutscheine", icon: TicketPercent },
+    { href: "/admin/settings", label: "Einstellungen", icon: Settings },
   ];
 
   const SidebarContent = () => (
@@ -67,7 +67,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <div className="p-4 border-t border-border">
         <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-white" onClick={handleLogout}>
           <LogOut className="h-5 w-5 mr-3" />
-          Logout
+          Abmelden
         </Button>
       </div>
     </div>
@@ -75,12 +75,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
       <aside className="hidden md:block w-64 h-screen sticky top-0">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Nav */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 border-b border-border bg-card z-50 flex items-center px-4">
         <Sheet>
           <SheetTrigger asChild>
@@ -97,7 +95,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </span>
       </div>
 
-      {/* Main Content */}
       <main className="flex-1 p-6 md:p-8 pt-20 md:pt-8 min-h-screen">
         {children}
       </main>

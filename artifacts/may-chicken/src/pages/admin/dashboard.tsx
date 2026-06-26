@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold uppercase text-white">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Overview of your restaurant.</p>
+        <p className="text-muted-foreground mt-1">Übersicht deines Restaurants.</p>
       </div>
 
       {isLoading ? (
@@ -48,18 +48,17 @@ export default function AdminDashboard() {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <StatCard label="Today's Orders" value={String(stats?.todayOrders ?? 0)} icon={ShoppingBag} accent />
-            <StatCard label="Pending Orders" value={String(stats?.pendingOrders ?? 0)} icon={Clock} sub="Need attention" />
-            <StatCard label="Today's Revenue" value={`£${(stats?.todayRevenue ?? 0).toFixed(2)}`} icon={DollarSign} />
-            <StatCard label="Week Revenue" value={`£${(stats?.weekRevenue ?? 0).toFixed(2)}`} icon={TrendingUp} />
+            <StatCard label="Bestellungen heute" value={String(stats?.todayOrders ?? 0)} icon={ShoppingBag} accent />
+            <StatCard label="Offene Bestellungen" value={String(stats?.pendingOrders ?? 0)} icon={Clock} sub="Benötigen Aufmerksamkeit" />
+            <StatCard label="Umsatz heute" value={`£${(stats?.todayRevenue ?? 0).toFixed(2)}`} icon={DollarSign} />
+            <StatCard label="Wochenumsatz" value={`£${(stats?.weekRevenue ?? 0).toFixed(2)}`} icon={TrendingUp} />
           </div>
 
-          {/* Popular items */}
           {stats?.popularItems && stats.popularItems.length > 0 && (
             <div className="bg-card border border-border p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Star className="h-5 w-5 text-primary" />
-                <h2 className="font-display font-bold uppercase text-white">Top Items</h2>
+                <h2 className="font-display font-bold uppercase text-white">Beliebteste Artikel</h2>
               </div>
               <div className="space-y-3">
                 {stats.popularItems.map((item, i) => (
@@ -68,7 +67,7 @@ export default function AdminDashboard() {
                       <span className="text-primary font-bold text-sm w-5">{i + 1}.</span>
                       <span className="text-white font-medium">{item.name}</span>
                     </div>
-                    <span className="text-muted-foreground text-sm">{item.orderCount} ordered</span>
+                    <span className="text-muted-foreground text-sm">{item.orderCount}× bestellt</span>
                   </div>
                 ))}
               </div>

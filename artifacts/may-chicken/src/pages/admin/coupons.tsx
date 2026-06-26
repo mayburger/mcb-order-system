@@ -38,16 +38,16 @@ export default function AdminCoupons() {
   const handleSave = () => {
     if (!dialog) return;
     const { code, description, discountType, discountValue, minOrder, maxUsage, expiresAt, active } = dialog.form;
-    if (!code.trim() || !discountValue) { toast({ title: "Code and discount value required", variant: "destructive" }); return; }
+    if (!code.trim() || !discountValue) { toast({ title: "Code und Rabattwert erforderlich", variant: "destructive" }); return; }
     const data = {
       code: code.trim().toUpperCase(), description, discountType, discountValue: parseFloat(discountValue),
       minOrder: parseFloat(minOrder) || 0, maxUsage: maxUsage ? parseInt(maxUsage) : undefined,
       expiresAt: expiresAt || undefined, active,
     };
     if (dialog.mode === "create") {
-      createCoupon.mutate({ data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Coupon created" }); }, onError: () => toast({ title: "Failed", variant: "destructive" }) });
+      createCoupon.mutate({ data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Gutschein erstellt" }); }, onError: () => toast({ title: "Fehler", variant: "destructive" }) });
     } else {
-      updateCoupon.mutate({ id: dialog.id!, data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Coupon updated" }); }, onError: () => toast({ title: "Failed", variant: "destructive" }) });
+      updateCoupon.mutate({ id: dialog.id!, data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Gutschein aktualisiert" }); }, onError: () => toast({ title: "Fehler", variant: "destructive" }) });
     }
   };
 
@@ -56,17 +56,17 @@ export default function AdminCoupons() {
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Delete this coupon?")) return;
-    deleteCoupon.mutate({ id }, { onSuccess: () => { invalidate(); toast({ title: "Deleted" }); } });
+    if (!confirm("Gutschein wirklich löschen?")) return;
+    deleteCoupon.mutate({ id }, { onSuccess: () => { invalidate(); toast({ title: "Gelöscht" }); } });
   };
 
   return (
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-display font-bold uppercase text-white">Coupons</h1>
+        <h1 className="text-3xl font-display font-bold uppercase text-white">Gutscheine</h1>
         <Button className="rounded-none uppercase tracking-wider text-xs font-bold bg-primary hover:bg-primary/90"
           onClick={() => setDialog({ mode: "create", form: EMPTY })}>
-          <Plus className="h-4 w-4 mr-2" /> New Coupon
+          <Plus className="h-4 w-4 mr-2" /> Neuer Gutschein
         </Button>
       </div>
 
@@ -75,7 +75,7 @@ export default function AdminCoupons() {
       ) : coupons?.length === 0 ? (
         <div className="bg-card border border-border p-16 text-center">
           <TicketPercent className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No coupons yet. Create one to offer discounts.</p>
+          <p className="text-muted-foreground">Noch keine Gutscheine. Erstelle einen für Rabatte.</p>
         </div>
       ) : (
         <div className="bg-card border border-border overflow-hidden">
@@ -83,11 +83,11 @@ export default function AdminCoupons() {
             <thead className="border-b border-border">
               <tr className="text-left">
                 <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Code</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Discount</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Min. Order</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Uses</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Expires</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Active</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Rabatt</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Mind. Bestellung</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Verwendungen</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Gültig bis</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Aktiv</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -103,7 +103,7 @@ export default function AdminCoupons() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">£{(c.minOrder ?? 0).toFixed(2)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{c.usageCount}{c.maxUsage ? `/${c.maxUsage}` : ""}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-sm">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-sm">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString("de-DE") : "—"}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => handleToggle(c.id, c.active)}
                       className={`w-10 h-5 rounded-full transition-colors relative ${c.active ? "bg-primary" : "bg-border"}`}>
@@ -133,7 +133,7 @@ export default function AdminCoupons() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "New Coupon" : "Edit Coupon"}</h2>
+              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "Neuer Gutschein" : "Gutschein bearbeiten"}</h2>
               <button onClick={() => setDialog(null)}><X className="h-5 w-5 text-muted-foreground hover:text-white" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -143,49 +143,49 @@ export default function AdminCoupons() {
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, code: e.target.value.toUpperCase() } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Type</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Rabattart</label>
                 <select value={dialog.form.discountType} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, discountType: e.target.value as any } })}
                   className="w-full bg-background border border-border text-white text-sm px-3 py-2 rounded-none focus:outline-none focus:border-primary">
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="fixed">Fixed (£)</option>
+                  <option value="percentage">Prozent (%)</option>
+                  <option value="fixed">Festbetrag (£)</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Value *</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Wert *</label>
                 <Input type="number" step="0.01" value={dialog.form.discountValue} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, discountValue: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Min. Order (£)</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Mind. Bestellung (£)</label>
                 <Input type="number" step="0.01" value={dialog.form.minOrder} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, minOrder: e.target.value } })} />
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Description</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Beschreibung</label>
                 <Input value={dialog.form.description} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, description: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Max Uses</label>
-                <Input type="number" value={dialog.form.maxUsage} placeholder="Unlimited" className="rounded-none border-border bg-background text-white"
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Max. Verwendungen</label>
+                <Input type="number" value={dialog.form.maxUsage} placeholder="Unbegrenzt" className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, maxUsage: e.target.value } })} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Expires At</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Gültig bis</label>
                 <Input type="date" value={dialog.form.expiresAt} className="rounded-none border-border bg-background text-white"
                   onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, expiresAt: e.target.value } })} />
               </div>
               <div className="col-span-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={dialog.form.active} onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, active: e.target.checked } })} className="accent-primary" />
-                  <span className="text-sm text-white">Active</span>
+                  <span className="text-sm text-white">Aktiv</span>
                 </label>
               </div>
             </div>
             <div className="flex gap-3 pt-2">
               <Button className="flex-1 rounded-none uppercase font-bold bg-primary hover:bg-primary/90" onClick={handleSave}
-                disabled={createCoupon.isPending || updateCoupon.isPending}>Save</Button>
-              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Cancel</Button>
+                disabled={createCoupon.isPending || updateCoupon.isPending}>Speichern</Button>
+              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Abbrechen</Button>
             </div>
           </div>
         </div>

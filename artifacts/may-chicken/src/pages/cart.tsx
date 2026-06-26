@@ -28,10 +28,10 @@ export default function CartPage() {
             : Math.min(coupon.discountValue, subtotal);
           setDiscount(d);
           setAppliedCoupon(couponCode.trim().toUpperCase());
-          toast({ title: "Coupon applied!", description: `Saved £${d.toFixed(2)}` });
+          toast({ title: "Gutschein angewendet!", description: `Du sparst £${d.toFixed(2)}` });
         },
         onError: () => {
-          toast({ title: "Invalid coupon", description: "This code is invalid or expired.", variant: "destructive" });
+          toast({ title: "Ungültiger Gutschein", description: "Dieser Code ist ungültig oder abgelaufen.", variant: "destructive" });
         }
       }
     );
@@ -44,11 +44,11 @@ export default function CartPage() {
       <Layout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
           <ShoppingBag className="h-20 w-20 text-muted-foreground mb-6" />
-          <h1 className="text-3xl font-display font-bold uppercase text-white mb-2">Your cart is empty</h1>
-          <p className="text-muted-foreground mb-8">Add some items to get started.</p>
+          <h1 className="text-3xl font-display font-bold uppercase text-white mb-2">Dein Warenkorb ist leer</h1>
+          <p className="text-muted-foreground mb-8">Füge Artikel hinzu, um zu starten.</p>
           <Link href="/menu">
             <Button className="uppercase tracking-widest font-bold rounded-none bg-primary hover:bg-primary/90">
-              Browse Menu <ArrowRight className="ml-2 h-4 w-4" />
+              Zur Speisekarte <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>
@@ -59,9 +59,9 @@ export default function CartPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-display font-bold uppercase tracking-tight text-white mb-10">Your Order</h1>
+        <h1 className="text-4xl font-display font-bold uppercase tracking-tight text-white mb-10">Deine Bestellung</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Items */}
+          {/* Artikel */}
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <div key={item.menuItem.id} className="flex items-center gap-4 bg-card border border-border p-4">
@@ -89,14 +89,14 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Summary */}
+          {/* Übersicht */}
           <div className="bg-card border border-border p-6 h-fit space-y-6">
-            <h2 className="text-xl font-display font-bold uppercase text-white">Summary</h2>
-            
-            {/* Coupon */}
+            <h2 className="text-xl font-display font-bold uppercase text-white">Übersicht</h2>
+
+            {/* Gutschein */}
             {!appliedCoupon ? (
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Coupon Code</label>
+                <label className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">Gutscheincode</label>
                 <div className="flex gap-2">
                   <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value)}
                     placeholder="WELCOME10" className="rounded-none border-border bg-background text-white uppercase" />
@@ -108,32 +108,32 @@ export default function CartPage() {
               </div>
             ) : (
               <div className="flex items-center justify-between bg-primary/10 border border-primary/30 p-3">
-                <span className="text-primary font-semibold text-sm">{appliedCoupon} applied</span>
-                <button className="text-muted-foreground text-xs hover:text-white" onClick={() => { setDiscount(0); setAppliedCoupon(null); setCouponCode(""); }}>Remove</button>
+                <span className="text-primary font-semibold text-sm">{appliedCoupon} angewendet</span>
+                <button className="text-muted-foreground text-xs hover:text-white" onClick={() => { setDiscount(0); setAppliedCoupon(null); setCouponCode(""); }}>Entfernen</button>
               </div>
             )}
 
             <div className="space-y-3 border-t border-border pt-4">
               <div className="flex justify-between text-muted-foreground">
-                <span>Subtotal</span><span>£{subtotal.toFixed(2)}</span>
+                <span>Zwischensumme</span><span>£{subtotal.toFixed(2)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-primary">
-                  <span>Discount</span><span>-£{discount.toFixed(2)}</span>
+                  <span>Rabatt</span><span>-£{discount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-white font-bold text-xl border-t border-border pt-3">
-                <span>Total</span><span>£{total.toFixed(2)}</span>
+                <span>Gesamt</span><span>£{total.toFixed(2)}</span>
               </div>
             </div>
 
             <Button className="w-full rounded-none uppercase tracking-widest font-bold h-12 bg-primary hover:bg-primary/90 text-white"
               onClick={() => navigate("/checkout")}>
-              Checkout <ArrowRight className="ml-2 h-4 w-4" />
+              Zur Kasse <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
 
             <Link href="/menu" className="block text-center text-sm text-muted-foreground hover:text-white transition-colors">
-              Continue shopping
+              Weiter einkaufen
             </Link>
           </div>
         </div>

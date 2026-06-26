@@ -34,31 +34,31 @@ export default function AdminDeliveryAreas() {
   const handleSave = () => {
     if (!dialog) return;
     const { postalCode, name, deliveryFee, minOrder } = dialog.form;
-    if (!postalCode.trim() || !name.trim()) { toast({ title: "Postal code and area name required", variant: "destructive" }); return; }
+    if (!postalCode.trim() || !name.trim()) { toast({ title: "PLZ und Gebietsname erforderlich", variant: "destructive" }); return; }
     const data = { postalCode: postalCode.trim(), name: name.trim(), deliveryFee: parseFloat(deliveryFee) || 0, minOrder: parseFloat(minOrder) || 0 };
 
     if (dialog.mode === "create") {
-      createArea.mutate({ data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Area added" }); }, onError: () => toast({ title: "Failed", variant: "destructive" }) });
+      createArea.mutate({ data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Gebiet hinzugefügt" }); }, onError: () => toast({ title: "Fehler", variant: "destructive" }) });
     } else {
-      updateArea.mutate({ id: dialog.id!, data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Area updated" }); }, onError: () => toast({ title: "Failed", variant: "destructive" }) });
+      updateArea.mutate({ id: dialog.id!, data }, { onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Gebiet aktualisiert" }); }, onError: () => toast({ title: "Fehler", variant: "destructive" }) });
     }
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Delete this delivery area?")) return;
-    deleteArea.mutate({ id }, { onSuccess: () => { invalidate(); toast({ title: "Area deleted" }); } });
+    if (!confirm("Dieses Liefergebiet wirklich löschen?")) return;
+    deleteArea.mutate({ id }, { onSuccess: () => { invalidate(); toast({ title: "Gebiet gelöscht" }); } });
   };
 
   return (
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold uppercase text-white">Delivery Areas</h1>
-          <p className="text-muted-foreground mt-1">Manage which postcodes you deliver to.</p>
+          <h1 className="text-3xl font-display font-bold uppercase text-white">Liefergebiete</h1>
+          <p className="text-muted-foreground mt-1">Lege fest, in welche Postleitzahlgebiete geliefert wird.</p>
         </div>
         <Button className="rounded-none uppercase tracking-wider text-xs font-bold bg-primary hover:bg-primary/90"
           onClick={() => setDialog({ mode: "create", form: EMPTY })}>
-          <Plus className="h-4 w-4 mr-2" /> Add Area
+          <Plus className="h-4 w-4 mr-2" /> Gebiet hinzufügen
         </Button>
       </div>
 
@@ -67,18 +67,18 @@ export default function AdminDeliveryAreas() {
       ) : areas?.length === 0 ? (
         <div className="bg-card border border-border p-16 text-center">
           <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">No delivery areas configured yet.</p>
+          <p className="text-muted-foreground">Noch keine Liefergebiete konfiguriert.</p>
         </div>
       ) : (
         <div className="bg-card border border-border overflow-hidden">
           <table className="w-full">
             <thead className="border-b border-border">
               <tr className="text-left">
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Postal Code</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Area Name</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Delivery Fee</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Min. Order</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Active</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">PLZ</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Gebiet</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Liefergebühr</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Mind. Bestellung</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Aktiv</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -90,7 +90,7 @@ export default function AdminDeliveryAreas() {
                   <td className="px-4 py-3 text-muted-foreground">£{a.deliveryFee.toFixed(2)}</td>
                   <td className="px-4 py-3 text-muted-foreground">£{a.minOrder.toFixed(2)}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs font-bold uppercase ${a.active ? "text-green-400" : "text-muted-foreground"}`}>{a.active ? "Yes" : "No"}</span>
+                    <span className={`text-xs font-bold uppercase ${a.active ? "text-green-400" : "text-muted-foreground"}`}>{a.active ? "Ja" : "Nein"}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 justify-end">
@@ -115,15 +115,15 @@ export default function AdminDeliveryAreas() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "Add Delivery Area" : "Edit Area"}</h2>
+              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "Gebiet hinzufügen" : "Gebiet bearbeiten"}</h2>
               <button onClick={() => setDialog(null)}><X className="h-5 w-5 text-muted-foreground hover:text-white" /></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Postal Code *", key: "postalCode" as const, type: "text" },
-                { label: "Area Name *", key: "name" as const, type: "text" },
-                { label: "Delivery Fee (£)", key: "deliveryFee" as const, type: "number" },
-                { label: "Min. Order (£)", key: "minOrder" as const, type: "number" },
+                { label: "PLZ *", key: "postalCode" as const, type: "text" },
+                { label: "Gebietsname *", key: "name" as const, type: "text" },
+                { label: "Liefergebühr (£)", key: "deliveryFee" as const, type: "number" },
+                { label: "Mind. Bestellung (£)", key: "minOrder" as const, type: "number" },
               ].map(({ label, key, type }) => (
                 <div key={key}>
                   <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">{label}</label>
@@ -135,8 +135,8 @@ export default function AdminDeliveryAreas() {
             </div>
             <div className="flex gap-3 pt-2">
               <Button className="flex-1 rounded-none uppercase font-bold bg-primary hover:bg-primary/90" onClick={handleSave}
-                disabled={createArea.isPending || updateArea.isPending}>Save</Button>
-              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Cancel</Button>
+                disabled={createArea.isPending || updateArea.isPending}>Speichern</Button>
+              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Abbrechen</Button>
             </div>
           </div>
         </div>

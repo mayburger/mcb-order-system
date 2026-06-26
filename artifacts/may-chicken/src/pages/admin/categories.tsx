@@ -34,26 +34,26 @@ export default function AdminCategories() {
   const handleSave = () => {
     if (!dialog) return;
     const { name, slug, description, sortOrder } = dialog.form;
-    if (!name.trim() || !slug.trim()) { toast({ title: "Name and slug required", variant: "destructive" }); return; }
+    if (!name.trim() || !slug.trim()) { toast({ title: "Name und Slug erforderlich", variant: "destructive" }); return; }
 
     if (dialog.mode === "create") {
       createCat.mutate({ data: { name, slug, description, sortOrder } }, {
-        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Category created" }); },
-        onError: () => toast({ title: "Failed to create", variant: "destructive" }),
+        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Kategorie erstellt" }); },
+        onError: () => toast({ title: "Fehler beim Erstellen", variant: "destructive" }),
       });
     } else {
       updateCat.mutate({ id: dialog.id!, data: { name, slug, description, sortOrder } }, {
-        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Category updated" }); },
-        onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+        onSuccess: () => { invalidate(); setDialog(null); toast({ title: "Kategorie aktualisiert" }); },
+        onError: () => toast({ title: "Fehler beim Aktualisieren", variant: "destructive" }),
       });
     }
   };
 
   const handleDelete = (id: number) => {
-    if (!confirm("Delete this category? All items in it will be removed.")) return;
+    if (!confirm("Diese Kategorie wirklich löschen? Alle Artikel darin werden entfernt.")) return;
     deleteCat.mutate({ id }, {
-      onSuccess: () => { invalidate(); toast({ title: "Category deleted" }); },
-      onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+      onSuccess: () => { invalidate(); toast({ title: "Kategorie gelöscht" }); },
+      onError: () => toast({ title: "Fehler beim Löschen", variant: "destructive" }),
     });
   };
 
@@ -62,10 +62,10 @@ export default function AdminCategories() {
   return (
     <AdminLayout>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-display font-bold uppercase text-white">Categories</h1>
+        <h1 className="text-3xl font-display font-bold uppercase text-white">Kategorien</h1>
         <Button className="rounded-none uppercase tracking-wider text-xs font-bold bg-primary hover:bg-primary/90"
           onClick={() => setDialog({ mode: "create", form: EMPTY })}>
-          <Plus className="h-4 w-4 mr-2" /> New Category
+          <Plus className="h-4 w-4 mr-2" /> Neue Kategorie
         </Button>
       </div>
 
@@ -78,8 +78,8 @@ export default function AdminCategories() {
               <tr className="text-left">
                 <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Name</th>
                 <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Slug</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Items</th>
-                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Order</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Artikel</th>
+                <th className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wider">Reihenfolge</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -109,12 +109,11 @@ export default function AdminCategories() {
         </div>
       )}
 
-      {/* Dialog */}
       {dialog && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "New Category" : "Edit Category"}</h2>
+              <h2 className="font-display font-bold uppercase text-white">{dialog.mode === "create" ? "Neue Kategorie" : "Kategorie bearbeiten"}</h2>
               <button onClick={() => setDialog(null)}><X className="h-5 w-5 text-muted-foreground hover:text-white" /></button>
             </div>
             <div>
@@ -128,19 +127,19 @@ export default function AdminCategories() {
                 onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, slug: e.target.value } })} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Description</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Beschreibung</label>
               <Input value={dialog.form.description} className="rounded-none border-border bg-background text-white"
                 onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, description: e.target.value } })} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Sort Order</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Reihenfolge</label>
               <Input type="number" value={dialog.form.sortOrder} className="rounded-none border-border bg-background text-white"
                 onChange={(e) => setDialog({ ...dialog, form: { ...dialog.form, sortOrder: Number(e.target.value) } })} />
             </div>
             <div className="flex gap-3 pt-2">
               <Button className="flex-1 rounded-none uppercase font-bold bg-primary hover:bg-primary/90" onClick={handleSave}
-                disabled={createCat.isPending || updateCat.isPending}>Save</Button>
-              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Cancel</Button>
+                disabled={createCat.isPending || updateCat.isPending}>Speichern</Button>
+              <Button variant="outline" className="flex-1 rounded-none border-border" onClick={() => setDialog(null)}>Abbrechen</Button>
             </div>
           </div>
         </div>

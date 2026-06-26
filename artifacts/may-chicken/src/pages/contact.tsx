@@ -11,20 +11,20 @@ export default function ContactPage() {
     <Layout>
       <div className="container mx-auto px-4 py-20">
         <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-display font-bold uppercase tracking-tight text-white">Contact Us</h1>
-          <p className="text-muted-foreground mt-4 text-lg">We'd love to hear from you.</p>
+          <h1 className="text-5xl md:text-6xl font-display font-bold uppercase tracking-tight text-white">Kontakt</h1>
+          <p className="text-muted-foreground mt-4 text-lg">Wir freuen uns von dir zu hören.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Info cards */}
+          {/* Kontakt-Karten */}
           <div className="space-y-4">
             <div className="bg-card border border-border p-6 flex items-start gap-4">
               <div className="bg-primary/10 p-3 shrink-0">
                 <MapPin className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-display font-bold uppercase text-white mb-1">Address</h3>
-                <p className="text-muted-foreground">{info?.address || "123 Main Street, City Centre, London"}</p>
+                <h3 className="font-display font-bold uppercase text-white mb-1">Adresse</h3>
+                <p className="text-muted-foreground">{info?.address || "Hauptstraße 123, Innenstadt"}</p>
               </div>
             </div>
 
@@ -33,9 +33,9 @@ export default function ContactPage() {
                 <Phone className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-display font-bold uppercase text-white mb-1">Phone</h3>
+                <h3 className="font-display font-bold uppercase text-white mb-1">Telefon</h3>
                 <a href={`tel:${info?.phone}`} className="text-muted-foreground hover:text-primary transition-colors">
-                  {info?.phone || "+44 20 1234 5678"}
+                  {info?.phone || "+49 30 1234 5678"}
                 </a>
               </div>
             </div>
@@ -46,7 +46,7 @@ export default function ContactPage() {
                   <Mail className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold uppercase text-white mb-1">Email</h3>
+                  <h3 className="font-display font-bold uppercase text-white mb-1">E-Mail</h3>
                   <a href={`mailto:${info.email}`} className="text-muted-foreground hover:text-primary transition-colors">
                     {info.email}
                   </a>
@@ -55,11 +55,11 @@ export default function ContactPage() {
             )}
           </div>
 
-          {/* Opening hours summary */}
+          {/* Öffnungszeiten */}
           <div className="bg-card border border-border p-6">
             <div className="flex items-center gap-3 mb-6">
               <Clock className="h-5 w-5 text-primary" />
-              <h3 className="font-display font-bold uppercase text-white">Opening Hours</h3>
+              <h3 className="font-display font-bold uppercase text-white">Öffnungszeiten</h3>
             </div>
             {hours ? (
               <div className="space-y-2">
@@ -67,8 +67,8 @@ export default function ContactPage() {
                   const isToday = day.dayOfWeek === today;
                   return (
                     <div key={day.id} className={`flex justify-between text-sm ${isToday ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                      <span>{day.dayName}{isToday ? " (Today)" : ""}</span>
-                      <span>{day.isClosed ? "Closed" : `${day.openTime} – ${day.closeTime}`}</span>
+                      <span>{day.dayName}{isToday ? " (Heute)" : ""}</span>
+                      <span>{day.isClosed ? "Geschlossen" : `${day.openTime} – ${day.closeTime} Uhr`}</span>
                     </div>
                   );
                 })}
@@ -86,11 +86,11 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* Map placeholder */}
+        {/* Karten-Platzhalter */}
         <div className="max-w-4xl mx-auto mt-8 bg-card border border-border h-64 flex items-center justify-center">
           <div className="text-center">
             <MapPin className="h-10 w-10 text-primary mx-auto mb-2" />
-            <p className="text-muted-foreground">{info?.address || "123 Main Street, City Centre, London"}</p>
+            <p className="text-muted-foreground">{info?.address || "Hauptstraße 123, Innenstadt"}</p>
           </div>
         </div>
       </div>
