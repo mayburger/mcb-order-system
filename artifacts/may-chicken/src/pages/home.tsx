@@ -1,29 +1,40 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/layout";
 import { useListMenuItems } from "@workspace/api-client-react";
+import { MenuItem } from "@workspace/api-client-react";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/hooks/use-toast";
+import { ProductDialog } from "@/components/product-dialog";
 
 export default function Home() {
   const { data: featuredItems } = useListMenuItems({ featured: true });
   const { addItem } = useCart();
   const { toast } = useToast();
+  const [dialogItem, setDialogItem] = useState<MenuItem | null>(null);
 
-  const handleAddToCart = (item: any) => {
-    addItem(item, 1, []);
-    toast({
-      title: "Zum Warenkorb hinzugefügt",
-      description: `${item.name} wurde zum Warenkorb hinzugefügt.`
-    });
+  const handleCardClick = (item: MenuItem) => {
+    const hasOptions = (item.optionGroups?.length ?? 0) > 0;
+    if (hasOptions) {
+      setDialogItem(item);
+    } else {
+      addItem(item, 1, []);
+      toast({
+        title: "Zum Warenkorb hinzugefügt",
+        description: `${item.name} wurde zum Warenkorb hinzugefügt.`,
+      });
+    }
   };
 
   return (
     <Layout>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="relative flex items-center justify-center overflow-hidden border-b border-border"
-        style={{ minHeight: "clamp(420px, 75vh, 700px)" }}>
+      <section
+        className="relative flex items-center justify-center overflow-hidden border-b border-border"
+        style={{ minHeight: "clamp(420px, 75vh, 700px)" }}
+      >
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-transparent z-10" />
           <img
@@ -77,53 +88,64 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
-            {featuredItems?.map((item) => (
-              <div
-                key={item.id}
-                className="group bg-background border border-border overflow-hidden flex flex-col hover:border-primary/50 transition-colors"
-              >
-                <div className="aspect-[4/3] sm:aspect-square relative overflow-hidden bg-secondary">
-                  <img
-                    src={item.imageUrl || "/chicken-sandwich.png"}
-                    alt={item.name}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 right-3 bg-primary text-white font-bold py-1 px-2 text-sm uppercase tracking-wider">
-                    {item.price.toFixed(2)} €
+            {featuredItems?.map((item) => {
+              const hasOptions = (item.optionGroups?.length ?? 0) > 0;
+              const absoluteGroup = item.optionGroups?.find((g) => g.priceType === "absolute");
+              const minPrice = absoluteGroup
+                ? Math.min(...absoluteGroup.items.map((i) => i.defaultPrice))
+                : item.price;
+
+              return (
+                <div
+                  key={item.id}
+                  className="group bg-background border border-border overflow-hidden flex flex-col hover:border-primary/50 transition-colors"
+                >
+                  <div className="aspect-[4/3] sm:aspect-square relative overflow-hidden bg-secondary">
+                    <img
+                      src={item.imageUrl || "/chicken-sandwich.png"}
+                      alt={item.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 right-3 bg-primary text-white font-bold py-1 px-2 text-sm uppercase tracking-wider">
+                      {absoluteGroup ? `ab ${minPrice.toFixed(2)} €` : `${item.price.toFixed(2)} €`}
+                    </div>
+                    {absoluteGroup && (
+                      <div className="absolute top-3 left-3 bg-black/70 text-white text-xs font-bold uppercase px-2 py-0.5 tracking-wider">
+                        Größe wählbar
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 md:p-6 flex-1 flex flex-col">
+                    <h3 className="text-lg font-display font-bold uppercase text-white mb-1 md:mb-2 leading-tight">
+                      {item.name}
+                    </h3>
+                    <p className="text-muted-foreground text-sm flex-1 mb-4 md:mb-6 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="w-full uppercase tracking-wider font-bold rounded-none border-border hover:bg-white hover:text-black transition-colors text-sm"
+                      onClick={() => handleCardClick(item)}
+                      disabled={!item.available}
+                    >
+                      {item.available ? (
+                        <>
+                          <ShoppingBag className="mr-2 h-4 w-4" />
+                          {hasOptions ? "Auswählen" : "In den Warenkorb"}
+                        </>
+                      ) : (
+                        "Ausverkauft"
+                      )}
+                    </Button>
                   </div>
                 </div>
-                <div className="p-4 md:p-6 flex-1 flex flex-col">
-                  <h3 className="text-lg font-display font-bold uppercase text-white mb-1 md:mb-2">
-                    {item.name}
-                  </h3>
-                  <p className="text-muted-foreground text-sm flex-1 mb-4 md:mb-6 line-clamp-2">
-                    {item.description}
-                  </p>
-                  <Button
-                    variant="outline"
-                    className="w-full uppercase tracking-wider font-bold rounded-none border-border hover:bg-white hover:text-black transition-colors text-sm"
-                    onClick={() => handleAddToCart(item)}
-                    disabled={!item.available}
-                  >
-                    {item.available ? (
-                      <>
-                        <ShoppingBag className="mr-2 h-4 w-4" /> In den Warenkorb
-                      </>
-                    ) : (
-                      "Ausverkauft"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-6 text-center md:hidden">
             <Link href="/menu">
-              <Button
-                variant="outline"
-                className="uppercase tracking-widest font-bold w-full rounded-none"
-              >
+              <Button variant="outline" className="uppercase tracking-widest font-bold w-full rounded-none">
                 Zur Speisekarte <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -152,6 +174,15 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* ── Produktdialog ──────────────────────────────────────────────── */}
+      {dialogItem && (
+        <ProductDialog
+          item={dialogItem}
+          open={!!dialogItem}
+          onClose={() => setDialogItem(null)}
+        />
+      )}
     </Layout>
   );
 }
