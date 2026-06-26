@@ -117,6 +117,36 @@ router.post("/restaurant/orders", async (req, res) => {
     if (body.orderType === "delivery" && !body.deliveryAddress)
       return res.status(400).json({ error: "Delivery address required for delivery orders" });
 
+    // Validate delivery area & minimum order (server-side guard)
+    if (body.orderType === "delivery" && body.postalCode) {
+      const area = await db.query.deliveryAreas.findFirst({
+        where: (a, { eq: eqFn, and: andFn }) =>
+          andFn(eqFn(a.postalCode, body.postalCode!), eqFn(a.active, true)),
+      });
+      if (!area) {
+        return res.status(422).json({ error: "Wir liefern aktuell nicht in dieses Gebiet." });
+      }
+      // Temporarily compute subtotal to validate minimum order
+      const preItems = body.items.map((i) => i);
+      const preItemIds = preItems.map((i) => i.menuItemId);
+      const preDbItems = await db.query.menuItems.findMany({
+        where: (item, { inArray: inArrayFn }) => inArrayFn(item.id, preItemIds),
+      });
+      const preSubtotal = preItems.reduce((sum, bi) => {
+        const item = preDbItems.find((d) => d.id === bi.menuItemId);
+        if (!item) return sum;
+        return sum + Number(item.price) * bi.quantity;
+      }, 0);
+      const minOrder = Number(area.minOrder);
+      if (minOrder > 0 && preSubtotal < minOrder) {
+        return res.status(422).json({
+          error: `Mindestbestellwert von ${minOrder.toFixed(2)} € nicht erreicht. Noch ${(minOrder - preSubtotal).toFixed(2)} € fehlen.`,
+          minOrder,
+          currentTotal: preSubtotal,
+        });
+      }
+    }
+
     // Fetch menu items
     const itemIds = body.items.map((i) => i.menuItemId);
     const dbItems = await db.query.menuItems.findMany({

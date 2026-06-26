@@ -15,6 +15,8 @@ export interface MenuItemInput {
   categoryId: number;
   available?: boolean;
   featured?: boolean;
+  isNew?: boolean;
+  isRecommended?: boolean;
   imageUrl?: string;
   sortOrder?: number;
 }

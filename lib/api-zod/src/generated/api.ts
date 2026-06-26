@@ -25,6 +25,8 @@ export const ListMenuCategoriesResponseItem = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -49,6 +51,8 @@ export const ListMenuItemsResponseItem = zod.object({
   "categoryId": zod.number(),
   "available": zod.boolean(),
   "featured": zod.boolean(),
+  "isNew": zod.boolean(),
+  "isRecommended": zod.boolean(),
   "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "category": zod.object({
@@ -57,6 +61,8 @@ export const ListMenuItemsResponseItem = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -85,6 +91,8 @@ export const ListMenuItemsResponseItem = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -92,10 +100,12 @@ export const ListMenuItemsResponseItem = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -117,6 +127,8 @@ export const GetMenuItemResponse = zod.object({
   "categoryId": zod.number(),
   "available": zod.boolean(),
   "featured": zod.boolean(),
+  "isNew": zod.boolean(),
+  "isRecommended": zod.boolean(),
   "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "category": zod.object({
@@ -125,6 +137,8 @@ export const GetMenuItemResponse = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -153,6 +167,8 @@ export const GetMenuItemResponse = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -160,10 +176,12 @@ export const GetMenuItemResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -180,6 +198,8 @@ export const ListMenuOptionGroupsResponseItem = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -187,10 +207,12 @@ export const ListMenuOptionGroupsResponseItem = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })
 export const ListMenuOptionGroupsResponse = zod.array(ListMenuOptionGroupsResponseItem)
 
@@ -235,6 +257,7 @@ export const ListDeliveryAreasResponseItem = zod.object({
   "postalCode": zod.string(),
   "minOrder": zod.number(),
   "deliveryFee": zod.number(),
+  "deliveryTime": zod.string().optional(),
   "active": zod.boolean()
 })
 export const ListDeliveryAreasResponse = zod.array(ListDeliveryAreasResponseItem)
@@ -447,6 +470,8 @@ export const ListAdminCategoriesResponseItem = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -466,6 +491,8 @@ export const CreateCategoryBody = zod.object({
   "slug": zod.string().min(1),
   "description": zod.string().optional(),
   "imageUrl": zod.string().optional(),
+  "icon": zod.string().optional(),
+  "visible": zod.boolean().optional(),
   "sortOrder": zod.number().optional()
 })
 
@@ -475,6 +502,8 @@ export const CreateCategoryResponse = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -496,6 +525,8 @@ export const UpdateCategoryBody = zod.object({
   "slug": zod.string().optional(),
   "description": zod.string().optional(),
   "imageUrl": zod.string().optional(),
+  "icon": zod.string().optional(),
+  "visible": zod.boolean().optional(),
   "sortOrder": zod.number().optional()
 })
 
@@ -505,6 +536,8 @@ export const UpdateCategoryResponse = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -536,6 +569,8 @@ export const ListAdminItemsResponseItem = zod.object({
   "categoryId": zod.number(),
   "available": zod.boolean(),
   "featured": zod.boolean(),
+  "isNew": zod.boolean(),
+  "isRecommended": zod.boolean(),
   "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "category": zod.object({
@@ -544,6 +579,8 @@ export const ListAdminItemsResponseItem = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -572,6 +609,8 @@ export const ListAdminItemsResponseItem = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -579,10 +618,12 @@ export const ListAdminItemsResponseItem = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -604,6 +645,8 @@ export const CreateAdminMenuItemBody = zod.object({
   "categoryId": zod.number(),
   "available": zod.boolean().optional(),
   "featured": zod.boolean().optional(),
+  "isNew": zod.boolean().optional(),
+  "isRecommended": zod.boolean().optional(),
   "imageUrl": zod.string().optional(),
   "sortOrder": zod.number().optional()
 })
@@ -616,6 +659,8 @@ export const CreateAdminMenuItemResponse = zod.object({
   "categoryId": zod.number(),
   "available": zod.boolean(),
   "featured": zod.boolean(),
+  "isNew": zod.boolean(),
+  "isRecommended": zod.boolean(),
   "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "category": zod.object({
@@ -624,6 +669,8 @@ export const CreateAdminMenuItemResponse = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -652,6 +699,8 @@ export const CreateAdminMenuItemResponse = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -659,10 +708,12 @@ export const CreateAdminMenuItemResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -682,6 +733,8 @@ export const UpdateAdminMenuItemBody = zod.object({
   "categoryId": zod.number().optional(),
   "available": zod.boolean().optional(),
   "featured": zod.boolean().optional(),
+  "isNew": zod.boolean().optional(),
+  "isRecommended": zod.boolean().optional(),
   "imageUrl": zod.string().optional(),
   "sortOrder": zod.number().optional()
 })
@@ -694,6 +747,8 @@ export const UpdateAdminMenuItemResponse = zod.object({
   "categoryId": zod.number(),
   "available": zod.boolean(),
   "featured": zod.boolean(),
+  "isNew": zod.boolean(),
+  "isRecommended": zod.boolean(),
   "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "category": zod.object({
@@ -702,6 +757,8 @@ export const UpdateAdminMenuItemResponse = zod.object({
   "slug": zod.string(),
   "description": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
+  "icon": zod.string().nullish(),
+  "visible": zod.boolean(),
   "sortOrder": zod.number(),
   "itemCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
@@ -730,6 +787,8 @@ export const UpdateAdminMenuItemResponse = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -737,10 +796,12 @@ export const UpdateAdminMenuItemResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -927,6 +988,8 @@ export const ListAdminOptionGroupsResponseItem = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -934,10 +997,12 @@ export const ListAdminOptionGroupsResponseItem = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })
 export const ListAdminOptionGroupsResponse = zod.array(ListAdminOptionGroupsResponseItem)
 
@@ -956,6 +1021,8 @@ export const CreateAdminOptionGroupBody = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number().optional(),
+  "maxSelections": zod.number().optional(),
   "sortOrder": zod.number().optional()
 })
 
@@ -967,6 +1034,8 @@ export const CreateAdminOptionGroupResponse = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -974,10 +1043,12 @@ export const CreateAdminOptionGroupResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })
 
 
@@ -994,6 +1065,8 @@ export const UpdateAdminOptionGroupBody = zod.object({
   "inputType": zod.enum(['single', 'multiple']).optional(),
   "required": zod.boolean().optional(),
   "priceType": zod.enum(['absolute', 'additive']).optional(),
+  "minSelections": zod.number().optional(),
+  "maxSelections": zod.number().optional(),
   "sortOrder": zod.number().optional()
 })
 
@@ -1005,6 +1078,8 @@ export const UpdateAdminOptionGroupResponse = zod.object({
   "inputType": zod.enum(['single', 'multiple']),
   "required": zod.boolean(),
   "priceType": zod.enum(['absolute', 'additive']),
+  "minSelections": zod.number(),
+  "maxSelections": zod.number().nullish(),
   "sortOrder": zod.number(),
   "items": zod.array(zod.object({
   "id": zod.number(),
@@ -1012,10 +1087,12 @@ export const UpdateAdminOptionGroupResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })),
-  "linkedCategoryIds": zod.array(zod.number()).optional()
+  "linkedCategoryIds": zod.array(zod.number()).optional(),
+  "linkedItemIds": zod.array(zod.number()).optional()
 })
 
 
@@ -1045,6 +1122,7 @@ export const CreateAdminOptionItemBody = zod.object({
   "name": zod.string().min(1),
   "defaultPrice": zod.number().min(createAdminOptionItemBodyDefaultPriceMin).optional(),
   "priceByVariant": zod.record(zod.string(), zod.number()).optional(),
+  "imageUrl": zod.string().optional(),
   "sortOrder": zod.number().optional(),
   "available": zod.boolean().optional()
 })
@@ -1055,6 +1133,7 @@ export const CreateAdminOptionItemResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })
@@ -1071,6 +1150,7 @@ export const UpdateAdminOptionItemBody = zod.object({
   "name": zod.string().optional(),
   "defaultPrice": zod.number().optional(),
   "priceByVariant": zod.record(zod.string(), zod.number()).optional(),
+  "imageUrl": zod.string().optional(),
   "sortOrder": zod.number().optional(),
   "available": zod.boolean().optional()
 })
@@ -1081,6 +1161,7 @@ export const UpdateAdminOptionItemResponse = zod.object({
   "name": zod.string(),
   "defaultPrice": zod.number(),
   "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "imageUrl": zod.string().nullish(),
   "sortOrder": zod.number(),
   "available": zod.boolean()
 })
@@ -1119,6 +1200,52 @@ export const UnlinkCategoryFromOptionGroupParams = zod.object({
 })
 
 export const UnlinkCategoryFromOptionGroupResponse = zod.void()
+
+
+/**
+ * @summary Link a menu item directly to an option group
+ */
+export const LinkMenuItemToOptionGroupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const LinkMenuItemToOptionGroupBody = zod.object({
+  "menuItemId": zod.number(),
+  "sortOrder": zod.number().optional()
+})
+
+export const LinkMenuItemToOptionGroupResponse = zod.void()
+
+
+/**
+ * @summary Remove a menu-item–option-group link
+ */
+export const UnlinkMenuItemFromOptionGroupParams = zod.object({
+  "groupId": zod.coerce.number(),
+  "menuItemId": zod.coerce.number()
+})
+
+export const UnlinkMenuItemFromOptionGroupResponse = zod.void()
+
+
+/**
+ * @summary Bulk-update category sort order
+ */
+export const BulkSortCategoriesBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+export const BulkSortCategoriesResponse = zod.unknown()
+
+
+/**
+ * @summary Bulk-update menu item sort order
+ */
+export const BulkSortMenuItemsBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+export const BulkSortMenuItemsResponse = zod.unknown()
 
 
 /**
@@ -1335,6 +1462,7 @@ export const ListAdminDeliveryAreasResponseItem = zod.object({
   "postalCode": zod.string(),
   "minOrder": zod.number(),
   "deliveryFee": zod.number(),
+  "deliveryTime": zod.string().optional(),
   "active": zod.boolean()
 })
 export const ListAdminDeliveryAreasResponse = zod.array(ListAdminDeliveryAreasResponseItem)
@@ -1356,6 +1484,7 @@ export const CreateDeliveryAreaBody = zod.object({
   "postalCode": zod.string().min(1),
   "minOrder": zod.number().min(createDeliveryAreaBodyMinOrderMin),
   "deliveryFee": zod.number().min(createDeliveryAreaBodyDeliveryFeeMin),
+  "deliveryTime": zod.string().optional(),
   "active": zod.boolean().optional()
 })
 
@@ -1365,6 +1494,7 @@ export const CreateDeliveryAreaResponse = zod.object({
   "postalCode": zod.string(),
   "minOrder": zod.number(),
   "deliveryFee": zod.number(),
+  "deliveryTime": zod.string().optional(),
   "active": zod.boolean()
 })
 
@@ -1381,6 +1511,7 @@ export const UpdateDeliveryAreaBody = zod.object({
   "postalCode": zod.string().optional(),
   "minOrder": zod.number().optional(),
   "deliveryFee": zod.number().optional(),
+  "deliveryTime": zod.string().optional(),
   "active": zod.boolean().optional()
 })
 
@@ -1390,6 +1521,7 @@ export const UpdateDeliveryAreaResponse = zod.object({
   "postalCode": zod.string(),
   "minOrder": zod.number(),
   "deliveryFee": zod.number(),
+  "deliveryTime": zod.string().optional(),
   "active": zod.boolean()
 })
 
@@ -1661,6 +1793,28 @@ export const GetCustomerSessionResponse = zod.object({
   "phone": zod.string(),
   "createdAt": zod.coerce.date()
 }).optional()
+})
+
+
+/**
+ * @summary Update the logged-in customer's profile
+ */
+
+
+
+export const UpdateCustomerProfileBody = zod.object({
+  "firstName": zod.string().min(1).optional(),
+  "lastName": zod.string().optional(),
+  "phone": zod.string().optional()
+})
+
+export const UpdateCustomerProfileResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "createdAt": zod.coerce.date()
 })
 
 

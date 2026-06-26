@@ -11,6 +11,7 @@ export interface OptionItemUpdate {
   name?: string;
   defaultPrice?: number;
   priceByVariant?: OptionItemUpdatePriceByVariant;
+  imageUrl?: string;
   sortOrder?: number;
   available?: boolean;
 }

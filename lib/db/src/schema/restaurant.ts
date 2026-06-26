@@ -34,6 +34,8 @@ export const categories = pgTable("restaurant_categories", {
   slug: text("slug").notNull().unique(),
   description: text("description"),
   imageUrl: text("image_url"),
+  icon: text("icon"),
+  visible: boolean("visible").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -49,6 +51,8 @@ export const menuItems = pgTable("restaurant_items", {
     .references(() => categories.id, { onDelete: "cascade" }),
   available: boolean("available").notNull().default(true),
   featured: boolean("featured").notNull().default(false),
+  isNew: boolean("is_new").notNull().default(false),
+  isRecommended: boolean("is_recommended").notNull().default(false),
   imageUrl: text("image_url"),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -89,6 +93,8 @@ export const optionGroups = pgTable("restaurant_option_groups", {
   inputType: text("input_type").notNull().default("single"),
   required: boolean("required").notNull().default(false),
   priceType: text("price_type").notNull().default("additive"),
+  minSelections: integer("min_selections").notNull().default(0),
+  maxSelections: integer("max_selections"),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
@@ -104,6 +110,7 @@ export const optionItems = pgTable("restaurant_option_items", {
   name: text("name").notNull(),
   defaultPrice: numeric("default_price", { precision: 10, scale: 2 }).notNull().default("0"),
   priceByVariant: jsonb("price_by_variant").$type<Record<string, number>>(),
+  imageUrl: text("image_url"),
   sortOrder: integer("sort_order").notNull().default(0),
   available: boolean("available").notNull().default(true),
 });
@@ -286,6 +293,7 @@ export const deliveryAreas = pgTable("restaurant_delivery_areas", {
   deliveryFee: numeric("delivery_fee", { precision: 10, scale: 2 })
     .notNull()
     .default("0"),
+  deliveryTime: text("delivery_time").default("30-45 Min."),
   active: boolean("active").notNull().default(true),
 });
 

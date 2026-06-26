@@ -17,5 +17,7 @@ export interface OptionGroupInput {
   inputType: OptionGroupInputInputType;
   required: boolean;
   priceType: OptionGroupInputPriceType;
+  minSelections?: number;
+  maxSelections?: number;
   sortOrder?: number;
 }

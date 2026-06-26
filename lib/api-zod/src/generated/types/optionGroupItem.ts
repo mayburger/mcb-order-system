@@ -13,6 +13,8 @@ export interface OptionGroupItem {
   name: string;
   defaultPrice: number;
   priceByVariant?: OptionGroupItemPriceByVariant;
+  /** @nullable */
+  imageUrl?: string | null;
   sortOrder: number;
   available: boolean;
 }

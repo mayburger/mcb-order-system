@@ -14,6 +14,9 @@ export interface Category {
   description?: string | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  icon?: string | null;
+  visible: boolean;
   sortOrder: number;
   itemCount?: number;
   createdAt: Date;

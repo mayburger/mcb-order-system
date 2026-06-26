@@ -17,6 +17,9 @@ export interface Category {
   description?: string | null;
   /** @nullable */
   imageUrl?: string | null;
+  /** @nullable */
+  icon?: string | null;
+  visible: boolean;
   sortOrder: number;
   itemCount?: number;
   createdAt: string;
@@ -29,6 +32,8 @@ export interface CategoryInput {
   slug: string;
   description?: string;
   imageUrl?: string;
+  icon?: string;
+  visible?: boolean;
   sortOrder?: number;
 }
 
@@ -38,6 +43,8 @@ export interface CategoryUpdate {
   slug?: string;
   description?: string;
   imageUrl?: string;
+  icon?: string;
+  visible?: boolean;
   sortOrder?: number;
 }
 
@@ -99,6 +106,8 @@ export interface OptionGroupItem {
   name: string;
   defaultPrice: number;
   priceByVariant?: OptionGroupItemPriceByVariant;
+  /** @nullable */
+  imageUrl?: string | null;
   sortOrder: number;
   available: boolean;
 }
@@ -128,9 +137,13 @@ export interface OptionGroup {
   inputType: OptionGroupInputType;
   required: boolean;
   priceType: OptionGroupPriceType;
+  minSelections: number;
+  /** @nullable */
+  maxSelections?: number | null;
   sortOrder: number;
   items: OptionGroupItem[];
   linkedCategoryIds?: number[];
+  linkedItemIds?: number[];
 }
 
 export type OptionGroupInputInputType = typeof OptionGroupInputInputType[keyof typeof OptionGroupInputInputType];
@@ -158,6 +171,8 @@ export interface OptionGroupInput {
   inputType: OptionGroupInputInputType;
   required: boolean;
   priceType: OptionGroupInputPriceType;
+  minSelections?: number;
+  maxSelections?: number;
   sortOrder?: number;
 }
 
@@ -183,6 +198,8 @@ export interface OptionGroupUpdate {
   inputType?: OptionGroupUpdateInputType;
   required?: boolean;
   priceType?: OptionGroupUpdatePriceType;
+  minSelections?: number;
+  maxSelections?: number;
   sortOrder?: number;
 }
 
@@ -194,6 +211,7 @@ export interface OptionItemInput {
   /** @minimum 0 */
   defaultPrice?: number;
   priceByVariant?: OptionItemInputPriceByVariant;
+  imageUrl?: string;
   sortOrder?: number;
   available?: boolean;
 }
@@ -204,8 +222,18 @@ export interface OptionItemUpdate {
   name?: string;
   defaultPrice?: number;
   priceByVariant?: OptionItemUpdatePriceByVariant;
+  imageUrl?: string;
   sortOrder?: number;
   available?: boolean;
+}
+
+export interface ItemOptionGroupLink {
+  menuItemId: number;
+  sortOrder?: number;
+}
+
+export interface SortOrderUpdate {
+  ids: number[];
 }
 
 export interface CategoryOptionGroupLink {
@@ -238,6 +266,8 @@ export interface MenuItem {
   categoryId: number;
   available: boolean;
   featured: boolean;
+  isNew: boolean;
+  isRecommended: boolean;
   /** @nullable */
   imageUrl?: string | null;
   sortOrder: number;
@@ -257,6 +287,8 @@ export interface MenuItemInput {
   categoryId: number;
   available?: boolean;
   featured?: boolean;
+  isNew?: boolean;
+  isRecommended?: boolean;
   imageUrl?: string;
   sortOrder?: number;
 }
@@ -268,6 +300,8 @@ export interface MenuItemUpdate {
   categoryId?: number;
   available?: boolean;
   featured?: boolean;
+  isNew?: boolean;
+  isRecommended?: boolean;
   imageUrl?: string;
   sortOrder?: number;
 }
@@ -317,6 +351,7 @@ export interface DeliveryArea {
   postalCode: string;
   minOrder: number;
   deliveryFee: number;
+  deliveryTime?: string;
   active: boolean;
 }
 
@@ -329,6 +364,7 @@ export interface DeliveryAreaInput {
   minOrder: number;
   /** @minimum 0 */
   deliveryFee: number;
+  deliveryTime?: string;
   active?: boolean;
 }
 
@@ -337,6 +373,7 @@ export interface DeliveryAreaUpdate {
   postalCode?: string;
   minOrder?: number;
   deliveryFee?: number;
+  deliveryTime?: string;
   active?: boolean;
 }
 
@@ -648,6 +685,13 @@ export interface CustomerProfile {
 export interface CustomerSession {
   authenticated: boolean;
   customer?: CustomerProfile;
+}
+
+export interface CustomerProfileUpdate {
+  /** @minLength 1 */
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
 }
 
 export interface CustomerRegisterInput {

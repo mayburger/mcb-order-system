@@ -56,10 +56,22 @@ export default function CheckoutPage() {
   const validateCoupon = useValidateCoupon();
   const createNote = useCreateCustomerNote();
 
-  const matchedArea = areas?.find(
-    (a) => a.postalCode.toLowerCase() === postalCode.toLowerCase()
-  );
-  const deliveryFee = orderType === "delivery" ? (matchedArea?.deliveryFee ?? 2.99) : 0;
+  // Delivery area validation
+  const postalCodeTrimmed = postalCode.trim();
+  const matchedArea = areas && postalCodeTrimmed
+    ? areas.find((a) => a.postalCode.toLowerCase() === postalCodeTrimmed.toLowerCase())
+    : undefined;
+
+  type AreaStatus = "idle" | "not_found" | "below_min" | "ok";
+  const areaStatus: AreaStatus = (() => {
+    if (orderType !== "delivery") return "idle";
+    if (!postalCodeTrimmed) return "idle";
+    if (!matchedArea) return "not_found";
+    if (matchedArea.minOrder > 0 && subtotal < matchedArea.minOrder) return "below_min";
+    return "ok";
+  })();
+
+  const deliveryFee = orderType === "delivery" && matchedArea ? matchedArea.deliveryFee : 0;
   const total = subtotal - discount + deliveryFee;
 
   const handleApplyCoupon = () => {
@@ -112,6 +124,14 @@ export default function CheckoutPage() {
     }
     if (orderType === "delivery" && !address.trim()) {
       toast({ title: "Lieferadresse ist erforderlich", variant: "destructive" });
+      return;
+    }
+    if (orderType === "delivery" && areaStatus === "not_found") {
+      toast({ title: "Leider liefern wir nicht in dieses Gebiet", description: "Bitte überprüfe deine PLZ oder wähle Abholung.", variant: "destructive" });
+      return;
+    }
+    if (orderType === "delivery" && areaStatus === "below_min" && matchedArea) {
+      toast({ title: `Mindestbestellwert ${matchedArea.minOrder.toFixed(2)} € nicht erreicht`, description: `Noch ${(matchedArea.minOrder - subtotal).toFixed(2)} € fehlen.`, variant: "destructive" });
       return;
     }
 
@@ -283,6 +303,42 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
+
+                {/* Delivery area status banner */}
+                {areaStatus === "not_found" && (
+                  <div className="mt-3 flex items-start gap-3 border border-red-500/40 bg-red-500/10 p-3">
+                    <span className="text-red-400 text-lg leading-none mt-0.5">✕</span>
+                    <div>
+                      <p className="text-sm font-semibold text-red-400">Leider liefern wir aktuell nicht in dieses Gebiet.</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Bitte überprüfe deine PLZ oder wähle <strong>Abholung</strong> aus.</p>
+                    </div>
+                  </div>
+                )}
+                {areaStatus === "below_min" && matchedArea && (
+                  <div className="mt-3 flex items-start gap-3 border border-yellow-500/40 bg-yellow-500/10 p-3">
+                    <span className="text-yellow-400 text-lg leading-none mt-0.5">!</span>
+                    <div>
+                      <p className="text-sm font-semibold text-yellow-400">Mindestbestellwert nicht erreicht</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Mindestbestellung: <strong>{matchedArea.minOrder.toFixed(2)} €</strong> — noch{" "}
+                        <strong>{(matchedArea.minOrder - subtotal).toFixed(2)} €</strong> fehlen.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {areaStatus === "ok" && matchedArea && (
+                  <div className="mt-3 flex items-start gap-3 border border-green-500/30 bg-green-500/10 p-3">
+                    <span className="text-green-400 text-lg leading-none mt-0.5">✓</span>
+                    <div>
+                      <p className="text-sm font-semibold text-green-400">Lieferung möglich nach {matchedArea.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Lieferzeit: {matchedArea.deliveryTime ?? "30–45 Min."} ·{" "}
+                        {matchedArea.deliveryFee === 0 ? "Kostenlose Lieferung" : `Liefergebühr: ${matchedArea.deliveryFee.toFixed(2)} €`}
+                        {matchedArea.minOrder > 0 && ` · Mindestbestellung: ${matchedArea.minOrder.toFixed(2)} €`}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

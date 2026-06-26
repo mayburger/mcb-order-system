@@ -67,9 +67,13 @@ router.get("/restaurant/delivery-areas", async (req, res) => {
       .orderBy(asc(deliveryAreas.name));
     res.json(
       rows.map((r) => ({
-        ...r,
+        id: r.id,
+        name: r.name,
+        postalCode: r.postalCode,
         minOrder: Number(r.minOrder),
         deliveryFee: Number(r.deliveryFee),
+        deliveryTime: r.deliveryTime ?? "30-45 Min.",
+        active: r.active,
       })),
     );
   } catch (err) {

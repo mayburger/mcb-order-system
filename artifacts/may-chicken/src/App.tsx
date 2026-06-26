@@ -29,6 +29,7 @@ import AdminOptionGroups from "@/pages/admin/option-groups";
 import KitchenPage from "@/pages/kitchen";
 
 import AccountLoginPage from "@/pages/account/login";
+import AccountProfilePage from "@/pages/account/profile";
 import AccountOrdersPage from "@/pages/account/orders";
 import AccountFavoritesPage from "@/pages/account/favorites";
 import AccountNotesPage from "@/pages/account/notes";
@@ -56,11 +57,12 @@ function Router() {
 
       {/* Account routes */}
       <Route path="/account/login" component={AccountLoginPage} />
+      <Route path="/account/profile" component={AccountProfilePage} />
       <Route path="/account/orders" component={AccountOrdersPage} />
       <Route path="/account/favorites" component={AccountFavoritesPage} />
       <Route path="/account/notes" component={AccountNotesPage} />
       <Route path="/account">
-        {() => { window.location.replace("/account/orders"); return null; }}
+        {() => { window.location.replace("/account/profile"); return null; }}
       </Route>
 
       {/* Kitchen display */}

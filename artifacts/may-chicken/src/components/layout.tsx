@@ -59,7 +59,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Right: account icon + cart */}
           <div className="flex items-center gap-2">
-            <Link href={isAuthenticated ? "/account/orders" : "/account/login"}>
+            <Link href={isAuthenticated ? "/account/profile" : "/account/login"}>
               <Button
                 variant="ghost"
                 size="icon"

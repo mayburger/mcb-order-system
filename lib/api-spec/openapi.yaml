@@ -765,6 +765,77 @@ paths:
         "204":
           description: Unlinked
 
+  /admin/option-groups/{id}/menu-items:
+    post:
+      operationId: linkMenuItemToOptionGroup
+      tags: [admin]
+      summary: Link a menu item directly to an option group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemOptionGroupLink"
+      responses:
+        "201":
+          description: Linked
+
+  /admin/option-groups/{groupId}/menu-items/{menuItemId}:
+    delete:
+      operationId: unlinkMenuItemFromOptionGroup
+      tags: [admin]
+      summary: Remove a menu-item–option-group link
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: menuItemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Unlinked
+
+  /admin/categories/sort:
+    patch:
+      operationId: bulkSortCategories
+      tags: [admin]
+      summary: Bulk-update category sort order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SortOrderUpdate"
+      responses:
+        "200":
+          description: OK
+
+  /admin/items/sort:
+    patch:
+      operationId: bulkSortMenuItems
+      tags: [admin]
+      summary: Bulk-update menu item sort order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SortOrderUpdate"
+      responses:
+        "200":
+          description: OK
+
   /admin/items/{id}/option-prices:
     get:
       operationId: getItemOptionPrices
@@ -1167,6 +1238,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CustomerSession"
+    patch:
+      operationId: updateCustomerProfile
+      tags: [customer]
+      summary: Update the logged-in customer's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerProfile"
+        "401":
+          description: Not authenticated
 
   /customer/orders:
     get:
@@ -1378,7 +1468,7 @@ components:
     # ── CATEGORY ──────────────────────────────────────────────────────────
     Category:
       type: object
-      required: [id, name, slug, sortOrder, createdAt]
+      required: [id, name, slug, sortOrder, visible, createdAt]
       properties:
         id:
           type: integer
@@ -1390,6 +1480,10 @@ components:
           type: ["string", "null"]
         imageUrl:
           type: ["string", "null"]
+        icon:
+          type: ["string", "null"]
+        visible:
+          type: boolean
         sortOrder:
           type: integer
         itemCount:
@@ -1412,6 +1506,10 @@ components:
           type: string
         imageUrl:
           type: string
+        icon:
+          type: string
+        visible:
+          type: boolean
         sortOrder:
           type: integer
 
@@ -1427,6 +1525,10 @@ components:
           type: string
         imageUrl:
           type: string
+        icon:
+          type: string
+        visible:
+          type: boolean
         sortOrder:
           type: integer
 
@@ -1533,6 +1635,8 @@ components:
           additionalProperties:
             type: number
           nullable: true
+        imageUrl:
+          type: ["string", "null"]
         sortOrder:
           type: integer
         available:
@@ -1540,7 +1644,7 @@ components:
 
     OptionGroup:
       type: object
-      required: [id, name, slug, inputType, required, priceType, sortOrder, items]
+      required: [id, name, slug, inputType, required, priceType, minSelections, sortOrder, items]
       properties:
         id:
           type: integer
@@ -1558,6 +1662,10 @@ components:
         priceType:
           type: string
           enum: [absolute, additive]
+        minSelections:
+          type: integer
+        maxSelections:
+          type: ["integer", "null"]
         sortOrder:
           type: integer
         items:
@@ -1565,6 +1673,10 @@ components:
           items:
             $ref: "#/components/schemas/OptionGroupItem"
         linkedCategoryIds:
+          type: array
+          items:
+            type: integer
+        linkedItemIds:
           type: array
           items:
             type: integer
@@ -1589,6 +1701,10 @@ components:
         priceType:
           type: string
           enum: [absolute, additive]
+        minSelections:
+          type: integer
+        maxSelections:
+          type: integer
         sortOrder:
           type: integer
 
@@ -1607,6 +1723,10 @@ components:
         priceType:
           type: string
           enum: [absolute, additive]
+        minSelections:
+          type: integer
+        maxSelections:
+          type: integer
         sortOrder:
           type: integer
 
@@ -1624,6 +1744,8 @@ components:
           type: object
           additionalProperties:
             type: number
+        imageUrl:
+          type: string
         sortOrder:
           type: integer
         available:
@@ -1640,10 +1762,30 @@ components:
           type: object
           additionalProperties:
             type: number
+        imageUrl:
+          type: string
         sortOrder:
           type: integer
         available:
           type: boolean
+
+    ItemOptionGroupLink:
+      type: object
+      required: [menuItemId]
+      properties:
+        menuItemId:
+          type: integer
+        sortOrder:
+          type: integer
+
+    SortOrderUpdate:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
 
     CategoryOptionGroupLink:
       type: object
@@ -1685,7 +1827,7 @@ components:
     # ── MENU ITEM ─────────────────────────────────────────────────────────
     MenuItem:
       type: object
-      required: [id, name, price, categoryId, available, featured, sortOrder, createdAt]
+      required: [id, name, price, categoryId, available, featured, isNew, isRecommended, sortOrder, createdAt]
       properties:
         id:
           type: integer
@@ -1700,6 +1842,10 @@ components:
         available:
           type: boolean
         featured:
+          type: boolean
+        isNew:
+          type: boolean
+        isRecommended:
           type: boolean
         imageUrl:
           type: ["string", "null"]
@@ -1741,6 +1887,10 @@ components:
           type: boolean
         featured:
           type: boolean
+        isNew:
+          type: boolean
+        isRecommended:
+          type: boolean
         imageUrl:
           type: string
         sortOrder:
@@ -1760,6 +1910,10 @@ components:
         available:
           type: boolean
         featured:
+          type: boolean
+        isNew:
+          type: boolean
+        isRecommended:
           type: boolean
         imageUrl:
           type: string
@@ -1842,6 +1996,8 @@ components:
           type: number
         deliveryFee:
           type: number
+        deliveryTime:
+          type: string
         active:
           type: boolean
 
@@ -1861,6 +2017,8 @@ components:
         deliveryFee:
           type: number
           minimum: 0
+        deliveryTime:
+          type: string
         active:
           type: boolean
 
@@ -1875,6 +2033,8 @@ components:
           type: number
         deliveryFee:
           type: number
+        deliveryTime:
+          type: string
         active:
           type: boolean
 
@@ -2300,6 +2460,17 @@ components:
           type: boolean
         customer:
           $ref: "#/components/schemas/CustomerProfile"
+
+    CustomerProfileUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+        phone:
+          type: string
 
     CustomerRegisterInput:
       type: object

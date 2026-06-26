@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { User, ShoppingBag, Heart, FileText, LogOut } from "lucide-react";
 
 const tabs = [
-  { href: "/account/orders", label: "Bestellungen", icon: ShoppingBag },
-  { href: "/account/favorites", label: "Favoriten", icon: Heart },
-  { href: "/account/notes", label: "Meine Notizen", icon: FileText },
+  { href: "/account/profile", label: "Meine Daten", icon: User },
+  { href: "/account/orders", label: "Meine Bestellungen", icon: ShoppingBag },
+  { href: "/account/favorites", label: "Lieblingsbestellungen", icon: Heart },
+  { href: "/account/notes", label: "Gespeicherte Notizen", icon: FileText },
 ];
 
 export function AccountLayout({ children }: { children: React.ReactNode }) {

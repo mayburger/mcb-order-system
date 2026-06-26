@@ -12,5 +12,7 @@ export interface CategoryUpdate {
   slug?: string;
   description?: string;
   imageUrl?: string;
+  icon?: string;
+  visible?: boolean;
   sortOrder?: number;
 }

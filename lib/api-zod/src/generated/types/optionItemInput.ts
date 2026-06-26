@@ -13,6 +13,7 @@ export interface OptionItemInput {
   /** @minimum 0 */
   defaultPrice?: number;
   priceByVariant?: OptionItemInputPriceByVariant;
+  imageUrl?: string;
   sortOrder?: number;
   available?: boolean;
 }

@@ -127,6 +127,41 @@ router.get("/customer/me", async (req, res) => {
   res.json({ authenticated: true, customer: serializeCustomer(customer) });
 });
 
+// ── Update Profile ─────────────────────────────────────────────────────────────
+router.patch("/customer/me", async (req, res) => {
+  try {
+    const customerId = requireCustomer(req, res);
+    if (!customerId) return;
+
+    const { firstName, lastName, phone } = req.body as {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+    };
+
+    const updates: Partial<typeof customers.$inferInsert> = {};
+    if (firstName?.trim()) updates.firstName = firstName.trim();
+    if (lastName !== undefined) updates.lastName = lastName.trim();
+    if (phone !== undefined) updates.phone = phone.trim();
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "Keine Felder zum Aktualisieren" });
+    }
+
+    const [updated] = await db
+      .update(customers)
+      .set(updates)
+      .where(eq(customers.id, customerId))
+      .returning();
+
+    if (!updated) return res.status(404).json({ error: "Kunde nicht gefunden" });
+    res.json(serializeCustomer(updated));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // ── Order History ──────────────────────────────────────────────────────────────
 router.get("/customer/orders", async (req, res) => {
   try {

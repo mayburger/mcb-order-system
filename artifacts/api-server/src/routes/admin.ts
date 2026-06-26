@@ -331,14 +331,17 @@ router.delete("/admin/extras/:id", async (req, res) => {
 });
 
 // ── OPTION GROUPS ─────────────────────────────────────────────────────────────
-async function serializeOptionGroup(group: typeof optionGroups.$inferSelect, items: Array<typeof optionItems.$inferSelect>, linkedCatIds: number[]) {
+async function serializeOptionGroup(
+  group: typeof optionGroups.$inferSelect,
+  items: Array<typeof optionItems.$inferSelect>,
+  linkedCatIds: number[],
+  linkedItemIds: number[] = [],
+) {
   return {
     ...group,
-    items: items.map((i) => ({
-      ...i,
-      defaultPrice: Number(i.defaultPrice),
-    })),
+    items: items.map((i) => ({ ...i, defaultPrice: Number(i.defaultPrice) })),
     linkedCategoryIds: linkedCatIds,
+    linkedItemIds,
   };
 }
 
@@ -349,23 +352,33 @@ router.get("/admin/option-groups", async (req, res) => {
     const groupIds = groups.map((g) => g.id);
     const allItems = await db.select().from(optionItems).where(inArray(optionItems.groupId, groupIds)).orderBy(asc(optionItems.sortOrder));
     const catLinks = await db.select().from(categoryOptionGroups);
-    const itemsMap = new Map<number, typeof allItems>();
-    for (const i of allItems) { const arr = itemsMap.get(i.groupId) ?? []; arr.push(i); itemsMap.set(i.groupId, arr); }
+    const itemLinks = await db.select().from(itemOptionGroups);
+    const opItemsMap = new Map<number, typeof allItems>();
+    for (const i of allItems) { const arr = opItemsMap.get(i.groupId) ?? []; arr.push(i); opItemsMap.set(i.groupId, arr); }
     const linkedCatMap = new Map<number, number[]>();
     for (const l of catLinks) { const arr = linkedCatMap.get(l.groupId) ?? []; arr.push(l.categoryId); linkedCatMap.set(l.groupId, arr); }
-    const result = await Promise.all(groups.map((g) => serializeOptionGroup(g, itemsMap.get(g.id) ?? [], linkedCatMap.get(g.id) ?? [])));
+    const linkedItemMap = new Map<number, number[]>();
+    for (const l of itemLinks) { const arr = linkedItemMap.get(l.groupId) ?? []; arr.push(l.menuItemId); linkedItemMap.set(l.groupId, arr); }
+    const result = await Promise.all(groups.map((g) =>
+      serializeOptionGroup(g, opItemsMap.get(g.id) ?? [], linkedCatMap.get(g.id) ?? [], linkedItemMap.get(g.id) ?? [])
+    ));
     res.json(result);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.post("/admin/option-groups", async (req, res) => {
   try {
-    const { name, slug, description, inputType, required, priceType, sortOrder } = req.body as {
+    const { name, slug, description, inputType, required, priceType, minSelections, maxSelections, sortOrder } = req.body as {
       name: string; slug: string; description?: string; inputType: string;
-      required: boolean; priceType: string; sortOrder?: number;
+      required: boolean; priceType: string; minSelections?: number; maxSelections?: number; sortOrder?: number;
     };
-    const [group] = await db.insert(optionGroups).values({ name, slug, description, inputType, required, priceType, sortOrder: sortOrder ?? 0 }).returning();
-    res.status(201).json(await serializeOptionGroup(group, [], []));
+    const [group] = await db.insert(optionGroups).values({
+      name, slug, description, inputType, required, priceType,
+      minSelections: minSelections ?? 0,
+      maxSelections: maxSelections ?? null,
+      sortOrder: sortOrder ?? 0,
+    }).returning();
+    res.status(201).json(await serializeOptionGroup(group!, [], [], []));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -377,7 +390,8 @@ router.patch("/admin/option-groups/:id", async (req, res) => {
     if (!group) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(optionItems).where(eq(optionItems.groupId, id)).orderBy(asc(optionItems.sortOrder));
     const catLinks = await db.select().from(categoryOptionGroups).where(eq(categoryOptionGroups.groupId, id));
-    res.json(await serializeOptionGroup(group, items, catLinks.map((l) => l.categoryId)));
+    const itemLinks = await db.select().from(itemOptionGroups).where(eq(itemOptionGroups.groupId, id));
+    res.json(await serializeOptionGroup(group, items, catLinks.map((l) => l.categoryId), itemLinks.map((l) => l.menuItemId)));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -391,14 +405,16 @@ router.delete("/admin/option-groups/:id", async (req, res) => {
 router.post("/admin/option-groups/:id/items", async (req, res) => {
   try {
     const groupId = Number(req.params["id"]);
-    const { name, defaultPrice, priceByVariant, sortOrder, available } = req.body as {
-      name: string; defaultPrice?: number; priceByVariant?: Record<string, number>; sortOrder?: number; available?: boolean;
+    const { name, defaultPrice, priceByVariant, imageUrl, sortOrder, available } = req.body as {
+      name: string; defaultPrice?: number; priceByVariant?: Record<string, number>;
+      imageUrl?: string; sortOrder?: number; available?: boolean;
     };
     const [item] = await db.insert(optionItems).values({
       groupId, name, defaultPrice: String(defaultPrice ?? 0),
-      priceByVariant: priceByVariant ?? null, sortOrder: sortOrder ?? 0, available: available ?? true,
+      priceByVariant: priceByVariant ?? null, imageUrl: imageUrl ?? null,
+      sortOrder: sortOrder ?? 0, available: available ?? true,
     }).returning();
-    res.status(201).json({ ...item, defaultPrice: Number(item.defaultPrice) });
+    res.status(201).json({ ...item, defaultPrice: Number(item!.defaultPrice) });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -444,6 +460,44 @@ router.delete("/admin/option-groups/:groupId/categories/:categoryId", async (req
       and(eq(categoryOptionGroups.groupId, groupId), eq(categoryOptionGroups.categoryId, categoryId))
     );
     res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── ITEM-LEVEL OPTION GROUP LINKING ───────────────────────────────────────────
+router.post("/admin/option-groups/:id/menu-items", async (req, res) => {
+  try {
+    const groupId = Number(req.params["id"]);
+    const { menuItemId, sortOrder } = req.body as { menuItemId: number; sortOrder?: number };
+    await db.insert(itemOptionGroups).values({ groupId, menuItemId, sortOrder: sortOrder ?? 0 }).onConflictDoNothing();
+    res.status(201).json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/admin/option-groups/:groupId/menu-items/:menuItemId", async (req, res) => {
+  try {
+    const groupId = Number(req.params["groupId"]);
+    const menuItemId = Number(req.params["menuItemId"]);
+    await db.delete(itemOptionGroups).where(
+      and(eq(itemOptionGroups.groupId, groupId), eq(itemOptionGroups.menuItemId, menuItemId))
+    );
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── BULK SORT: Categories + Items ──────────────────────────────────────────────
+router.patch("/admin/categories/sort", async (req, res) => {
+  try {
+    const { ids } = req.body as { ids: number[] };
+    await Promise.all(ids.map((id, idx) => db.update(categories).set({ sortOrder: idx }).where(eq(categories.id, id))));
+    res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.patch("/admin/items/sort", async (req, res) => {
+  try {
+    const { ids } = req.body as { ids: number[] };
+    await Promise.all(ids.map((id, idx) => db.update(menuItems).set({ sortOrder: idx }).where(eq(menuItems.id, id))));
+    res.json({ ok: true });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -668,10 +722,22 @@ router.get("/admin/customers/:id", requireAdmin, async (req, res) => {
 });
 
 // ── DELIVERY AREAS ────────────────────────────────────────────────────────────
+function serializeArea(r: typeof deliveryAreas.$inferSelect) {
+  return {
+    id: r.id,
+    name: r.name,
+    postalCode: r.postalCode,
+    minOrder: Number(r.minOrder),
+    deliveryFee: Number(r.deliveryFee),
+    deliveryTime: r.deliveryTime ?? "30-45 Min.",
+    active: r.active,
+  };
+}
+
 router.get("/admin/delivery-areas", async (req, res) => {
   try {
     const rows = await db.select().from(deliveryAreas).orderBy(asc(deliveryAreas.name));
-    res.json(rows.map((r) => ({ ...r, minOrder: Number(r.minOrder), deliveryFee: Number(r.deliveryFee) })));
+    res.json(rows.map(serializeArea));
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -680,15 +746,16 @@ router.get("/admin/delivery-areas", async (req, res) => {
 
 router.post("/admin/delivery-areas", async (req, res) => {
   try {
-    const body = req.body as { name: string; postalCode: string; minOrder: number; deliveryFee: number; active?: boolean };
+    const body = req.body as { name: string; postalCode: string; minOrder: number; deliveryFee: number; deliveryTime?: string; active?: boolean };
     const [row] = await db.insert(deliveryAreas).values({
       name: body.name,
       postalCode: body.postalCode,
       minOrder: body.minOrder.toFixed(2),
       deliveryFee: body.deliveryFee.toFixed(2),
+      deliveryTime: body.deliveryTime ?? "30-45 Min.",
       active: body.active ?? true,
     }).returning();
-    res.status(201).json({ ...row, minOrder: Number(row!.minOrder), deliveryFee: Number(row!.deliveryFee) });
+    res.status(201).json(serializeArea(row!));
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -698,13 +765,17 @@ router.post("/admin/delivery-areas", async (req, res) => {
 router.patch("/admin/delivery-areas/:id", async (req, res) => {
   try {
     const id = Number(req.params["id"]);
-    const body = req.body as Partial<{ name: string; postalCode: string; minOrder: number; deliveryFee: number; active: boolean }>;
-    const update: Record<string, unknown> = { ...body };
+    const body = req.body as Partial<{ name: string; postalCode: string; minOrder: number; deliveryFee: number; deliveryTime: string; active: boolean }>;
+    const update: Record<string, unknown> = {};
+    if (body.name !== undefined) update["name"] = body.name;
+    if (body.postalCode !== undefined) update["postalCode"] = body.postalCode;
     if (body.minOrder !== undefined) update["minOrder"] = body.minOrder.toFixed(2);
     if (body.deliveryFee !== undefined) update["deliveryFee"] = body.deliveryFee.toFixed(2);
+    if (body.deliveryTime !== undefined) update["deliveryTime"] = body.deliveryTime;
+    if (body.active !== undefined) update["active"] = body.active;
     const [row] = await db.update(deliveryAreas).set(update).where(eq(deliveryAreas.id, id)).returning();
     if (!row) return res.status(404).json({ error: "Not found" });
-    res.json({ ...row, minOrder: Number(row.minOrder), deliveryFee: Number(row.deliveryFee) });
+    res.json(serializeArea(row));
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

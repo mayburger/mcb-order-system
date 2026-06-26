@@ -12,5 +12,6 @@ export interface DeliveryArea {
   postalCode: string;
   minOrder: number;
   deliveryFee: number;
+  deliveryTime?: string;
   active: boolean;
 }

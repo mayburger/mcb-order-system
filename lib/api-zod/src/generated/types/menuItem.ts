@@ -19,6 +19,8 @@ export interface MenuItem {
   categoryId: number;
   available: boolean;
   featured: boolean;
+  isNew: boolean;
+  isRecommended: boolean;
   /** @nullable */
   imageUrl?: string | null;
   sortOrder: number;

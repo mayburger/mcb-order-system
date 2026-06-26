@@ -15,5 +15,6 @@ export interface DeliveryAreaInput {
   minOrder: number;
   /** @minimum 0 */
   deliveryFee: number;
+  deliveryTime?: string;
   active?: boolean;
 }

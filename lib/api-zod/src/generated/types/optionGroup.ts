@@ -18,7 +18,11 @@ export interface OptionGroup {
   inputType: OptionGroupInputType;
   required: boolean;
   priceType: OptionGroupPriceType;
+  minSelections: number;
+  /** @nullable */
+  maxSelections?: number | null;
   sortOrder: number;
   items: OptionGroupItem[];
   linkedCategoryIds?: number[];
+  linkedItemIds?: number[];
 }

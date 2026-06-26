@@ -14,5 +14,7 @@ export interface OptionGroupUpdate {
   inputType?: OptionGroupUpdateInputType;
   required?: boolean;
   priceType?: OptionGroupUpdatePriceType;
+  minSelections?: number;
+  maxSelections?: number;
   sortOrder?: number;
 }

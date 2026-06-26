@@ -37,6 +37,8 @@ import type {
   CustomerLoginInput,
   CustomerNote,
   CustomerNoteInput,
+  CustomerProfile,
+  CustomerProfileUpdate,
   CustomerRegisterInput,
   CustomerSession,
   DayHours,
@@ -49,6 +51,7 @@ import type {
   ItemExtra,
   ItemExtraInput,
   ItemExtraUpdate,
+  ItemOptionGroupLink,
   ItemOptionPrice,
   ItemOptionPricesInput,
   ItemVariant,
@@ -72,7 +75,8 @@ import type {
   OrderInput,
   OrderStatusPatch,
   RestaurantInfo,
-  SettingsUpdate
+  SettingsUpdate,
+  SortOrderUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -3038,6 +3042,289 @@ export const useUnlinkCategoryFromOptionGroup = <TError = ErrorType<unknown>,
       return useMutation(getUnlinkCategoryFromOptionGroupMutationOptions(options));
     }
 
+export const getLinkMenuItemToOptionGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-groups/${id}/menu-items`
+}
+
+/**
+ * @summary Link a menu item directly to an option group
+ */
+export const linkMenuItemToOptionGroup = async (id: number,
+    itemOptionGroupLink: ItemOptionGroupLink, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getLinkMenuItemToOptionGroupUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(itemOptionGroupLink)
+  }
+);}
+
+
+
+
+export const getLinkMenuItemToOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkMenuItemToOptionGroup>>, TError,{id: number;data: BodyType<ItemOptionGroupLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkMenuItemToOptionGroup>>, TError,{id: number;data: BodyType<ItemOptionGroupLink>}, TContext> => {
+
+const mutationKey = ['linkMenuItemToOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkMenuItemToOptionGroup>>, {id: number;data: BodyType<ItemOptionGroupLink>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  linkMenuItemToOptionGroup(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkMenuItemToOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof linkMenuItemToOptionGroup>>>
+    export type LinkMenuItemToOptionGroupMutationBody = BodyType<ItemOptionGroupLink>
+    export type LinkMenuItemToOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Link a menu item directly to an option group
+ */
+export const useLinkMenuItemToOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkMenuItemToOptionGroup>>, TError,{id: number;data: BodyType<ItemOptionGroupLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof linkMenuItemToOptionGroup>>,
+        TError,
+        {id: number;data: BodyType<ItemOptionGroupLink>},
+        TContext
+      > => {
+      return useMutation(getLinkMenuItemToOptionGroupMutationOptions(options));
+    }
+
+export const getUnlinkMenuItemFromOptionGroupUrl = (groupId: number,
+    menuItemId: number,) => {
+
+
+
+
+  return `/api/admin/option-groups/${groupId}/menu-items/${menuItemId}`
+}
+
+/**
+ * @summary Remove a menu-item–option-group link
+ */
+export const unlinkMenuItemFromOptionGroup = async (groupId: number,
+    menuItemId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUnlinkMenuItemFromOptionGroupUrl(groupId,menuItemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUnlinkMenuItemFromOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlinkMenuItemFromOptionGroup>>, TError,{groupId: number;menuItemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlinkMenuItemFromOptionGroup>>, TError,{groupId: number;menuItemId: number}, TContext> => {
+
+const mutationKey = ['unlinkMenuItemFromOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlinkMenuItemFromOptionGroup>>, {groupId: number;menuItemId: number}> = (props) => {
+          const {groupId,menuItemId} = props ?? {};
+
+          return  unlinkMenuItemFromOptionGroup(groupId,menuItemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlinkMenuItemFromOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof unlinkMenuItemFromOptionGroup>>>
+
+    export type UnlinkMenuItemFromOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a menu-item–option-group link
+ */
+export const useUnlinkMenuItemFromOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlinkMenuItemFromOptionGroup>>, TError,{groupId: number;menuItemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlinkMenuItemFromOptionGroup>>,
+        TError,
+        {groupId: number;menuItemId: number},
+        TContext
+      > => {
+      return useMutation(getUnlinkMenuItemFromOptionGroupMutationOptions(options));
+    }
+
+export const getBulkSortCategoriesUrl = () => {
+
+
+
+
+  return `/api/admin/categories/sort`
+}
+
+/**
+ * @summary Bulk-update category sort order
+ */
+export const bulkSortCategories = async (sortOrderUpdate: SortOrderUpdate, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getBulkSortCategoriesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sortOrderUpdate)
+  }
+);}
+
+
+
+
+export const getBulkSortCategoriesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSortCategories>>, TError,{data: BodyType<SortOrderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkSortCategories>>, TError,{data: BodyType<SortOrderUpdate>}, TContext> => {
+
+const mutationKey = ['bulkSortCategories'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkSortCategories>>, {data: BodyType<SortOrderUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkSortCategories(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkSortCategoriesMutationResult = NonNullable<Awaited<ReturnType<typeof bulkSortCategories>>>
+    export type BulkSortCategoriesMutationBody = BodyType<SortOrderUpdate>
+    export type BulkSortCategoriesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk-update category sort order
+ */
+export const useBulkSortCategories = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSortCategories>>, TError,{data: BodyType<SortOrderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkSortCategories>>,
+        TError,
+        {data: BodyType<SortOrderUpdate>},
+        TContext
+      > => {
+      return useMutation(getBulkSortCategoriesMutationOptions(options));
+    }
+
+export const getBulkSortMenuItemsUrl = () => {
+
+
+
+
+  return `/api/admin/items/sort`
+}
+
+/**
+ * @summary Bulk-update menu item sort order
+ */
+export const bulkSortMenuItems = async (sortOrderUpdate: SortOrderUpdate, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getBulkSortMenuItemsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sortOrderUpdate)
+  }
+);}
+
+
+
+
+export const getBulkSortMenuItemsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSortMenuItems>>, TError,{data: BodyType<SortOrderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkSortMenuItems>>, TError,{data: BodyType<SortOrderUpdate>}, TContext> => {
+
+const mutationKey = ['bulkSortMenuItems'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkSortMenuItems>>, {data: BodyType<SortOrderUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkSortMenuItems(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkSortMenuItemsMutationResult = NonNullable<Awaited<ReturnType<typeof bulkSortMenuItems>>>
+    export type BulkSortMenuItemsMutationBody = BodyType<SortOrderUpdate>
+    export type BulkSortMenuItemsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Bulk-update menu item sort order
+ */
+export const useBulkSortMenuItems = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSortMenuItems>>, TError,{data: BodyType<SortOrderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkSortMenuItems>>,
+        TError,
+        {data: BodyType<SortOrderUpdate>},
+        TContext
+      > => {
+      return useMutation(getBulkSortMenuItemsMutationOptions(options));
+    }
+
 export const getGetItemOptionPricesUrl = (id: number,) => {
 
 
@@ -4651,6 +4938,76 @@ export function useGetCustomerSession<TData = Awaited<ReturnType<typeof getCusto
 
 
 
+
+export const getUpdateCustomerProfileUrl = () => {
+
+
+
+
+  return `/api/customer/me`
+}
+
+/**
+ * @summary Update the logged-in customer's profile
+ */
+export const updateCustomerProfile = async (customerProfileUpdate: CustomerProfileUpdate, options?: RequestInit): Promise<CustomerProfile> => {
+
+  return customFetch<CustomerProfile>(getUpdateCustomerProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(customerProfileUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateCustomerProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomerProfile>>, TError,{data: BodyType<CustomerProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCustomerProfile>>, TError,{data: BodyType<CustomerProfileUpdate>}, TContext> => {
+
+const mutationKey = ['updateCustomerProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCustomerProfile>>, {data: BodyType<CustomerProfileUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateCustomerProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCustomerProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateCustomerProfile>>>
+    export type UpdateCustomerProfileMutationBody = BodyType<CustomerProfileUpdate>
+    export type UpdateCustomerProfileMutationError = ErrorType<void>
+
+    /**
+ * @summary Update the logged-in customer's profile
+ */
+export const useUpdateCustomerProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomerProfile>>, TError,{data: BodyType<CustomerProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCustomerProfile>>,
+        TError,
+        {data: BodyType<CustomerProfileUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateCustomerProfileMutationOptions(options));
+    }
 
 export const getListCustomerOrdersUrl = () => {
 
