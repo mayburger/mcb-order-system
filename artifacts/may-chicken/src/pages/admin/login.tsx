@@ -14,7 +14,7 @@ export default function AdminLoginPage() {
   const login = useAdminLogin();
   const qc = useQueryClient();
 
-  const { data: session, isLoading } = useGetAdminSession({}, {
+  const { data: session, isLoading } = useGetAdminSession({
     query: { queryKey: getGetAdminSessionQueryKey() }
   });
 

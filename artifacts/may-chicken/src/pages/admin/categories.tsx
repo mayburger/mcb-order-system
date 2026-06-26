@@ -21,8 +21,8 @@ export default function AdminCategories() {
   const { toast } = useToast();
   const [dialog, setDialog] = useState<{ mode: "create" | "edit"; id?: number; form: FormState } | null>(null);
 
-  const { data: session, isLoading: sl } = useGetAdminSession({}, { query: { queryKey: getGetAdminSessionQueryKey() } });
-  const { data: cats, isLoading } = useListAdminCategories({}, { query: { queryKey: getListAdminCategoriesQueryKey() } });
+  const { data: session, isLoading: sl } = useGetAdminSession({ query: { queryKey: getGetAdminSessionQueryKey() } });
+  const { data: cats, isLoading } = useListAdminCategories({ query: { queryKey: getListAdminCategoriesQueryKey() } });
   const createCat = useCreateCategory();
   const updateCat = useUpdateCategory();
   const deleteCat = useDeleteCategory();

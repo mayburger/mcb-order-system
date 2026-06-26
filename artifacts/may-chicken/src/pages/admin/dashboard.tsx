@@ -20,10 +20,10 @@ function StatCard({ label, value, sub, icon: Icon, accent }: { label: string; va
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const { data: session, isLoading: sessionLoading } = useGetAdminSession({}, {
+  const { data: session, isLoading: sessionLoading } = useGetAdminSession({
     query: { queryKey: getGetAdminSessionQueryKey() }
   });
-  const { data: stats, isLoading } = useGetAdminStats({}, {
+  const { data: stats, isLoading } = useGetAdminStats({
     query: { queryKey: getGetAdminStatsQueryKey() }
   });
 

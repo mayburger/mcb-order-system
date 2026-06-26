@@ -32,7 +32,7 @@ export default function AdminOrders() {
   const [expanded, setExpanded] = useState<number | null>(null);
   const qc = useQueryClient();
 
-  const { data: session, isLoading: sessionLoading } = useGetAdminSession({}, { query: { queryKey: getGetAdminSessionQueryKey() } });
+  const { data: session, isLoading: sessionLoading } = useGetAdminSession({ query: { queryKey: getGetAdminSessionQueryKey() } });
   const params = statusFilter ? { status: statusFilter as any } : {};
   const { data: orders, isLoading } = useListAdminOrders(params, {
     query: { queryKey: getListAdminOrdersQueryKey(params), refetchInterval: 30000 }

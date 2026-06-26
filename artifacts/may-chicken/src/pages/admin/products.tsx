@@ -26,10 +26,10 @@ export default function AdminProducts() {
   const [catFilter, setCatFilter] = useState<number | undefined>();
   const [dialog, setDialog] = useState<{ mode: "create" | "edit"; id?: number; form: FormState } | null>(null);
 
-  const { data: session, isLoading: sl } = useGetAdminSession({}, { query: { queryKey: getGetAdminSessionQueryKey() } });
+  const { data: session, isLoading: sl } = useGetAdminSession({ query: { queryKey: getGetAdminSessionQueryKey() } });
   const params = catFilter ? { categoryId: catFilter } : {};
   const { data: items, isLoading } = useListAdminItems(params, { query: { queryKey: getListAdminItemsQueryKey(params) } });
-  const { data: cats } = useListAdminCategories({}, { query: { queryKey: getListAdminCategoriesQueryKey() } });
+  const { data: cats } = useListAdminCategories({ query: { queryKey: getListAdminCategoriesQueryKey() } });
   const createItem = useCreateAdminMenuItem();
   const updateItem = useUpdateAdminMenuItem();
   const deleteItem = useDeleteAdminMenuItem();
