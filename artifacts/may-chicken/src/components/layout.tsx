@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useCart } from "@/lib/cart-context";
+import { useCustomerAuth } from "@/lib/customer-auth-context";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Menu, X } from "lucide-react";
+import { ShoppingBag, Menu, X, User } from "lucide-react";
 import { useGetRestaurantInfo } from "@workspace/api-client-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { totalItems } = useCart();
+  const { customer, isAuthenticated } = useCustomerAuth();
   const { data: restaurant } = useGetRestaurantInfo();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -55,21 +57,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          {/* Right: cart */}
-          <Link href="/cart">
-            <Button
-              variant="outline"
-              className="relative border-border bg-background/50 px-3 md:px-4"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span className="hidden sm:inline ml-2">Warenkorb</span>
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
-          </Link>
+          {/* Right: account icon + cart */}
+          <div className="flex items-center gap-2">
+            <Link href={isAuthenticated ? "/account/orders" : "/account/login"}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`relative w-9 h-9 ${location.startsWith("/account") ? "text-primary" : "text-muted-foreground hover:text-white"}`}
+                title={isAuthenticated ? `Mein Konto (${customer?.firstName})` : "Anmelden"}
+              >
+                <User className="h-4 w-4" />
+                {isAuthenticated && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </Button>
+            </Link>
+
+            <Link href="/cart">
+              <Button
+                variant="outline"
+                className="relative border-border bg-background/50 px-3 md:px-4"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                <span className="hidden sm:inline ml-2">Warenkorb</span>
+                {totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* ── Mobile drawer ─────────────────────────────────────────────── */}
@@ -88,6 +106,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href={isAuthenticated ? "/account/orders" : "/account/login"}
+                onClick={() => setMobileOpen(false)}
+                className={`py-3 px-2 text-base font-bold uppercase tracking-wider transition-colors flex items-center gap-2 ${
+                  location.startsWith("/account") ? "text-primary" : "text-white"
+                }`}
+              >
+                <User className="h-4 w-4" />
+                {isAuthenticated ? `Mein Konto (${customer?.firstName})` : "Anmelden"}
+              </Link>
             </nav>
           </div>
         )}
@@ -123,6 +151,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/menu" className="hover:text-primary">Speisekarte</Link></li>
               <li><Link href="/opening-hours" className="hover:text-primary">Öffnungszeiten</Link></li>
+              <li><Link href="/account/orders" className="hover:text-primary">Mein Konto</Link></li>
             </ul>
           </div>
         </div>

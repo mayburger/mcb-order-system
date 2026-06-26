@@ -1,17 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/lib/cart-context";
-import { useCreateOrder, useListDeliveryAreas, useValidateCoupon } from "@workspace/api-client-react";
-import { Truck, ShoppingBag, Tag, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { useCustomerAuth } from "@/lib/customer-auth-context";
+import {
+  useCreateOrder,
+  useListDeliveryAreas,
+  useValidateCoupon,
+  useListCustomerNotes,
+  useCreateCustomerNote,
+  getListCustomerNotesQueryKey,
+} from "@workspace/api-client-react";
+import { Truck, ShoppingBag, Tag, ArrowRight, ChevronDown, ChevronUp, Banknote, CreditCard, FileText, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
+  const { customer, isAuthenticated } = useCustomerAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [orderType, setOrderType] = useState<"delivery" | "pickup">("delivery");
   const [name, setName] = useState("");
@@ -21,14 +32,29 @@ export default function CheckoutPage() {
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
   const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [newNoteText, setNewNoteText] = useState("");
+
+  // Pre-fill from logged-in customer
+  useEffect(() => {
+    if (customer) {
+      setName(`${customer.firstName} ${customer.lastName}`.trim());
+      setPhone(customer.phone || "");
+      setEmail(customer.email || "");
+    }
+  }, [customer]);
 
   const { data: areas } = useListDeliveryAreas();
+  const { data: savedNotes } = useListCustomerNotes({
+    query: { queryKey: getListCustomerNotesQueryKey(), enabled: isAuthenticated },
+  });
   const createOrder = useCreateOrder();
   const validateCoupon = useValidateCoupon();
+  const createNote = useCreateCustomerNote();
 
   const matchedArea = areas?.find(
     (a) => a.postalCode.toLowerCase() === postalCode.toLowerCase()
@@ -55,6 +81,29 @@ export default function CheckoutPage() {
     );
   };
 
+  const handleSelectNote = (noteText: string) => {
+    setNotes((prev) => {
+      if (!prev.trim()) return noteText;
+      if (prev.includes(noteText)) return prev;
+      return `${prev.trim()}, ${noteText}`;
+    });
+  };
+
+  const handleSaveNewNote = () => {
+    if (!newNoteText.trim() || !isAuthenticated) return;
+    createNote.mutate(
+      { data: { text: newNoteText.trim() } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListCustomerNotesQueryKey() });
+          handleSelectNote(newNoteText.trim());
+          setNewNoteText("");
+          toast({ title: "Notiz gespeichert & hinzugefügt" });
+        },
+      }
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
@@ -77,6 +126,7 @@ export default function CheckoutPage() {
           postalCode: postalCode.trim() || undefined,
           city: city.trim() || undefined,
           notes: notes.trim() || undefined,
+          paymentMethod,
           couponCode: appliedCoupon ?? undefined,
           items: items.map((i) => ({
             menuItemId: i.menuItem.id,
@@ -90,7 +140,10 @@ export default function CheckoutPage() {
         },
       },
       {
-        onSuccess: (order) => { clearCart(); navigate(`/order/${order.id}`); },
+        onSuccess: (order) => {
+          clearCart();
+          navigate(`/order/${order.id}`);
+        },
         onError: () =>
           toast({ title: "Bestellung fehlgeschlagen", description: "Bitte versuche es erneut.", variant: "destructive" }),
       }
@@ -143,6 +196,9 @@ export default function CheckoutPage() {
               <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
                 Deine Angaben
               </h2>
+              {isAuthenticated && (
+                <p className="text-xs text-primary mb-3">✓ Automatisch ausgefüllt aus deinem Konto</p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">
@@ -230,17 +286,96 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Zahlungsart */}
+            <div>
+              <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
+                Zahlungsart
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {(["cash", "card"] as const).map((method) => (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setPaymentMethod(method)}
+                    className={`flex items-center gap-3 p-4 border transition-colors ${
+                      paymentMethod === method
+                        ? "border-primary bg-primary/10 text-white"
+                        : "border-border text-muted-foreground hover:border-white"
+                    }`}
+                  >
+                    {method === "cash" ? <Banknote className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+                    <span className="font-bold uppercase tracking-wider text-sm">
+                      {method === "cash" ? "Barzahlung" : "Kartenzahlung"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Anmerkungen */}
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">
-                Anmerkungen (optional)
-              </label>
+              <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
+                Anmerkungen
+              </h2>
+
+              {/* Saved notes (only shown if logged in and has notes) */}
+              {isAuthenticated && savedNotes && savedNotes.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    Gespeicherte Notizen — per Klick hinzufügen:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {savedNotes.map((n) => {
+                      const active = notes.includes(n.text);
+                      return (
+                        <button
+                          key={n.id}
+                          type="button"
+                          onClick={() => handleSelectNote(n.text)}
+                          className={`text-xs px-3 py-1.5 border transition-colors ${
+                            active
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                          }`}
+                        >
+                          {active ? "✓ " : "+ "}{n.text}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full rounded-none border border-border bg-background text-white p-3 h-20 resize-none focus:outline-none focus:border-primary text-sm"
-                placeholder="Allergien, Sonderwünsche..."
+                placeholder="Allergien, Sonderwünsche, Lieferhinweise…"
               />
+
+              {/* Save new note — only shown if logged in */}
+              {isAuthenticated && notes.trim() && !savedNotes?.some((n) => n.text === notes.trim()) && (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={newNoteText || notes.trim()}
+                    onChange={(e) => setNewNoteText(e.target.value)}
+                    placeholder="Notiz speichern für nächstes Mal..."
+                    className="rounded-none border-border bg-background text-white text-xs h-8 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-none border-border h-8 text-xs gap-1"
+                    onClick={handleSaveNewNote}
+                    disabled={createNote.isPending}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Merken
+                  </Button>
+                </div>
+              )}
             </div>
 
             <Button
@@ -255,7 +390,6 @@ export default function CheckoutPage() {
 
           {/* ── Bestellübersicht ──────────────────────────────────────── */}
           <div className="h-fit">
-            {/* Mobile: collapsible toggle */}
             <button
               className="lg:hidden w-full flex items-center justify-between bg-card border border-border p-4 mb-0"
               onClick={() => setSummaryOpen((v) => !v)}
@@ -271,7 +405,6 @@ export default function CheckoutPage() {
                 Bestellübersicht
               </h2>
 
-              {/* Items */}
               <div className="space-y-2">
                 {items.map((item) => (
                   <div key={item.cartKey} className="text-sm">
@@ -351,6 +484,10 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-white font-bold text-lg border-t border-border pt-2">
                   <span>Gesamt</span>
                   <span>{total.toFixed(2)} €</span>
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  {paymentMethod === "cash" ? <Banknote className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
+                  {paymentMethod === "cash" ? "Barzahlung bei Lieferung" : "Kartenzahlung bei Lieferung"}
                 </div>
               </div>
             </div>

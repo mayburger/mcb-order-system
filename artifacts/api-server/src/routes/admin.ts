@@ -16,6 +16,9 @@ import {
   categoryOptionGroups,
   itemOptionGroups,
   itemOptionPrices,
+  customers,
+  favoriteOrders,
+  customerNotes,
 } from "@workspace/db/schema";
 import { eq, desc, asc, gte, and, sql, count, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAdmin";
@@ -541,6 +544,112 @@ router.get("/admin/customers", async (req, res) => {
       if (!c.lastOrderAt || o.createdAt > c.lastOrderAt) c.lastOrderAt = o.createdAt;
     }
     res.json([...customerMap.values()]);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── CUSTOMER DETAIL ───────────────────────────────────────────────────────────
+router.get("/admin/customers/:id", requireAdmin, async (req, res) => {
+  try {
+    const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const id = parseInt(idParam, 10);
+    if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
+
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+    const customerOrders = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.customerId, id))
+      .orderBy(desc(orders.createdAt));
+
+    const orderIds = customerOrders.map((o) => o.id);
+    const allItems = orderIds.length > 0
+      ? await db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds))
+      : [];
+
+    // Build top items (by count)
+    const itemCountMap = new Map<string, number>();
+    for (const item of allItems) {
+      const key = item.itemName;
+      itemCountMap.set(key, (itemCountMap.get(key) ?? 0) + item.quantity);
+    }
+    const topItems = [...itemCountMap.entries()]
+      .map(([itemName, count]) => ({ itemName, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const totalSpent = customerOrders
+      .filter((o) => o.status !== "cancelled")
+      .reduce((sum, o) => sum + Number(o.total), 0);
+
+    const lastOrder = customerOrders[0];
+
+    const notes = await db
+      .select()
+      .from(customerNotes)
+      .where(eq(customerNotes.customerId, id))
+      .orderBy(desc(customerNotes.usageCount));
+
+    const favs = await db
+      .select()
+      .from(favoriteOrders)
+      .where(eq(favoriteOrders.customerId, id))
+      .orderBy(desc(favoriteOrders.createdAt));
+
+    // Serialize orders with items
+    const orderItemsMap = new Map<number, typeof allItems>();
+    for (const item of allItems) {
+      if (!orderItemsMap.has(item.orderId)) orderItemsMap.set(item.orderId, []);
+      orderItemsMap.get(item.orderId)!.push(item);
+    }
+
+    const serializedOrders = customerOrders.map((o) => {
+      const items = (orderItemsMap.get(o.id) ?? []).map((i) => ({
+        id: i.id,
+        menuItemId: i.menuItemId,
+        itemName: i.itemName,
+        quantity: i.quantity,
+        itemPrice: Number(i.itemPrice),
+        lineTotal: Number(i.lineTotal),
+        variantName: i.variantName,
+        optionsSnapshot: i.optionsSnapshot,
+      }));
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        orderType: o.orderType,
+        status: o.status,
+        total: Number(o.total),
+        subtotal: Number(o.subtotal),
+        createdAt: o.createdAt,
+        items,
+      };
+    });
+
+    res.json({
+      id: customer.id,
+      email: customer.email,
+      firstName: customer.firstName,
+      lastName: customer.lastName ?? "",
+      phone: customer.phone ?? "",
+      createdAt: customer.createdAt,
+      orderCount: customerOrders.length,
+      totalSpent,
+      lastOrderAt: lastOrder?.createdAt ?? null,
+      topItems,
+      notes: notes.map((n) => ({ id: n.id, text: n.text, usageCount: n.usageCount })),
+      favorites: favs.map((f) => ({
+        id: f.id,
+        name: f.name,
+        items: f.items as Array<{ menuItemId: number; itemName: string; quantity: number; unitPrice: number; selectedOptions: unknown[] }>,
+        createdAt: f.createdAt,
+      })),
+      orders: serializedOrders,
+    });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });

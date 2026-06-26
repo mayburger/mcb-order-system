@@ -259,6 +259,7 @@ export const CreateOrderBody = zod.object({
   "city": zod.string().optional(),
   "notes": zod.string().optional(),
   "couponCode": zod.string().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "items": zod.array(zod.object({
   "menuItemId": zod.number(),
   "quantity": zod.number().min(1),
@@ -279,7 +280,9 @@ export const CreateOrderResponse = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -327,7 +330,9 @@ export const GetOrderStatusResponse = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1162,7 +1167,9 @@ export const ListAdminOrdersResponseItem = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1211,7 +1218,9 @@ export const GetAdminOrderResponse = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1264,7 +1273,9 @@ export const UpdateAdminOrderResponse = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1582,13 +1593,394 @@ export const UpdateAdminSettingsResponse = zod.object({
 
 
 /**
+ * @summary Register a new customer account
+ */
+export const customerRegisterBodyPasswordMin = 6;
+
+
+
+
+export const CustomerRegisterBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(customerRegisterBodyPasswordMin),
+  "firstName": zod.string().min(1),
+  "lastName": zod.string().optional(),
+  "phone": zod.string().optional()
+})
+
+export const CustomerRegisterResponse = zod.object({
+  "authenticated": zod.boolean(),
+  "customer": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "createdAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * @summary Login as customer
+ */
+export const CustomerLoginBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string()
+})
+
+export const CustomerLoginResponse = zod.object({
+  "authenticated": zod.boolean(),
+  "customer": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "createdAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * @summary Logout customer
+ */
+export const CustomerLogoutResponse = zod.unknown()
+
+
+/**
+ * @summary Get current customer session
+ */
+export const GetCustomerSessionResponse = zod.object({
+  "authenticated": zod.boolean(),
+  "customer": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "createdAt": zod.coerce.date()
+}).optional()
+})
+
+
+/**
+ * @summary List orders for the logged-in customer
+ */
+export const ListCustomerOrdersResponseItem = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})
+export const ListCustomerOrdersResponse = zod.array(ListCustomerOrdersResponseItem)
+
+
+/**
+ * @summary Get a specific order belonging to the customer
+ */
+export const GetCustomerOrderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCustomerOrderResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List saved favorite orders
+ */
+export const ListCustomerFavoritesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "itemName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number(),
+  "priceType": zod.string()
+}))
+})),
+  "createdAt": zod.coerce.date()
+})
+export const ListCustomerFavoritesResponse = zod.array(ListCustomerFavoritesResponseItem)
+
+
+/**
+ * @summary Save a new favorite order
+ */
+
+
+
+export const CreateCustomerFavoriteBody = zod.object({
+  "name": zod.string().min(1),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "itemName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number(),
+  "priceType": zod.string()
+}))
+}))
+})
+
+export const CreateCustomerFavoriteResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "itemName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number(),
+  "priceType": zod.string()
+}))
+})),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a favorite order
+ */
+export const DeleteCustomerFavoriteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCustomerFavoriteResponse = zod.unknown()
+
+
+/**
+ * @summary List saved delivery notes
+ */
+export const ListCustomerNotesResponseItem = zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "usageCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCustomerNotesResponse = zod.array(ListCustomerNotesResponseItem)
+
+
+/**
+ * @summary Save a new delivery note
+ */
+
+
+
+export const CreateCustomerNoteBody = zod.object({
+  "text": zod.string().min(1)
+})
+
+export const CreateCustomerNoteResponse = zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "usageCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a saved note
+ */
+export const DeleteCustomerNoteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCustomerNoteResponse = zod.unknown()
+
+
+/**
+ * @summary Get detailed customer info including stats, notes, favorites
+ */
+export const GetAdminCustomerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAdminCustomerResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "orderCount": zod.number(),
+  "totalSpent": zod.number(),
+  "lastOrderAt": zod.coerce.date().nullish(),
+  "topItems": zod.array(zod.object({
+  "itemName": zod.string(),
+  "count": zod.number()
+})).optional(),
+  "orders": zod.array(zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})),
+  "notes": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "usageCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "favorites": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "itemName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number(),
+  "priceType": zod.string()
+}))
+})),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
  * @summary Active orders for kitchen display
  */
 export const ListKitchenOrdersResponseItem = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1641,7 +2033,9 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
   "id": zod.number(),
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
-  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),

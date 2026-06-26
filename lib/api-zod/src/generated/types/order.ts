@@ -7,13 +7,16 @@
  */
 import type { OrderItem } from './orderItem';
 import type { OrderOrderType } from './orderOrderType';
-import type { OrderStatus } from './orderStatus';
+import type { OrderPaymentMethod } from './orderPaymentMethod';
 
 export interface Order {
   id: number;
   orderNumber: string;
   orderType: OrderOrderType;
-  status: OrderStatus;
+  status: string;
+  /** @nullable */
+  customerId?: number | null;
+  paymentMethod?: OrderPaymentMethod;
   customerName: string;
   customerPhone: string;
   /** @nullable */

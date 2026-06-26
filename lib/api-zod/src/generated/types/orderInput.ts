@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { OrderInputOrderType } from './orderInputOrderType';
+import type { OrderInputPaymentMethod } from './orderInputPaymentMethod';
 import type { OrderItemInput } from './orderItemInput';
 
 export interface OrderInput {
@@ -22,6 +23,7 @@ export interface OrderInput {
   notes?: string;
   /** @nullable */
   couponCode?: string | null;
+  paymentMethod?: OrderInputPaymentMethod;
   /** @minItems 1 */
   items: OrderItemInput[];
 }

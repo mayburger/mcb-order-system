@@ -160,12 +160,24 @@ export const itemOptionPrices = pgTable(
   (t) => [unique().on(t.menuItemId, t.optionItemId)],
 );
 
+// ── CUSTOMERS (accounts) ──────────────────────────────────────────────────────
+export const customers = pgTable("restaurant_customers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ── ORDERS ────────────────────────────────────────────────────────────────────
 export const orders = pgTable("restaurant_orders", {
   id: serial("id").primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
   orderType: orderTypeEnum("order_type").notNull(),
   status: orderStatusEnum("status").notNull().default("pending"),
+  customerId: integer("customer_id").references(() => customers.id, { onDelete: "set null" }),
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
   customerEmail: text("customer_email"),
@@ -173,6 +185,7 @@ export const orders = pgTable("restaurant_orders", {
   postalCode: text("postal_code"),
   city: text("city"),
   notes: text("notes"),
+  paymentMethod: text("payment_method").notNull().default("cash"),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
   deliveryFee: numeric("delivery_fee", { precision: 10, scale: 2 })
     .notNull()
@@ -208,6 +221,48 @@ export const orderItems = pgTable("restaurant_order_items", {
     optionItemName: string;
     price: number;
   }>>(),
+});
+
+// ── FAVORITE ORDERS ───────────────────────────────────────────────────────────
+// Customers can save named order presets for quick reorder.
+export const favoriteOrders = pgTable("restaurant_favorite_orders", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  // Full cart snapshot: array of {menuItemId, itemName, quantity, unitPrice, selectedOptions[...]}
+  items: jsonb("items")
+    .notNull()
+    .$type<
+      Array<{
+        menuItemId: number;
+        itemName: string;
+        quantity: number;
+        unitPrice: number;
+        selectedOptions: Array<{
+          groupId: number;
+          groupName: string;
+          optionItemId: number;
+          optionItemName: string;
+          price: number;
+          priceType: string;
+        }>;
+      }>
+    >(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ── CUSTOMER SAVED NOTES ───────────────────────────────────────────────────────
+// Reusable delivery notes (e.g. "Ohne Zwiebeln", "Extra scharf").
+export const customerNotes = pgTable("restaurant_customer_notes", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // ── OPENING HOURS ─────────────────────────────────────────────────────────────
@@ -339,7 +394,14 @@ export const itemOptionPricesRelations = relations(itemOptionPrices, ({ one }) =
   }),
 }));
 
-export const ordersRelations = relations(orders, ({ many }) => ({
+export const customersRelations = relations(customers, ({ many }) => ({
+  orders: many(orders),
+  favoriteOrders: many(favoriteOrders),
+  notes: many(customerNotes),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
   items: many(orderItems),
 }));
 
@@ -349,4 +411,12 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.menuItemId],
     references: [menuItems.id],
   }),
+}));
+
+export const favoriteOrdersRelations = relations(favoriteOrders, ({ one }) => ({
+  customer: one(customers, { fields: [favoriteOrders.customerId], references: [customers.id] }),
+}));
+
+export const customerNotesRelations = relations(customerNotes, ({ one }) => ({
+  customer: one(customers, { fields: [customerNotes.customerId], references: [customers.id] }),
 }));

@@ -463,6 +463,14 @@ export const OrderInputOrderType = {
   pickup: 'pickup',
 } as const;
 
+export type OrderInputPaymentMethod = typeof OrderInputPaymentMethod[keyof typeof OrderInputPaymentMethod];
+
+
+export const OrderInputPaymentMethod = {
+  cash: 'cash',
+  card: 'card',
+} as const;
+
 export interface OrderInput {
   orderType: OrderInputOrderType;
   /** @minLength 1 */
@@ -477,6 +485,7 @@ export interface OrderInput {
   notes?: string;
   /** @nullable */
   couponCode?: string | null;
+  paymentMethod?: OrderInputPaymentMethod;
   /** @minItems 1 */
   items: OrderItemInput[];
 }
@@ -489,24 +498,22 @@ export const OrderOrderType = {
   pickup: 'pickup',
 } as const;
 
-export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
+export type OrderPaymentMethod = typeof OrderPaymentMethod[keyof typeof OrderPaymentMethod];
 
 
-export const OrderStatus = {
-  pending: 'pending',
-  confirmed: 'confirmed',
-  preparing: 'preparing',
-  ready: 'ready',
-  delivering: 'delivering',
-  completed: 'completed',
-  cancelled: 'cancelled',
+export const OrderPaymentMethod = {
+  cash: 'cash',
+  card: 'card',
 } as const;
 
 export interface Order {
   id: number;
   orderNumber: string;
   orderType: OrderOrderType;
-  status: OrderStatus;
+  status: string;
+  /** @nullable */
+  customerId?: number | null;
+  paymentMethod?: OrderPaymentMethod;
   customerName: string;
   customerPhone: string;
   /** @nullable */
@@ -627,6 +634,99 @@ export interface SettingsUpdate {
   estimatedPickupTime?: number;
   adminUsername?: string;
   adminPassword?: string;
+}
+
+export interface CustomerProfile {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  createdAt: string;
+}
+
+export interface CustomerSession {
+  authenticated: boolean;
+  customer?: CustomerProfile;
+}
+
+export interface CustomerRegisterInput {
+  email: string;
+  /** @minLength 6 */
+  password: string;
+  /** @minLength 1 */
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+}
+
+export interface CustomerLoginInput {
+  email: string;
+  password: string;
+}
+
+export type FavoriteOrderItemSelectedOptionsItem = {
+  groupId: number;
+  groupName: string;
+  optionItemId: number;
+  optionItemName: string;
+  price: number;
+  priceType: string;
+};
+
+export interface FavoriteOrderItem {
+  menuItemId: number;
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  selectedOptions: FavoriteOrderItemSelectedOptionsItem[];
+}
+
+export interface FavoriteOrder {
+  id: number;
+  name: string;
+  items: FavoriteOrderItem[];
+  createdAt: string;
+}
+
+export interface FavoriteOrderInput {
+  /** @minLength 1 */
+  name: string;
+  items: FavoriteOrderItem[];
+}
+
+export interface CustomerNote {
+  id: number;
+  text: string;
+  usageCount: number;
+  createdAt: string;
+}
+
+export interface CustomerNoteInput {
+  /** @minLength 1 */
+  text: string;
+}
+
+export type CustomerAdminDetailTopItemsItem = {
+  itemName: string;
+  count: number;
+};
+
+export interface CustomerAdminDetail {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  createdAt: string;
+  orderCount: number;
+  totalSpent: number;
+  /** @nullable */
+  lastOrderAt?: string | null;
+  topItems?: CustomerAdminDetailTopItemsItem[];
+  orders: Order[];
+  notes: CustomerNote[];
+  favorites: FavoriteOrder[];
 }
 
 export type ListMenuItemsParams = {

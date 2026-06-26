@@ -1103,6 +1103,228 @@ paths:
               schema:
                 $ref: "#/components/schemas/AppSettings"
 
+  # ── CUSTOMER AUTH & ACCOUNT ──────────────────────────────────────────────
+  /customer/register:
+    post:
+      operationId: customerRegister
+      tags: [customer]
+      summary: Register a new customer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerRegisterInput"
+      responses:
+        "201":
+          description: Registered and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerSession"
+        "409":
+          description: E-Mail already taken
+
+  /customer/login:
+    post:
+      operationId: customerLogin
+      tags: [customer]
+      summary: Login as customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerSession"
+        "401":
+          description: Invalid credentials
+
+  /customer/logout:
+    post:
+      operationId: customerLogout
+      tags: [customer]
+      summary: Logout customer
+      responses:
+        "200":
+          description: Logged out
+
+  /customer/me:
+    get:
+      operationId: getCustomerSession
+      tags: [customer]
+      summary: Get current customer session
+      responses:
+        "200":
+          description: Session info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerSession"
+
+  /customer/orders:
+    get:
+      operationId: listCustomerOrders
+      tags: [customer]
+      summary: List orders for the logged-in customer
+      responses:
+        "200":
+          description: Order history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: Not authenticated
+
+  /customer/orders/{id}:
+    get:
+      operationId: getCustomerOrder
+      tags: [customer]
+      summary: Get a specific order belonging to the customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+
+  /customer/favorites:
+    get:
+      operationId: listCustomerFavorites
+      tags: [customer]
+      summary: List saved favorite orders
+      responses:
+        "200":
+          description: Favorites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FavoriteOrder"
+        "401":
+          description: Not authenticated
+    post:
+      operationId: createCustomerFavorite
+      tags: [customer]
+      summary: Save a new favorite order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteOrderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteOrder"
+
+  /customer/favorites/{id}:
+    delete:
+      operationId: deleteCustomerFavorite
+      tags: [customer]
+      summary: Delete a favorite order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /customer/notes:
+    get:
+      operationId: listCustomerNotes
+      tags: [customer]
+      summary: List saved delivery notes
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomerNote"
+        "401":
+          description: Not authenticated
+    post:
+      operationId: createCustomerNote
+      tags: [customer]
+      summary: Save a new delivery note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerNoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerNote"
+
+  /customer/notes/{id}:
+    delete:
+      operationId: deleteCustomerNote
+      tags: [customer]
+      summary: Delete a saved note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /admin/customers/{id}:
+    get:
+      operationId: getAdminCustomer
+      tags: [admin]
+      summary: Get detailed customer info including stats, notes, favorites
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerAdminDetail"
+        "404":
+          description: Not found
+
   # ── KITCHEN ───────────────────────────────────────────────────────────────
   /kitchen/orders:
     get:
@@ -1848,6 +2070,9 @@ components:
           type: string
         couponCode:
           type: ["string", "null"]
+        paymentMethod:
+          type: string
+          enum: [cash, card]
         items:
           type: array
           items:
@@ -1867,7 +2092,11 @@ components:
           enum: [delivery, pickup]
         status:
           type: string
-          enum: [pending, confirmed, preparing, ready, delivering, completed, cancelled]
+        customerId:
+          type: ["integer", "null"]
+        paymentMethod:
+          type: string
+          enum: [cash, card]
         customerName:
           type: string
         customerPhone:
@@ -2043,3 +2272,187 @@ components:
           type: string
         adminPassword:
           type: string
+
+    # ── CUSTOMER ACCOUNT ──────────────────────────────────────────────────────
+    CustomerProfile:
+      type: object
+      required: [id, email, firstName, lastName, phone, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomerSession:
+      type: object
+      required: [authenticated]
+      properties:
+        authenticated:
+          type: boolean
+        customer:
+          $ref: "#/components/schemas/CustomerProfile"
+
+    CustomerRegisterInput:
+      type: object
+      required: [email, password, firstName]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+        phone:
+          type: string
+
+    CustomerLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    FavoriteOrderItem:
+      type: object
+      required: [menuItemId, itemName, quantity, unitPrice, selectedOptions]
+      properties:
+        menuItemId:
+          type: integer
+        itemName:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        selectedOptions:
+          type: array
+          items:
+            type: object
+            required: [groupId, groupName, optionItemId, optionItemName, price, priceType]
+            properties:
+              groupId:
+                type: integer
+              groupName:
+                type: string
+              optionItemId:
+                type: integer
+              optionItemName:
+                type: string
+              price:
+                type: number
+              priceType:
+                type: string
+
+    FavoriteOrder:
+      type: object
+      required: [id, name, items, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FavoriteOrderItem"
+        createdAt:
+          type: string
+          format: date-time
+
+    FavoriteOrderInput:
+      type: object
+      required: [name, items]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FavoriteOrderItem"
+
+    CustomerNote:
+      type: object
+      required: [id, text, usageCount, createdAt]
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        usageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    CustomerNoteInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+
+    CustomerAdminDetail:
+      type: object
+      required: [id, email, firstName, lastName, phone, createdAt, orderCount, totalSpent, orders, notes, favorites]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        orderCount:
+          type: integer
+        totalSpent:
+          type: number
+        lastOrderAt:
+          type: ["string", "null"]
+          format: date-time
+        topItems:
+          type: array
+          items:
+            type: object
+            required: [itemName, count]
+            properties:
+              itemName:
+                type: string
+              count:
+                type: integer
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerNote"
+        favorites:
+          type: array
+          items:
+            $ref: "#/components/schemas/FavoriteOrder"

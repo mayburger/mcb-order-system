@@ -31,6 +31,8 @@ function serializeOrder(
     orderNumber: order.orderNumber,
     orderType: order.orderType,
     status: order.status,
+    customerId: order.customerId ?? null,
+    paymentMethod: order.paymentMethod,
     customerName: order.customerName,
     customerPhone: order.customerPhone,
     customerEmail: order.customerEmail,
@@ -97,6 +99,7 @@ router.post("/restaurant/orders", async (req, res) => {
       city?: string;
       notes?: string;
       couponCode?: string;
+      paymentMethod?: "cash" | "card";
       items: Array<{
         menuItemId: number;
         quantity: number;
@@ -249,6 +252,7 @@ router.post("/restaurant/orders", async (req, res) => {
       .values({
         orderNumber,
         orderType: body.orderType,
+        customerId: req.session.customerId ?? null,
         customerName: body.customerName,
         customerPhone: body.customerPhone,
         customerEmail: body.customerEmail ?? null,
@@ -256,6 +260,7 @@ router.post("/restaurant/orders", async (req, res) => {
         postalCode: body.postalCode ?? null,
         city: body.city ?? null,
         notes: body.notes ?? null,
+        paymentMethod: body.paymentMethod ?? "cash",
         subtotal: subtotal.toFixed(2),
         deliveryFee: deliveryFee.toFixed(2),
         discountAmount: discountAmount.toFixed(2),

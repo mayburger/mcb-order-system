@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/lib/cart-context";
+import { CustomerAuthProvider } from "@/lib/customer-auth-context";
 
 import Home from "@/pages/home";
 import MenuPage from "@/pages/menu";
@@ -27,6 +28,11 @@ import AdminOptionGroups from "@/pages/admin/option-groups";
 
 import KitchenPage from "@/pages/kitchen";
 
+import AccountLoginPage from "@/pages/account/login";
+import AccountOrdersPage from "@/pages/account/orders";
+import AccountFavoritesPage from "@/pages/account/favorites";
+import AccountNotesPage from "@/pages/account/notes";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -47,6 +53,15 @@ function Router() {
       <Route path="/order/:id" component={OrderStatusPage} />
       <Route path="/opening-hours" component={OpeningHoursPage} />
       <Route path="/contact" component={ContactPage} />
+
+      {/* Account routes */}
+      <Route path="/account/login" component={AccountLoginPage} />
+      <Route path="/account/orders" component={AccountOrdersPage} />
+      <Route path="/account/favorites" component={AccountFavoritesPage} />
+      <Route path="/account/notes" component={AccountNotesPage} />
+      <Route path="/account">
+        {() => { window.location.replace("/account/orders"); return null; }}
+      </Route>
 
       {/* Kitchen display */}
       <Route path="/kitchen" component={KitchenPage} />
@@ -73,12 +88,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
+        <CustomerAuthProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </CustomerAuthProvider>
       </CartProvider>
     </QueryClientProvider>
   );
