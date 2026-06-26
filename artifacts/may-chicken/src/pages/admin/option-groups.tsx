@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   Trash2, Plus, ChevronDown, ChevronUp, Pencil,
-  Check, X, ArrowUp, ArrowDown, Link, GripVertical,
+  Check, X, ArrowUp, ArrowDown, Link, GripVertical, Settings,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -77,7 +77,6 @@ function OptionItemRow({
       for (const k of variantKeys) {
         parsed[k] = parseFloat(variantPrices[k] ?? "0") || 0;
       }
-      // defaultPrice = smallest variant price
       defaultP = Math.min(...Object.values(parsed));
     }
 
@@ -112,7 +111,6 @@ function OptionItemRow({
     const sibling = group.items[direction === "up" ? index - 1 : index + 1];
     if (!sibling) return;
 
-    // Swap sortOrders
     const thisNewOrder = sibling.sortOrder;
     const siblingNewOrder = item.sortOrder === sibling.sortOrder
       ? item.sortOrder + (direction === "up" ? -1 : 1)
@@ -184,7 +182,6 @@ function OptionItemRow({
   return (
     <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 group/item">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        {/* Reorder buttons */}
         <div className="flex flex-col gap-0.5 shrink-0">
           <button
             onClick={() => handleMove("up")}
@@ -203,10 +200,8 @@ function OptionItemRow({
         </div>
 
         <span className="text-sm text-muted-foreground shrink-0 w-5 text-right">{index + 1}.</span>
-
         <span className="text-sm text-white truncate">{item.name}</span>
 
-        {/* Preis-Badge */}
         {group.priceType === "absolute" && (
           <span className="text-xs text-primary font-bold shrink-0">{item.defaultPrice.toFixed(2)} €</span>
         )}
@@ -241,9 +236,6 @@ function AddItemForm({ groupId, group, onAdded }: { groupId: number; group: Opti
   const createItem = useCreateAdminOptionItem();
   const variantKeys = getVariantKeys(group);
   const useVariants = hasVariantPricing(group);
-
-  // For new additive groups without items yet: default variant keys
-  const effectiveKeys = useVariants ? variantKeys : (group.priceType === "additive" && variantKeys.length === 0 ? [] : []);
 
   const handleAdd = () => {
     if (!name.trim()) return;
@@ -340,21 +332,22 @@ function AddItemForm({ groupId, group, onAdded }: { groupId: number; group: Opti
   );
 }
 
-// ── Kategorie-Verknüpfungs-Dialog ─────────────────────────────────────────────
-function LinkCategoryDialog({
+// ── Kategorie-Verwaltungs-Dialog ───────────────────────────────────────────────
+function ManageCategoriesDialog({
   group,
   open,
   onClose,
-  onLinked,
+  onChanged,
 }: {
   group: OptionGroup;
   open: boolean;
   onClose: () => void;
-  onLinked: () => void;
+  onChanged: () => void;
 }) {
   const { toast } = useToast();
   const { data: categories } = useListAdminCategories();
   const linkCategory = useLinkCategoryToOptionGroup();
+  const [unlinking, setUnlinking] = useState<number | null>(null);
 
   const linkedIds = new Set(group.linkedCategoryIds ?? []);
 
@@ -362,37 +355,201 @@ function LinkCategoryDialog({
     linkCategory.mutate(
       { id: group.id, data: { categoryId: catId } },
       {
-        onSuccess: () => { onLinked(); },
+        onSuccess: onChanged,
         onError: () => toast({ title: "Fehler beim Verknüpfen", variant: "destructive" }),
       }
     );
+  };
+
+  const handleUnlink = async (catId: number) => {
+    setUnlinking(catId);
+    try {
+      const res = await fetch(`/api/admin/option-groups/${group.id}/categories/${catId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      onChanged();
+    } catch {
+      toast({ title: "Fehler beim Entfernen", variant: "destructive" });
+    } finally {
+      setUnlinking(null);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-card border-border text-white max-w-sm rounded-none">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold uppercase">Kategorie verknüpfen</DialogTitle>
+          <DialogTitle className="text-lg font-bold uppercase">Kategorien verwalten</DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground mt-1">
-          Alle Artikel der gewählten Kategorie erhalten automatisch diese Optionsgruppe.
+          Alle Artikel der verknüpften Kategorien erhalten diese Optionsgruppe automatisch.
         </p>
         <div className="space-y-2 mt-3">
           {categories?.map((cat) => {
             const linked = linkedIds.has(cat.id);
+            const isUnlinking = unlinking === cat.id;
             return (
               <div key={cat.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                 <span className={`text-sm ${linked ? "text-white font-semibold" : "text-muted-foreground"}`}>{cat.name}</span>
                 {linked ? (
-                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">Verknüpft</Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs rounded-none border-destructive/50 text-destructive hover:bg-destructive/10"
+                    onClick={() => handleUnlink(cat.id)}
+                    disabled={isUnlinking}
+                  >
+                    {isUnlinking ? "…" : "Entfernen"}
+                  </Button>
                 ) : (
-                  <Button size="sm" variant="outline" className="h-7 text-xs rounded-none" onClick={() => handleLink(cat.id)} disabled={linkCategory.isPending}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs rounded-none"
+                    onClick={() => handleLink(cat.id)}
+                    disabled={linkCategory.isPending}
+                  >
                     Verknüpfen
                   </Button>
                 )}
               </div>
             );
           })}
+        </div>
+        <Button variant="outline" className="w-full rounded-none border-border mt-2" onClick={onClose}>
+          Schließen
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Gruppe bearbeiten Dialog ───────────────────────────────────────────────────
+function EditGroupDialog({
+  group,
+  open,
+  onClose,
+  onSaved,
+}: {
+  group: OptionGroup;
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState(group.name);
+  const [slug, setSlug] = useState(group.slug);
+  const [description, setDescription] = useState(group.description ?? "");
+  const [inputType, setInputType] = useState<"single" | "multiple">(group.inputType as "single" | "multiple");
+  const [priceType, setPriceType] = useState<"absolute" | "additive">(group.priceType as "absolute" | "additive");
+  const [required, setRequired] = useState(group.required);
+  const updateGroup = useUpdateAdminOptionGroup();
+
+  const handleSave = () => {
+    if (!name.trim()) {
+      toast({ title: "Name darf nicht leer sein", variant: "destructive" });
+      return;
+    }
+    updateGroup.mutate(
+      {
+        id: group.id,
+        data: {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          inputType,
+          priceType,
+          required,
+        },
+      },
+      {
+        onSuccess: () => { onSaved(); onClose(); },
+        onError: () => toast({ title: "Fehler beim Speichern", variant: "destructive" }),
+      }
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-card border-border text-white max-w-md rounded-none">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-display font-bold uppercase text-white">Gruppe bearbeiten</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-4">
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block mb-1">Name *</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="rounded-none border-border bg-background text-white"
+              placeholder="z.B. Pizza-Extras"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block mb-1">Slug (technisch)</label>
+            <Input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              className="rounded-none border-border bg-background text-white font-mono text-sm"
+              placeholder="z.B. pizza-extras"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block mb-1">Beschreibung (optional)</label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="rounded-none border-border bg-background text-white text-sm"
+              placeholder="Kurze Beschreibung für Kunden"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block mb-1">Auswahltyp</label>
+              <select
+                value={inputType}
+                onChange={(e) => setInputType(e.target.value as "single" | "multiple")}
+                className="w-full h-9 rounded-none border border-border bg-background text-white text-sm px-2"
+              >
+                <option value="single">Einzelauswahl (Radio)</option>
+                <option value="multiple">Mehrfachauswahl (Checkbox)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block mb-1">Preistyp</label>
+              <select
+                value={priceType}
+                onChange={(e) => setPriceType(e.target.value as "absolute" | "additive")}
+                className="w-full h-9 rounded-none border border-border bg-background text-white text-sm px-2"
+              >
+                <option value="absolute">Festpreis (z.B. Größe)</option>
+                <option value="additive">Aufpreis (z.B. Extras)</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="edit-required"
+              checked={required}
+              onChange={(e) => setRequired(e.target.checked)}
+              className="accent-primary w-4 h-4"
+            />
+            <label htmlFor="edit-required" className="text-sm text-white cursor-pointer">
+              Pflichtfeld — Kunde muss eine Option auswählen
+            </label>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" className="flex-1 rounded-none border-border" onClick={onClose}>
+              Abbrechen
+            </Button>
+            <Button
+              className="flex-1 rounded-none bg-primary hover:bg-primary/90"
+              onClick={handleSave}
+              disabled={updateGroup.isPending}
+            >
+              {updateGroup.isPending ? "Speichern…" : "Speichern"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -411,21 +568,9 @@ function OptionGroupCard({
 }) {
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(true);
-  const [editName, setEditName] = useState(group.name);
-  const [editingName, setEditingName] = useState(false);
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const updateGroup = useUpdateAdminOptionGroup();
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const deleteGroup = useDeleteAdminOptionGroup();
-
-  const handleSaveName = () => {
-    updateGroup.mutate(
-      { id: group.id, data: { name: editName.trim() } },
-      {
-        onSuccess: () => { setEditingName(false); onRefetch(); },
-        onError: () => toast({ title: "Fehler beim Speichern", variant: "destructive" }),
-      }
-    );
-  };
 
   const handleDelete = () => {
     if (!confirm(`Optionsgruppe "${group.name}" wirklich löschen? Alle verknüpften Optionen werden entfernt.`)) return;
@@ -450,28 +595,11 @@ function OptionGroupCard({
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
 
-        {editingName ? (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="h-8 rounded-none border-border bg-background text-white text-sm"
-              onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
-              autoFocus
-            />
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-500 shrink-0" onClick={handleSaveName}><Check className="h-4 w-4" /></Button>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground shrink-0" onClick={() => setEditingName(false)}><X className="h-4 w-4" /></Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h3 className="font-bold text-white uppercase tracking-wide truncate">{group.name}</h3>
-            <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-white shrink-0" onClick={() => setEditingName(true)}>
-              <Pencil className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <h3 className="font-bold text-white uppercase tracking-wide truncate">{group.name}</h3>
+        </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
           <Badge variant="outline" className="text-xs border-border text-muted-foreground hidden sm:flex">
             {group.inputType === "single" ? "Einzelwahl" : "Mehrfachwahl"}
           </Badge>
@@ -481,14 +609,28 @@ function OptionGroupCard({
           {group.required && (
             <Badge className="text-xs bg-primary/20 text-primary border-primary/30">Pflicht</Badge>
           )}
+
+          {/* Bearbeiten */}
           <Button
             size="icon" variant="ghost"
             className="h-7 w-7 text-muted-foreground hover:text-white"
-            onClick={() => setShowLinkDialog(true)}
-            title="Mit Kategorie verknüpfen"
+            title="Gruppe bearbeiten"
+            onClick={() => setShowEditDialog(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+
+          {/* Kategorien verwalten */}
+          <Button
+            size="icon" variant="ghost"
+            className="h-7 w-7 text-muted-foreground hover:text-white"
+            onClick={() => setShowCategoryDialog(true)}
+            title="Kategorien verknüpfen / entfernen"
           >
             <Link className="h-4 w-4" />
           </Button>
+
+          {/* Löschen */}
           <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={handleDelete}>
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -499,7 +641,13 @@ function OptionGroupCard({
       {linkedCategoryNames && (
         <div className="px-4 pb-2 flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Gilt für:</span>
-          <span className="text-xs text-primary font-semibold">{linkedCategoryNames}</span>
+          <button
+            className="text-xs text-primary font-semibold hover:underline"
+            onClick={() => setShowCategoryDialog(true)}
+            title="Kategorien verwalten"
+          >
+            {linkedCategoryNames}
+          </button>
         </div>
       )}
 
@@ -538,11 +686,20 @@ function OptionGroupCard({
         </div>
       )}
 
-      <LinkCategoryDialog
+      {/* Edit dialog */}
+      <EditGroupDialog
         group={group}
-        open={showLinkDialog}
-        onClose={() => setShowLinkDialog(false)}
-        onLinked={() => { setShowLinkDialog(false); onRefetch(); }}
+        open={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        onSaved={() => { setShowEditDialog(false); onRefetch(); }}
+      />
+
+      {/* Category management dialog */}
+      <ManageCategoriesDialog
+        group={group}
+        open={showCategoryDialog}
+        onClose={() => setShowCategoryDialog(false)}
+        onChanged={() => onRefetch()}
       />
     </div>
   );
@@ -608,14 +765,14 @@ function NewGroupDialog({ open, onClose, onCreated }: { open: boolean; onClose: 
             </div>
             <div>
               <label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold block mb-1">Preistyp</label>
-              <select value={priceType} onChange={(e) => setPriceType(e.target.value as "absolute" | "additive")} className="w-full h-9 rounded-none border border-border bg-background text-white text-sm px-2">
+              <select value={priceType} onChange={(e) => setPriceType(e.target.value as "additive" | "absolute")} className="w-full h-9 rounded-none border border-border bg-background text-white text-sm px-2">
                 <option value="absolute">Festpreis (z.B. Größe)</option>
                 <option value="additive">Aufpreis (z.B. Extras)</option>
               </select>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <input type="checkbox" id="required" checked={required} onChange={(e) => setRequired(e.target.checked)} className="accent-primary" />
+            <input type="checkbox" id="required" checked={required} onChange={(e) => setRequired(e.target.checked)} className="accent-primary w-4 h-4" />
             <label htmlFor="required" className="text-sm text-white cursor-pointer">Pflichtfeld — Kunde muss auswählen</label>
           </div>
           <div className="flex gap-3 pt-2">
@@ -676,7 +833,8 @@ export default function OptionGroupsPage() {
           <p className="font-semibold text-white text-xs uppercase tracking-widest mb-2">Wie funktioniert das System?</p>
           <p>• <strong className="text-white">Festpreis</strong>: Ersetzt den Artikelpreis vollständig (Pizzagrößen 29cm / 32cm)</p>
           <p>• <strong className="text-white">Aufpreis</strong>: Wird zum Artikelpreis addiert. Bei Pizzas je nach Größe (+0,70 € / +0,90 €)</p>
-          <p>• <strong className="text-white">Kategorie verknüpfen</strong> (🔗): Alle Artikel dieser Kategorie erhalten die Optionen automatisch</p>
+          <p>• <strong className="text-white">⚙ Bearbeiten</strong>: Name, Auswahltyp, Preistyp und Pflichtfeld ändern</p>
+          <p>• <strong className="text-white">🔗 Kategorien</strong>: Verknüpfungen hinzufügen oder entfernen</p>
           <p>• <strong className="text-white">Reihenfolge</strong>: Pfeile ↑↓ in jeder Zeile zum Verschieben</p>
         </div>
       </div>

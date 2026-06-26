@@ -436,6 +436,17 @@ router.delete("/admin/category-option-groups/:id", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+router.delete("/admin/option-groups/:groupId/categories/:categoryId", async (req, res) => {
+  try {
+    const groupId = Number(req.params["groupId"]);
+    const categoryId = Number(req.params["categoryId"]);
+    await db.delete(categoryOptionGroups).where(
+      and(eq(categoryOptionGroups.groupId, groupId), eq(categoryOptionGroups.categoryId, categoryId))
+    );
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.get("/admin/items/:id/option-prices", async (req, res) => {
   try {
     const menuItemId = Number(req.params["id"]);
