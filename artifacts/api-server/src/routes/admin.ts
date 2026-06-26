@@ -26,7 +26,7 @@ import { serializeOrder } from "./orders";
 import bcrypt from "bcryptjs";
 
 const router = Router();
-router.use(requireAdmin);
+router.use("/admin", requireAdmin);
 
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 

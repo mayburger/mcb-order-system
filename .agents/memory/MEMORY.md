@@ -1,0 +1,1 @@
+- [Admin router auth bug](admin-router-auth.md) — `router.use(requireAdmin)` ohne Pfad blockiert alle Routen inkl. /customer/*; fix: `router.use("/admin", requireAdmin)`
