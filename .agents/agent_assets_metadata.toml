@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "UL7mZPjDVLbqLnT8QFfDF"
+uri = "file://artifacts/may-chicken/public/hero-burger.png"
+type = "image"
+title = "Premium burger hero shot"
+
+[[generated]]
+id = "W_cDRrQai4Q5c3MTG_esg"
+uri = "file://artifacts/may-chicken/public/chicken-sandwich.png"
+type = "image"
+title = "Fried chicken sandwich"
+
+[[generated]]
+id = "b7RwfLjE_e5rnYzE-0JIS"
+uri = "file://artifacts/may-chicken/public/pizza.png"
+type = "image"
+title = "Gourmet pizza slice"
+
+[[generated]]
+id = "HesU0mRd59tdFz7Uk8wU8"
+uri = "file://artifacts/may-chicken/public/fries.png"
+type = "image"
+title = "Loaded french fries"

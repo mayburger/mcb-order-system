@@ -1,0 +1,529 @@
+import { Router } from "express";
+import { db } from "@workspace/db";
+import {
+  categories,
+  menuItems,
+  orders,
+  orderItems,
+  openingHours,
+  deliveryAreas,
+  coupons,
+  settings,
+} from "@workspace/db/schema";
+import { eq, desc, asc, gte, and, sql, count } from "drizzle-orm";
+import { requireAdmin } from "../middleware/requireAdmin";
+import { serializeOrder } from "./orders";
+import bcrypt from "bcryptjs";
+
+const router = Router();
+router.use(requireAdmin);
+
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+router.get("/admin/stats", async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const allOrders = await db.select().from(orders);
+    const todayOrders = allOrders.filter((o) => o.createdAt >= today);
+    const weekOrders = allOrders.filter((o) => o.createdAt >= weekAgo);
+    const pending = allOrders.filter((o) =>
+      ["pending", "confirmed", "preparing", "ready", "delivering"].includes(o.status),
+    );
+
+    const totalRevenue = allOrders
+      .filter((o) => o.status !== "cancelled")
+      .reduce((s, o) => s + Number(o.total), 0);
+    const todayRevenue = todayOrders
+      .filter((o) => o.status !== "cancelled")
+      .reduce((s, o) => s + Number(o.total), 0);
+    const weekRevenue = weekOrders
+      .filter((o) => o.status !== "cancelled")
+      .reduce((s, o) => s + Number(o.total), 0);
+
+    // Popular items
+    const allItems = await db.select().from(orderItems);
+    const nameCount = new Map<string, number>();
+    for (const i of allItems) {
+      nameCount.set(i.itemName, (nameCount.get(i.itemName) ?? 0) + i.quantity);
+    }
+    const popularItems = [...nameCount.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, orderCount]) => ({ name, orderCount }));
+
+    res.json({
+      totalOrders: allOrders.length,
+      pendingOrders: pending.length,
+      todayOrders: todayOrders.length,
+      todayRevenue,
+      totalRevenue,
+      weekRevenue,
+      popularItems,
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── CATEGORIES ────────────────────────────────────────────────────────────────
+router.get("/admin/categories", async (req, res) => {
+  try {
+    const rows = await db.select().from(categories).orderBy(asc(categories.sortOrder));
+    const itemCounts = await db
+      .select({ categoryId: menuItems.categoryId, c: count() })
+      .from(menuItems)
+      .groupBy(menuItems.categoryId);
+    const countMap = new Map(itemCounts.map((r) => [r.categoryId, Number(r.c)]));
+    res.json(rows.map((c) => ({ ...c, itemCount: countMap.get(c.id) ?? 0 })));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/categories", async (req, res) => {
+  try {
+    const { name, slug, description, imageUrl, sortOrder } = req.body as {
+      name: string; slug: string; description?: string; imageUrl?: string; sortOrder?: number;
+    };
+    const [row] = await db.insert(categories).values({ name, slug, description, imageUrl, sortOrder: sortOrder ?? 0 }).returning();
+    res.status(201).json({ ...row, itemCount: 0 });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/categories/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const [row] = await db.update(categories).set(req.body as Partial<typeof categories.$inferInsert>).where(eq(categories.id, id)).returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json({ ...row, itemCount: 0 });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/categories/:id", async (req, res) => {
+  try {
+    await db.delete(categories).where(eq(categories.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── MENU ITEMS ────────────────────────────────────────────────────────────────
+router.get("/admin/items", async (req, res) => {
+  try {
+    const categoryId = req.query["categoryId"] ? Number(req.query["categoryId"]) : undefined;
+    const rows = await db.query.menuItems.findMany({
+      with: { category: true },
+      where: categoryId ? (item, { eq: eqFn }) => eqFn(item.categoryId, categoryId) : undefined,
+      orderBy: [asc(menuItems.sortOrder), asc(menuItems.id)],
+    });
+    res.json(rows.map((i) => ({ ...i, price: Number(i.price) })));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/items", async (req, res) => {
+  try {
+    const body = req.body as {
+      name: string; description?: string; price: number; categoryId: number;
+      available?: boolean; featured?: boolean; imageUrl?: string; sortOrder?: number;
+    };
+    const [row] = await db.insert(menuItems).values({
+      name: body.name,
+      description: body.description,
+      price: body.price.toFixed(2),
+      categoryId: body.categoryId,
+      available: body.available ?? true,
+      featured: body.featured ?? false,
+      imageUrl: body.imageUrl,
+      sortOrder: body.sortOrder ?? 0,
+    }).returning();
+    res.status(201).json({ ...row, price: Number(row!.price) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/items/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const body = req.body as Partial<{
+      name: string; description: string; price: number; categoryId: number;
+      available: boolean; featured: boolean; imageUrl: string; sortOrder: number;
+    }>;
+    const update: Record<string, unknown> = { ...body };
+    if (body.price !== undefined) update["price"] = body.price.toFixed(2);
+    const [row] = await db.update(menuItems).set(update).where(eq(menuItems.id, id)).returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json({ ...row, price: Number(row.price) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/items/:id", async (req, res) => {
+  try {
+    await db.delete(menuItems).where(eq(menuItems.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── ORDERS ────────────────────────────────────────────────────────────────────
+router.get("/admin/orders", async (req, res) => {
+  try {
+    const { status, orderType, date } = req.query as { status?: string; orderType?: string; date?: string };
+    let allOrders = await db.query.orders.findMany({
+      orderBy: [desc(orders.createdAt)],
+    });
+    if (status) allOrders = allOrders.filter((o) => o.status === status);
+    if (orderType) allOrders = allOrders.filter((o) => o.orderType === orderType);
+    if (date) {
+      const d = new Date(date);
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      allOrders = allOrders.filter((o) => o.createdAt >= d && o.createdAt < next);
+    }
+    const ids = allOrders.map((o) => o.id);
+    const allItems = ids.length > 0 ? await db.select().from(orderItems).where(
+      sql`${orderItems.orderId} = ANY(ARRAY[${sql.join(ids.map(id => sql`${id}`), sql`, `)}]::int[])`
+    ) : [];
+    const itemsByOrder = new Map<number, typeof allItems>();
+    for (const item of allItems) {
+      const existing = itemsByOrder.get(item.orderId) ?? [];
+      existing.push(item);
+      itemsByOrder.set(item.orderId, existing);
+    }
+    res.json(allOrders.map((o) => serializeOrder(o, itemsByOrder.get(o.id) ?? [])));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/admin/orders/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const order = await db.query.orders.findFirst({ where: (o, { eq: eqFn }) => eqFn(o.id, id) });
+    if (!order) return res.status(404).json({ error: "Not found" });
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    res.json(serializeOrder(order, items));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/orders/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const { status, notes } = req.body as { status: string; notes?: string };
+    const update: Record<string, unknown> = {};
+    if (status) update["status"] = status;
+    if (notes !== undefined) update["notes"] = notes;
+    const [order] = await db.update(orders).set(update).where(eq(orders.id, id)).returning();
+    if (!order) return res.status(404).json({ error: "Not found" });
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    res.json(serializeOrder(order, items));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── CUSTOMERS ─────────────────────────────────────────────────────────────────
+router.get("/admin/customers", async (req, res) => {
+  try {
+    const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
+    const customerMap = new Map<string, {
+      name: string; phone: string; email: string | null;
+      orderCount: number; totalSpent: number; lastOrderAt: Date | null;
+    }>();
+    for (const o of allOrders) {
+      const key = o.customerPhone;
+      if (!customerMap.has(key)) {
+        customerMap.set(key, {
+          name: o.customerName,
+          phone: o.customerPhone,
+          email: o.customerEmail,
+          orderCount: 0,
+          totalSpent: 0,
+          lastOrderAt: null,
+        });
+      }
+      const c = customerMap.get(key)!;
+      c.orderCount += 1;
+      if (o.status !== "cancelled") c.totalSpent += Number(o.total);
+      if (!c.lastOrderAt || o.createdAt > c.lastOrderAt) c.lastOrderAt = o.createdAt;
+    }
+    res.json([...customerMap.values()]);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── DELIVERY AREAS ────────────────────────────────────────────────────────────
+router.get("/admin/delivery-areas", async (req, res) => {
+  try {
+    const rows = await db.select().from(deliveryAreas).orderBy(asc(deliveryAreas.name));
+    res.json(rows.map((r) => ({ ...r, minOrder: Number(r.minOrder), deliveryFee: Number(r.deliveryFee) })));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/delivery-areas", async (req, res) => {
+  try {
+    const body = req.body as { name: string; postalCode: string; minOrder: number; deliveryFee: number; active?: boolean };
+    const [row] = await db.insert(deliveryAreas).values({
+      name: body.name,
+      postalCode: body.postalCode,
+      minOrder: body.minOrder.toFixed(2),
+      deliveryFee: body.deliveryFee.toFixed(2),
+      active: body.active ?? true,
+    }).returning();
+    res.status(201).json({ ...row, minOrder: Number(row!.minOrder), deliveryFee: Number(row!.deliveryFee) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/delivery-areas/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const body = req.body as Partial<{ name: string; postalCode: string; minOrder: number; deliveryFee: number; active: boolean }>;
+    const update: Record<string, unknown> = { ...body };
+    if (body.minOrder !== undefined) update["minOrder"] = body.minOrder.toFixed(2);
+    if (body.deliveryFee !== undefined) update["deliveryFee"] = body.deliveryFee.toFixed(2);
+    const [row] = await db.update(deliveryAreas).set(update).where(eq(deliveryAreas.id, id)).returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json({ ...row, minOrder: Number(row.minOrder), deliveryFee: Number(row.deliveryFee) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/delivery-areas/:id", async (req, res) => {
+  try {
+    await db.delete(deliveryAreas).where(eq(deliveryAreas.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── OPENING HOURS ─────────────────────────────────────────────────────────────
+router.get("/admin/opening-hours", async (req, res) => {
+  try {
+    const rows = await db.select().from(openingHours).orderBy(asc(openingHours.dayOfWeek));
+    res.json(rows);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/admin/opening-hours", async (req, res) => {
+  try {
+    const { hours } = req.body as { hours: Array<{ dayOfWeek: number; openTime?: string; closeTime?: string; isClosed: boolean }> };
+    const updated = [];
+    for (const h of hours) {
+      const existing = await db.query.openingHours.findFirst({
+        where: (r, { eq: eqFn }) => eqFn(r.dayOfWeek, h.dayOfWeek),
+      });
+      if (existing) {
+        const [row] = await db.update(openingHours)
+          .set({ openTime: h.openTime ?? null, closeTime: h.closeTime ?? null, isClosed: h.isClosed })
+          .where(eq(openingHours.id, existing.id))
+          .returning();
+        updated.push(row);
+      } else {
+        const [row] = await db.insert(openingHours).values({
+          dayOfWeek: h.dayOfWeek,
+          dayName: DAY_NAMES[h.dayOfWeek] ?? `Day ${h.dayOfWeek}`,
+          openTime: h.openTime ?? null,
+          closeTime: h.closeTime ?? null,
+          isClosed: h.isClosed,
+        }).returning();
+        updated.push(row);
+      }
+    }
+    res.json(updated);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── COUPONS ───────────────────────────────────────────────────────────────────
+router.get("/admin/coupons", async (req, res) => {
+  try {
+    const rows = await db.select().from(coupons).orderBy(desc(coupons.createdAt));
+    res.json(rows.map((c) => ({ ...c, discountValue: Number(c.discountValue), minOrder: Number(c.minOrder ?? 0) })));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/admin/coupons", async (req, res) => {
+  try {
+    const body = req.body as {
+      code: string; description?: string; discountType: "percentage" | "fixed";
+      discountValue: number; minOrder?: number; active?: boolean; expiresAt?: string; maxUsage?: number;
+    };
+    const [row] = await db.insert(coupons).values({
+      code: body.code.toUpperCase(),
+      description: body.description,
+      discountType: body.discountType,
+      discountValue: body.discountValue.toFixed(2),
+      minOrder: body.minOrder ? body.minOrder.toFixed(2) : "0",
+      active: body.active ?? true,
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+      maxUsage: body.maxUsage ?? null,
+    }).returning();
+    res.status(201).json({ ...row, discountValue: Number(row!.discountValue), minOrder: Number(row!.minOrder ?? 0) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.patch("/admin/coupons/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const body = req.body as Partial<{
+      code: string; description: string; discountType: string;
+      discountValue: number; minOrder: number; active: boolean; expiresAt: string; maxUsage: number;
+    }>;
+    const update: Record<string, unknown> = { ...body };
+    if (body.code) update["code"] = body.code.toUpperCase();
+    if (body.discountValue !== undefined) update["discountValue"] = body.discountValue.toFixed(2);
+    if (body.minOrder !== undefined) update["minOrder"] = body.minOrder.toFixed(2);
+    if (body.expiresAt) update["expiresAt"] = new Date(body.expiresAt);
+    const [row] = await db.update(coupons).set(update).where(eq(coupons.id, id)).returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json({ ...row, discountValue: Number(row.discountValue), minOrder: Number(row.minOrder ?? 0) });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/admin/coupons/:id", async (req, res) => {
+  try {
+    await db.delete(coupons).where(eq(coupons.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+router.get("/admin/settings", async (req, res) => {
+  try {
+    const rows = await db.select().from(settings);
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    res.json({
+      restaurantName: map.get("restaurantName") ?? "May Chicken & Burger",
+      tagline: map.get("tagline") ?? "",
+      address: map.get("address") ?? "",
+      phone: map.get("phone") ?? "",
+      email: map.get("email") ?? "",
+      deliveryEnabled: map.get("deliveryEnabled") !== "false",
+      pickupEnabled: map.get("pickupEnabled") !== "false",
+      minDeliveryOrder: Number(map.get("minDeliveryOrder") ?? 15),
+      estimatedDeliveryTime: Number(map.get("estimatedDeliveryTime") ?? 30),
+      estimatedPickupTime: Number(map.get("estimatedPickupTime") ?? 15),
+      adminUsername: map.get("adminUsername") ?? "admin",
+      adminPassword: "",
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/admin/settings", async (req, res) => {
+  try {
+    const body = req.body as {
+      restaurantName?: string; tagline?: string; address?: string; phone?: string; email?: string;
+      deliveryEnabled?: boolean; pickupEnabled?: boolean; minDeliveryOrder?: number;
+      estimatedDeliveryTime?: number; estimatedPickupTime?: number;
+      adminUsername?: string; adminPassword?: string;
+    };
+
+    const upsert = async (key: string, value: string) => {
+      const existing = await db.query.settings.findFirst({ where: (s, { eq: eqFn }) => eqFn(s.key, key) });
+      if (existing) {
+        await db.update(settings).set({ value }).where(eq(settings.key, key));
+      } else {
+        await db.insert(settings).values({ key, value });
+      }
+    };
+
+    if (body.restaurantName !== undefined) await upsert("restaurantName", body.restaurantName);
+    if (body.tagline !== undefined) await upsert("tagline", body.tagline);
+    if (body.address !== undefined) await upsert("address", body.address);
+    if (body.phone !== undefined) await upsert("phone", body.phone);
+    if (body.email !== undefined) await upsert("email", body.email);
+    if (body.deliveryEnabled !== undefined) await upsert("deliveryEnabled", String(body.deliveryEnabled));
+    if (body.pickupEnabled !== undefined) await upsert("pickupEnabled", String(body.pickupEnabled));
+    if (body.minDeliveryOrder !== undefined) await upsert("minDeliveryOrder", String(body.minDeliveryOrder));
+    if (body.estimatedDeliveryTime !== undefined) await upsert("estimatedDeliveryTime", String(body.estimatedDeliveryTime));
+    if (body.estimatedPickupTime !== undefined) await upsert("estimatedPickupTime", String(body.estimatedPickupTime));
+    if (body.adminUsername !== undefined) await upsert("adminUsername", body.adminUsername);
+    if (body.adminPassword && body.adminPassword.length > 0) {
+      const hash = await bcrypt.hash(body.adminPassword, 10);
+      await upsert("adminPasswordHash", hash);
+    }
+
+    const rows = await db.select().from(settings);
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    res.json({
+      restaurantName: map.get("restaurantName") ?? "May Chicken & Burger",
+      tagline: map.get("tagline") ?? "",
+      address: map.get("address") ?? "",
+      phone: map.get("phone") ?? "",
+      email: map.get("email") ?? "",
+      deliveryEnabled: map.get("deliveryEnabled") !== "false",
+      pickupEnabled: map.get("pickupEnabled") !== "false",
+      minDeliveryOrder: Number(map.get("minDeliveryOrder") ?? 15),
+      estimatedDeliveryTime: Number(map.get("estimatedDeliveryTime") ?? 30),
+      estimatedPickupTime: Number(map.get("estimatedPickupTime") ?? 15),
+      adminUsername: map.get("adminUsername") ?? "admin",
+      adminPassword: "",
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+export default router;
