@@ -26,6 +26,7 @@ import type {
   AppSettings,
   Category,
   CategoryInput,
+  CategoryOptionGroupLink,
   CategoryUpdate,
   Coupon,
   CouponInput,
@@ -40,6 +41,8 @@ import type {
   ItemExtra,
   ItemExtraInput,
   ItemExtraUpdate,
+  ItemOptionPrice,
+  ItemOptionPricesInput,
   ItemVariant,
   ItemVariantInput,
   ItemVariantUpdate,
@@ -51,6 +54,12 @@ import type {
   MenuItemInput,
   MenuItemUpdate,
   OpeningHoursUpdate,
+  OptionGroup,
+  OptionGroupInput,
+  OptionGroupItem,
+  OptionGroupUpdate,
+  OptionItemInput,
+  OptionItemUpdate,
   Order,
   OrderInput,
   OrderStatusPatch,
@@ -388,6 +397,83 @@ export function useGetMenuItem<TData = Awaited<ReturnType<typeof getMenuItem>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMenuItemQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMenuOptionGroupsUrl = () => {
+
+
+
+
+  return `/api/menu/option-groups`
+}
+
+/**
+ * @summary List all global option groups with their items
+ */
+export const listMenuOptionGroups = async ( options?: RequestInit): Promise<OptionGroup[]> => {
+
+  return customFetch<OptionGroup[]>(getListMenuOptionGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMenuOptionGroupsQueryKey = () => {
+    return [
+    `/api/menu/option-groups`
+    ] as const;
+    }
+
+
+export const getListMenuOptionGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listMenuOptionGroups>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMenuOptionGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMenuOptionGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMenuOptionGroups>>> = ({ signal }) => listMenuOptionGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMenuOptionGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMenuOptionGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listMenuOptionGroups>>>
+export type ListMenuOptionGroupsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all global option groups with their items
+ */
+
+export function useListMenuOptionGroups<TData = Awaited<ReturnType<typeof listMenuOptionGroups>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMenuOptionGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMenuOptionGroupsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2301,6 +2387,795 @@ export const useDeleteItemExtra = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteItemExtraMutationOptions(options));
+    }
+
+export const getListAdminOptionGroupsUrl = () => {
+
+
+
+
+  return `/api/admin/option-groups`
+}
+
+/**
+ * @summary List all global option groups
+ */
+export const listAdminOptionGroups = async ( options?: RequestInit): Promise<OptionGroup[]> => {
+
+  return customFetch<OptionGroup[]>(getListAdminOptionGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminOptionGroupsQueryKey = () => {
+    return [
+    `/api/admin/option-groups`
+    ] as const;
+    }
+
+
+export const getListAdminOptionGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminOptionGroups>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminOptionGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminOptionGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminOptionGroups>>> = ({ signal }) => listAdminOptionGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminOptionGroups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminOptionGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminOptionGroups>>>
+export type ListAdminOptionGroupsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all global option groups
+ */
+
+export function useListAdminOptionGroups<TData = Awaited<ReturnType<typeof listAdminOptionGroups>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminOptionGroups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminOptionGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAdminOptionGroupUrl = () => {
+
+
+
+
+  return `/api/admin/option-groups`
+}
+
+/**
+ * @summary Create a global option group
+ */
+export const createAdminOptionGroup = async (optionGroupInput: OptionGroupInput, options?: RequestInit): Promise<OptionGroup> => {
+
+  return customFetch<OptionGroup>(getCreateAdminOptionGroupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(optionGroupInput)
+  }
+);}
+
+
+
+
+export const getCreateAdminOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminOptionGroup>>, TError,{data: BodyType<OptionGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminOptionGroup>>, TError,{data: BodyType<OptionGroupInput>}, TContext> => {
+
+const mutationKey = ['createAdminOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminOptionGroup>>, {data: BodyType<OptionGroupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminOptionGroup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminOptionGroup>>>
+    export type CreateAdminOptionGroupMutationBody = BodyType<OptionGroupInput>
+    export type CreateAdminOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a global option group
+ */
+export const useCreateAdminOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminOptionGroup>>, TError,{data: BodyType<OptionGroupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminOptionGroup>>,
+        TError,
+        {data: BodyType<OptionGroupInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminOptionGroupMutationOptions(options));
+    }
+
+export const getUpdateAdminOptionGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-groups/${id}`
+}
+
+/**
+ * @summary Update an option group
+ */
+export const updateAdminOptionGroup = async (id: number,
+    optionGroupUpdate: OptionGroupUpdate, options?: RequestInit): Promise<OptionGroup> => {
+
+  return customFetch<OptionGroup>(getUpdateAdminOptionGroupUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(optionGroupUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateAdminOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminOptionGroup>>, TError,{id: number;data: BodyType<OptionGroupUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminOptionGroup>>, TError,{id: number;data: BodyType<OptionGroupUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminOptionGroup>>, {id: number;data: BodyType<OptionGroupUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminOptionGroup(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminOptionGroup>>>
+    export type UpdateAdminOptionGroupMutationBody = BodyType<OptionGroupUpdate>
+    export type UpdateAdminOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update an option group
+ */
+export const useUpdateAdminOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminOptionGroup>>, TError,{id: number;data: BodyType<OptionGroupUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminOptionGroup>>,
+        TError,
+        {id: number;data: BodyType<OptionGroupUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminOptionGroupMutationOptions(options));
+    }
+
+export const getDeleteAdminOptionGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-groups/${id}`
+}
+
+/**
+ * @summary Delete an option group
+ */
+export const deleteAdminOptionGroup = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAdminOptionGroupUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdminOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminOptionGroup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminOptionGroup>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAdminOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminOptionGroup>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminOptionGroup(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminOptionGroup>>>
+
+    export type DeleteAdminOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an option group
+ */
+export const useDeleteAdminOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminOptionGroup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminOptionGroup>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminOptionGroupMutationOptions(options));
+    }
+
+export const getCreateAdminOptionItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-groups/${id}/items`
+}
+
+/**
+ * @summary Add an item to an option group
+ */
+export const createAdminOptionItem = async (id: number,
+    optionItemInput: OptionItemInput, options?: RequestInit): Promise<OptionGroupItem> => {
+
+  return customFetch<OptionGroupItem>(getCreateAdminOptionItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(optionItemInput)
+  }
+);}
+
+
+
+
+export const getCreateAdminOptionItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminOptionItem>>, TError,{id: number;data: BodyType<OptionItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminOptionItem>>, TError,{id: number;data: BodyType<OptionItemInput>}, TContext> => {
+
+const mutationKey = ['createAdminOptionItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminOptionItem>>, {id: number;data: BodyType<OptionItemInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createAdminOptionItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminOptionItemMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminOptionItem>>>
+    export type CreateAdminOptionItemMutationBody = BodyType<OptionItemInput>
+    export type CreateAdminOptionItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add an item to an option group
+ */
+export const useCreateAdminOptionItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminOptionItem>>, TError,{id: number;data: BodyType<OptionItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminOptionItem>>,
+        TError,
+        {id: number;data: BodyType<OptionItemInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminOptionItemMutationOptions(options));
+    }
+
+export const getUpdateAdminOptionItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-items/${id}`
+}
+
+/**
+ * @summary Update an option item
+ */
+export const updateAdminOptionItem = async (id: number,
+    optionItemUpdate: OptionItemUpdate, options?: RequestInit): Promise<OptionGroupItem> => {
+
+  return customFetch<OptionGroupItem>(getUpdateAdminOptionItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(optionItemUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateAdminOptionItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminOptionItem>>, TError,{id: number;data: BodyType<OptionItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminOptionItem>>, TError,{id: number;data: BodyType<OptionItemUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminOptionItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminOptionItem>>, {id: number;data: BodyType<OptionItemUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAdminOptionItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminOptionItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminOptionItem>>>
+    export type UpdateAdminOptionItemMutationBody = BodyType<OptionItemUpdate>
+    export type UpdateAdminOptionItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update an option item
+ */
+export const useUpdateAdminOptionItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminOptionItem>>, TError,{id: number;data: BodyType<OptionItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminOptionItem>>,
+        TError,
+        {id: number;data: BodyType<OptionItemUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminOptionItemMutationOptions(options));
+    }
+
+export const getDeleteAdminOptionItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-items/${id}`
+}
+
+/**
+ * @summary Delete an option item
+ */
+export const deleteAdminOptionItem = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAdminOptionItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdminOptionItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminOptionItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminOptionItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAdminOptionItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminOptionItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdminOptionItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminOptionItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminOptionItem>>>
+
+    export type DeleteAdminOptionItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an option item
+ */
+export const useDeleteAdminOptionItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminOptionItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminOptionItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminOptionItemMutationOptions(options));
+    }
+
+export const getLinkCategoryToOptionGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/option-groups/${id}/categories`
+}
+
+/**
+ * @summary Link a category to an option group
+ */
+export const linkCategoryToOptionGroup = async (id: number,
+    categoryOptionGroupLink: CategoryOptionGroupLink, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getLinkCategoryToOptionGroupUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(categoryOptionGroupLink)
+  }
+);}
+
+
+
+
+export const getLinkCategoryToOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkCategoryToOptionGroup>>, TError,{id: number;data: BodyType<CategoryOptionGroupLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkCategoryToOptionGroup>>, TError,{id: number;data: BodyType<CategoryOptionGroupLink>}, TContext> => {
+
+const mutationKey = ['linkCategoryToOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkCategoryToOptionGroup>>, {id: number;data: BodyType<CategoryOptionGroupLink>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  linkCategoryToOptionGroup(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkCategoryToOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof linkCategoryToOptionGroup>>>
+    export type LinkCategoryToOptionGroupMutationBody = BodyType<CategoryOptionGroupLink>
+    export type LinkCategoryToOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Link a category to an option group
+ */
+export const useLinkCategoryToOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkCategoryToOptionGroup>>, TError,{id: number;data: BodyType<CategoryOptionGroupLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof linkCategoryToOptionGroup>>,
+        TError,
+        {id: number;data: BodyType<CategoryOptionGroupLink>},
+        TContext
+      > => {
+      return useMutation(getLinkCategoryToOptionGroupMutationOptions(options));
+    }
+
+export const getUnlinkCategoryFromOptionGroupUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/category-option-groups/${id}`
+}
+
+/**
+ * @summary Remove a category–option-group link
+ */
+export const unlinkCategoryFromOptionGroup = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUnlinkCategoryFromOptionGroupUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUnlinkCategoryFromOptionGroupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlinkCategoryFromOptionGroup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlinkCategoryFromOptionGroup>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unlinkCategoryFromOptionGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlinkCategoryFromOptionGroup>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unlinkCategoryFromOptionGroup(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlinkCategoryFromOptionGroupMutationResult = NonNullable<Awaited<ReturnType<typeof unlinkCategoryFromOptionGroup>>>
+
+    export type UnlinkCategoryFromOptionGroupMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a category–option-group link
+ */
+export const useUnlinkCategoryFromOptionGroup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlinkCategoryFromOptionGroup>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlinkCategoryFromOptionGroup>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnlinkCategoryFromOptionGroupMutationOptions(options));
+    }
+
+export const getGetItemOptionPricesUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/items/${id}/option-prices`
+}
+
+/**
+ * @summary Get per-item option prices (e.g. pizza size prices)
+ */
+export const getItemOptionPrices = async (id: number, options?: RequestInit): Promise<ItemOptionPrice[]> => {
+
+  return customFetch<ItemOptionPrice[]>(getGetItemOptionPricesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetItemOptionPricesQueryKey = (id: number,) => {
+    return [
+    `/api/admin/items/${id}/option-prices`
+    ] as const;
+    }
+
+
+export const getGetItemOptionPricesQueryOptions = <TData = Awaited<ReturnType<typeof getItemOptionPrices>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getItemOptionPrices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetItemOptionPricesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItemOptionPrices>>> = ({ signal }) => getItemOptionPrices(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItemOptionPrices>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetItemOptionPricesQueryResult = NonNullable<Awaited<ReturnType<typeof getItemOptionPrices>>>
+export type GetItemOptionPricesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get per-item option prices (e.g. pizza size prices)
+ */
+
+export function useGetItemOptionPrices<TData = Awaited<ReturnType<typeof getItemOptionPrices>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getItemOptionPrices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetItemOptionPricesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetItemOptionPricesUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/items/${id}/option-prices`
+}
+
+/**
+ * @summary Set per-item option prices (bulk upsert)
+ */
+export const setItemOptionPrices = async (id: number,
+    itemOptionPricesInput: ItemOptionPricesInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getSetItemOptionPricesUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(itemOptionPricesInput)
+  }
+);}
+
+
+
+
+export const getSetItemOptionPricesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setItemOptionPrices>>, TError,{id: number;data: BodyType<ItemOptionPricesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setItemOptionPrices>>, TError,{id: number;data: BodyType<ItemOptionPricesInput>}, TContext> => {
+
+const mutationKey = ['setItemOptionPrices'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setItemOptionPrices>>, {id: number;data: BodyType<ItemOptionPricesInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setItemOptionPrices(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetItemOptionPricesMutationResult = NonNullable<Awaited<ReturnType<typeof setItemOptionPrices>>>
+    export type SetItemOptionPricesMutationBody = BodyType<ItemOptionPricesInput>
+    export type SetItemOptionPricesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set per-item option prices (bulk upsert)
+ */
+export const useSetItemOptionPrices = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setItemOptionPrices>>, TError,{id: number;data: BodyType<ItemOptionPricesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setItemOptionPrices>>,
+        TError,
+        {id: number;data: BodyType<ItemOptionPricesInput>},
+        TContext
+      > => {
+      return useMutation(getSetItemOptionPricesMutationOptions(options));
     }
 
 export const getListAdminOrdersUrl = (params?: ListAdminOrdersParams,) => {

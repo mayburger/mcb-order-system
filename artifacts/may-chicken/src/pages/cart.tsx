@@ -79,14 +79,20 @@ export default function CartPage() {
               >
                 <div className="flex-1">
                   <p className="font-bold text-white text-lg">{item.menuItem.name}</p>
-                  {item.variant && (
+                  {item.selectedOptions
+                    .filter((o) => o.priceType === "absolute")
+                    .map((o) => (
+                      <p key={o.optionItemId} className="text-xs text-muted-foreground mt-0.5">
+                        {o.groupName}: {o.optionItemName}
+                      </p>
+                    ))}
+                  {item.selectedOptions.filter((o) => o.priceType === "additive").length > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Größe: {item.variant.name}
-                    </p>
-                  )}
-                  {item.selectedExtras.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Extras: {item.selectedExtras.map((e) => e.name).join(", ")}
+                      Extras:{" "}
+                      {item.selectedOptions
+                        .filter((o) => o.priceType === "additive")
+                        .map((o) => o.optionItemName)
+                        .join(", ")}
                     </p>
                   )}
                   <p className="text-primary font-semibold mt-1">{item.unitPrice.toFixed(2)} € / Stk.</p>

@@ -8,6 +8,7 @@ import {
   timestamp,
   pgEnum,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -53,30 +54,111 @@ export const menuItems = pgTable("restaurant_items", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// ── ITEM VARIANTS (z.B. Pizza 29cm / 32cm) ───────────────────────────────────
-// Each variant has a name (e.g. "29 cm") and its own price.
-// If an item has variants, the base item price is ignored on the frontend.
+// ── ITEM VARIANTS (legacy, kept for backward-compat) ─────────────────────────
 export const itemVariants = pgTable("restaurant_item_variants", {
   id: serial("id").primaryKey(),
   menuItemId: integer("menu_item_id")
     .notNull()
     .references(() => menuItems.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),        // e.g. "29 cm", "32 cm", "Groß"
+  name: text("name").notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
 });
 
-// ── ITEM EXTRAS (z.B. extra Käse, Jalapenos) ────────────────────────────────
-// Extras can be scoped to a specific item or to a whole category (categoryId set).
+// ── ITEM EXTRAS (legacy, kept for backward-compat) ───────────────────────────
 export const itemExtras = pgTable("restaurant_item_extras", {
   id: serial("id").primaryKey(),
   menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "cascade" }),
   categoryId: integer("category_id").references(() => categories.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),        // e.g. "Extra Käse", "Jalapenos"
+  name: text("name").notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"),
   available: boolean("available").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
 });
+
+// ── GLOBAL OPTION GROUPS ──────────────────────────────────────────────────────
+// Reusable groups like "Pizza-Größe" or "Pizza-Extras".
+// inputType: 'single' = radio (one choice), 'multiple' = checkboxes (many).
+// priceType: 'absolute' = selected item price replaces base price (sizes);
+//            'additive' = selected item prices are added to the base price (extras).
+export const optionGroups = pgTable("restaurant_option_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  inputType: text("input_type").notNull().default("single"),
+  required: boolean("required").notNull().default(false),
+  priceType: text("price_type").notNull().default("additive"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+// ── OPTION ITEMS ──────────────────────────────────────────────────────────────
+// Items within an option group.
+// defaultPrice: used when no per-item price or priceByVariant applies.
+// priceByVariant: JSONB map {"29 cm": 0.70, "32 cm": 0.90} for context-dependent pricing.
+export const optionItems = pgTable("restaurant_option_items", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id")
+    .notNull()
+    .references(() => optionGroups.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  defaultPrice: numeric("default_price", { precision: 10, scale: 2 }).notNull().default("0"),
+  priceByVariant: jsonb("price_by_variant").$type<Record<string, number>>(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  available: boolean("available").notNull().default(true),
+});
+
+// ── CATEGORY → OPTION GROUP ASSIGNMENTS ──────────────────────────────────────
+// Linking a category to a group applies the group to all items in that category.
+export const categoryOptionGroups = pgTable(
+  "restaurant_category_option_groups",
+  {
+    id: serial("id").primaryKey(),
+    categoryId: integer("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    groupId: integer("group_id")
+      .notNull()
+      .references(() => optionGroups.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [unique().on(t.categoryId, t.groupId)],
+);
+
+// ── ITEM → OPTION GROUP ASSIGNMENTS (overrides category) ─────────────────────
+// Use this when a specific item needs its own groups (different from category default).
+export const itemOptionGroups = pgTable(
+  "restaurant_item_option_groups",
+  {
+    id: serial("id").primaryKey(),
+    menuItemId: integer("menu_item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    groupId: integer("group_id")
+      .notNull()
+      .references(() => optionGroups.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [unique().on(t.menuItemId, t.groupId)],
+);
+
+// ── PER-ITEM PRICES FOR ABSOLUTE OPTIONS ─────────────────────────────────────
+// For 'absolute' priceType groups (e.g., sizes), each item can have its own price
+// per option item (e.g., Margherita 29cm=10.50, Salami 29cm=11.40).
+export const itemOptionPrices = pgTable(
+  "restaurant_item_option_prices",
+  {
+    id: serial("id").primaryKey(),
+    menuItemId: integer("menu_item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    optionItemId: integer("option_item_id")
+      .notNull()
+      .references(() => optionItems.id, { onDelete: "cascade" }),
+    price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  },
+  (t) => [unique().on(t.menuItemId, t.optionItemId)],
+);
 
 // ── ORDERS ────────────────────────────────────────────────────────────────────
 export const orders = pgTable("restaurant_orders", {
@@ -116,9 +198,16 @@ export const orderItems = pgTable("restaurant_order_items", {
   itemPrice: numeric("item_price", { precision: 10, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
   lineTotal: numeric("line_total", { precision: 10, scale: 2 }).notNull(),
-  // Snapshot of chosen variant & extras at order time
   variantName: text("variant_name"),
   extrasSnapshot: jsonb("extras_snapshot").$type<Array<{ name: string; price: number }>>(),
+  // New: selected option group items snapshot for the option-groups system
+  optionsSnapshot: jsonb("options_snapshot").$type<Array<{
+    groupId: number;
+    groupName: string;
+    optionItemId: number;
+    optionItemName: string;
+    price: number;
+  }>>(),
 });
 
 // ── OPENING HOURS ─────────────────────────────────────────────────────────────
@@ -171,6 +260,7 @@ export const settings = pgTable("restaurant_settings", {
 export const categoriesRelations = relations(categories, ({ many }) => ({
   items: many(menuItems),
   extras: many(itemExtras),
+  categoryOptionGroups: many(categoryOptionGroups),
 }));
 
 export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
@@ -180,6 +270,8 @@ export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
   }),
   variants: many(itemVariants),
   extras: many(itemExtras),
+  itemOptionGroups: many(itemOptionGroups),
+  itemOptionPrices: many(itemOptionPrices),
 }));
 
 export const itemVariantsRelations = relations(itemVariants, ({ one }) => ({
@@ -197,6 +289,53 @@ export const itemExtrasRelations = relations(itemExtras, ({ one }) => ({
   category: one(categories, {
     fields: [itemExtras.categoryId],
     references: [categories.id],
+  }),
+}));
+
+export const optionGroupsRelations = relations(optionGroups, ({ many }) => ({
+  items: many(optionItems),
+  categoryOptionGroups: many(categoryOptionGroups),
+  itemOptionGroups: many(itemOptionGroups),
+}));
+
+export const optionItemsRelations = relations(optionItems, ({ one, many }) => ({
+  group: one(optionGroups, {
+    fields: [optionItems.groupId],
+    references: [optionGroups.id],
+  }),
+  itemOptionPrices: many(itemOptionPrices),
+}));
+
+export const categoryOptionGroupsRelations = relations(categoryOptionGroups, ({ one }) => ({
+  category: one(categories, {
+    fields: [categoryOptionGroups.categoryId],
+    references: [categories.id],
+  }),
+  group: one(optionGroups, {
+    fields: [categoryOptionGroups.groupId],
+    references: [optionGroups.id],
+  }),
+}));
+
+export const itemOptionGroupsRelations = relations(itemOptionGroups, ({ one }) => ({
+  menuItem: one(menuItems, {
+    fields: [itemOptionGroups.menuItemId],
+    references: [menuItems.id],
+  }),
+  group: one(optionGroups, {
+    fields: [itemOptionGroups.groupId],
+    references: [optionGroups.id],
+  }),
+}));
+
+export const itemOptionPricesRelations = relations(itemOptionPrices, ({ one }) => ({
+  menuItem: one(menuItems, {
+    fields: [itemOptionPrices.menuItemId],
+    references: [menuItems.id],
+  }),
+  optionItem: one(optionItems, {
+    fields: [itemOptionPrices.optionItemId],
+    references: [optionItems.id],
   }),
 }));
 

@@ -7,8 +7,10 @@ import {
   itemVariants,
   deliveryAreas,
   coupons,
+  optionItems,
+  optionGroups,
 } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getSettingsMap } from "./restaurant";
 
 const router = Router();
@@ -51,6 +53,7 @@ function serializeOrder(
       lineTotal: Number(i.lineTotal),
       variantName: i.variantName ?? null,
       extrasSnapshot: (i.extrasSnapshot as Array<{ name: string; price: number }> | null) ?? [],
+      optionsSnapshot: (i.optionsSnapshot as Array<{ groupId: number; groupName: string; optionItemId: number; optionItemName: string; price: number }> | null) ?? [],
     })),
   };
 }
@@ -97,8 +100,11 @@ router.post("/restaurant/orders", async (req, res) => {
       items: Array<{
         menuItemId: number;
         quantity: number;
+        // Legacy fields (kept for backwards compat)
         variantId?: number;
         selectedExtras?: Array<{ name: string; price: number }>;
+        // New option groups system
+        selectedOptions?: Array<{ groupId: number; optionItemId: number; price: number }>;
       }>;
     };
 
@@ -112,8 +118,20 @@ router.post("/restaurant/orders", async (req, res) => {
     const itemIds = body.items.map((i) => i.menuItemId);
     const dbItems = await db.query.menuItems.findMany({
       with: { variants: true },
-      where: (item, { inArray }) => inArray(item.id, itemIds),
+      where: (item, { inArray: inArrayFn }) => inArrayFn(item.id, itemIds),
     });
+
+    // Fetch option group items for snapshot enrichment
+    const allOptionItemIds = body.items.flatMap((i) => (i.selectedOptions ?? []).map((o) => o.optionItemId));
+    const allGroupIds = body.items.flatMap((i) => (i.selectedOptions ?? []).map((o) => o.groupId));
+    const dbOptionItems = allOptionItemIds.length > 0
+      ? await db.select().from(optionItems).where(inArray(optionItems.id, allOptionItemIds))
+      : [];
+    const dbOptionGroups = allGroupIds.length > 0
+      ? await db.select().from(optionGroups).where(inArray(optionGroups.id, allGroupIds))
+      : [];
+    const optionItemMap = new Map(dbOptionItems.map((i) => [i.id, i]));
+    const optionGroupMap = new Map(dbOptionGroups.map((g) => [g.id, g]));
 
     const itemMap = new Map(dbItems.map((i) => [i.id, i]));
     let subtotal = 0;
@@ -125,6 +143,7 @@ router.post("/restaurant/orders", async (req, res) => {
       lineTotal: number;
       variantName: string | null;
       extrasSnapshot: Array<{ name: string; price: number }>;
+      optionsSnapshot: Array<{ groupId: number; groupName: string; optionItemId: number; optionItemName: string; price: number }>;
     }> = [];
 
     for (const ordered of body.items) {
@@ -134,26 +153,49 @@ router.post("/restaurant/orders", async (req, res) => {
 
       let price = Number(dbItem.price);
       let variantName: string | null = null;
+      const extras = ordered.selectedExtras ?? [];
+      const optionsSel = ordered.selectedOptions ?? [];
 
-      // Use variant price if a variantId was provided
-      if (ordered.variantId) {
+      if (optionsSel.length > 0) {
+        // New option groups system: find absolute price option (sets the base price)
+        const absoluteOpt = optionsSel.find((o) => {
+          const grp = optionGroupMap.get(o.groupId);
+          return grp?.priceType === "absolute";
+        });
+        if (absoluteOpt) {
+          price = absoluteOpt.price;
+          const absItem = optionItemMap.get(absoluteOpt.optionItemId);
+          if (absItem) variantName = absItem.name;
+        }
+        // Add additive options
+        const additivesTotal = optionsSel
+          .filter((o) => optionGroupMap.get(o.groupId)?.priceType === "additive")
+          .reduce((s, o) => s + o.price, 0);
+        price += additivesTotal;
+      } else if (ordered.variantId) {
+        // Legacy: use variant price
         const variant = dbItem.variants.find((v) => v.id === ordered.variantId);
-        if (!variant) return res.status(400).json({ error: `Variant ${ordered.variantId} not found for ${dbItem.name}` });
-        price = Number(variant.price);
-        variantName = variant.name;
+        if (variant) { price = Number(variant.price); variantName = variant.name; }
       } else if (dbItem.variants.length > 0) {
-        // If item has variants but none selected, use the first (cheapest) variant
         const sorted = [...dbItem.variants].sort((a, b) => a.sortOrder - b.sortOrder);
         price = Number(sorted[0]!.price);
         variantName = sorted[0]!.name;
       }
 
-      // Add extras price
-      const extras = ordered.selectedExtras ?? [];
+      // Add legacy extras
       const extrasTotal = extras.reduce((sum, e) => sum + e.price, 0);
       const unitPrice = price + extrasTotal;
       const lineTotal = unitPrice * ordered.quantity;
       subtotal += lineTotal;
+
+      // Build options snapshot for enriched display
+      const optionsSnapshot = optionsSel.map((o) => ({
+        groupId: o.groupId,
+        groupName: optionGroupMap.get(o.groupId)?.name ?? `Group ${o.groupId}`,
+        optionItemId: o.optionItemId,
+        optionItemName: optionItemMap.get(o.optionItemId)?.name ?? `Item ${o.optionItemId}`,
+        price: o.price,
+      }));
 
       resolvedItems.push({
         menuItemId: ordered.menuItemId,
@@ -163,6 +205,7 @@ router.post("/restaurant/orders", async (req, res) => {
         lineTotal,
         variantName,
         extrasSnapshot: extras,
+        optionsSnapshot,
       });
     }
 
@@ -235,6 +278,7 @@ router.post("/restaurant/orders", async (req, res) => {
           lineTotal: i.lineTotal.toFixed(2),
           variantName: i.variantName,
           extrasSnapshot: i.extrasSnapshot.length > 0 ? i.extrasSnapshot : null,
+          optionsSnapshot: i.optionsSnapshot.length > 0 ? i.optionsSnapshot : null,
         })),
       )
       .returning();

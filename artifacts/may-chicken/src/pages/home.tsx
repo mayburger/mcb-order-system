@@ -12,7 +12,7 @@ export default function Home() {
   const { toast } = useToast();
 
   const handleAddToCart = (item: any) => {
-    addItem(item);
+    addItem(item, 1, []);
     toast({
       title: "Zum Warenkorb hinzugefügt",
       description: `${item.name} wurde zum Warenkorb hinzugefügt.`

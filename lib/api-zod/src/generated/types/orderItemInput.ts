@@ -5,6 +5,7 @@
  * May Chicken & Burger Restaurant API
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderItemInputSelectedOptionsItem } from './orderItemInputSelectedOptionsItem';
 import type { SelectedExtra } from './selectedExtra';
 
 export interface OrderItemInput {
@@ -14,4 +15,6 @@ export interface OrderItemInput {
   /** ID of the chosen variant (e.g. pizza size) */
   variantId?: number;
   selectedExtras?: SelectedExtra[];
+  /** Selected option group items (new system) */
+  selectedOptions?: OrderItemInputSelectedOptionsItem[];
 }

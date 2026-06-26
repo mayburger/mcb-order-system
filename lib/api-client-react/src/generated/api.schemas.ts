@@ -91,6 +91,144 @@ export interface ItemExtraUpdate {
   sortOrder?: number;
 }
 
+export type OptionGroupItemPriceByVariant = {[key: string]: number} | null;
+
+export interface OptionGroupItem {
+  id: number;
+  groupId: number;
+  name: string;
+  defaultPrice: number;
+  priceByVariant?: OptionGroupItemPriceByVariant;
+  sortOrder: number;
+  available: boolean;
+}
+
+export type OptionGroupInputType = typeof OptionGroupInputType[keyof typeof OptionGroupInputType];
+
+
+export const OptionGroupInputType = {
+  single: 'single',
+  multiple: 'multiple',
+} as const;
+
+export type OptionGroupPriceType = typeof OptionGroupPriceType[keyof typeof OptionGroupPriceType];
+
+
+export const OptionGroupPriceType = {
+  absolute: 'absolute',
+  additive: 'additive',
+} as const;
+
+export interface OptionGroup {
+  id: number;
+  name: string;
+  slug: string;
+  /** @nullable */
+  description?: string | null;
+  inputType: OptionGroupInputType;
+  required: boolean;
+  priceType: OptionGroupPriceType;
+  sortOrder: number;
+  items: OptionGroupItem[];
+  linkedCategoryIds?: number[];
+}
+
+export type OptionGroupInputInputType = typeof OptionGroupInputInputType[keyof typeof OptionGroupInputInputType];
+
+
+export const OptionGroupInputInputType = {
+  single: 'single',
+  multiple: 'multiple',
+} as const;
+
+export type OptionGroupInputPriceType = typeof OptionGroupInputPriceType[keyof typeof OptionGroupInputPriceType];
+
+
+export const OptionGroupInputPriceType = {
+  absolute: 'absolute',
+  additive: 'additive',
+} as const;
+
+export interface OptionGroupInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  slug: string;
+  description?: string;
+  inputType: OptionGroupInputInputType;
+  required: boolean;
+  priceType: OptionGroupInputPriceType;
+  sortOrder?: number;
+}
+
+export type OptionGroupUpdateInputType = typeof OptionGroupUpdateInputType[keyof typeof OptionGroupUpdateInputType];
+
+
+export const OptionGroupUpdateInputType = {
+  single: 'single',
+  multiple: 'multiple',
+} as const;
+
+export type OptionGroupUpdatePriceType = typeof OptionGroupUpdatePriceType[keyof typeof OptionGroupUpdatePriceType];
+
+
+export const OptionGroupUpdatePriceType = {
+  absolute: 'absolute',
+  additive: 'additive',
+} as const;
+
+export interface OptionGroupUpdate {
+  name?: string;
+  description?: string;
+  inputType?: OptionGroupUpdateInputType;
+  required?: boolean;
+  priceType?: OptionGroupUpdatePriceType;
+  sortOrder?: number;
+}
+
+export type OptionItemInputPriceByVariant = {[key: string]: number};
+
+export interface OptionItemInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 0 */
+  defaultPrice?: number;
+  priceByVariant?: OptionItemInputPriceByVariant;
+  sortOrder?: number;
+  available?: boolean;
+}
+
+export type OptionItemUpdatePriceByVariant = {[key: string]: number};
+
+export interface OptionItemUpdate {
+  name?: string;
+  defaultPrice?: number;
+  priceByVariant?: OptionItemUpdatePriceByVariant;
+  sortOrder?: number;
+  available?: boolean;
+}
+
+export interface CategoryOptionGroupLink {
+  categoryId: number;
+  sortOrder?: number;
+}
+
+export type ItemOptionPricesInputPricesItem = {
+  optionItemId: number;
+  price: number;
+};
+
+export interface ItemOptionPricesInput {
+  prices: ItemOptionPricesInputPricesItem[];
+}
+
+export interface ItemOptionPrice {
+  id: number;
+  menuItemId: number;
+  optionItemId: number;
+  price: number;
+}
+
 export interface MenuItem {
   id: number;
   name: string;
@@ -106,6 +244,7 @@ export interface MenuItem {
   category?: Category;
   variants?: ItemVariant[];
   extras?: ItemExtra[];
+  optionGroups?: OptionGroup[];
   createdAt: string;
 }
 
@@ -277,6 +416,12 @@ export interface SelectedExtra {
   price: number;
 }
 
+export type OrderItemInputSelectedOptionsItem = {
+  groupId: number;
+  optionItemId: number;
+  price: number;
+};
+
 export interface OrderItemInput {
   menuItemId: number;
   /** @minimum 1 */
@@ -284,7 +429,17 @@ export interface OrderItemInput {
   /** ID of the chosen variant (e.g. pizza size) */
   variantId?: number;
   selectedExtras?: SelectedExtra[];
+  /** Selected option group items (new system) */
+  selectedOptions?: OrderItemInputSelectedOptionsItem[];
 }
+
+export type OrderItemOptionsSnapshotItem = {
+  groupId: number;
+  groupName: string;
+  optionItemId: number;
+  optionItemName: string;
+  price: number;
+};
 
 export interface OrderItem {
   id: number;
@@ -297,6 +452,7 @@ export interface OrderItem {
   /** @nullable */
   variantName?: string | null;
   extrasSnapshot?: SelectedExtra[];
+  optionsSnapshot?: OrderItemOptionsSnapshotItem[];
 }
 
 export type OrderInputOrderType = typeof OrderInputOrderType[keyof typeof OrderInputOrderType];

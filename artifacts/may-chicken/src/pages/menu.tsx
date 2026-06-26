@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useListMenuItems, useListMenuCategories } from "@workspace/api-client-react";
-import { useCart, SelectedExtra } from "@/lib/cart-context";
+import { useCart, SelectedOption, computeUnitPrice } from "@/lib/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShoppingBag, Plus, Minus, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MenuItem, ItemVariant, ItemExtra } from "@workspace/api-client-react";
+import { MenuItem, OptionGroup, OptionGroupItem } from "@workspace/api-client-react";
 
 interface ProductDialogProps {
   item: MenuItem;
@@ -19,33 +19,93 @@ interface ProductDialogProps {
 function ProductDialog({ item, open, onClose }: ProductDialogProps) {
   const { addItem } = useCart();
   const { toast } = useToast();
-  const hasVariants = (item.variants?.length ?? 0) > 0;
-  const hasExtras = (item.extras?.length ?? 0) > 0;
 
-  const sortedVariants = [...(item.variants ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
-  const [selectedVariant, setSelectedVariant] = useState<ItemVariant | undefined>(
-    sortedVariants[0]
-  );
-  const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([]);
+  const optionGroups: OptionGroup[] = item.optionGroups ?? [];
+  const hasOptions = optionGroups.length > 0;
+
+  // Initialize selections: for each group, track selected option item IDs
+  const [selections, setSelections] = useState<Map<number, number[]>>(() => {
+    const map = new Map<number, number[]>();
+    for (const group of optionGroups) {
+      if (group.inputType === "single" && group.items.length > 0) {
+        // Pre-select first option for required single-select groups
+        map.set(group.id, [group.items[0].id]);
+      } else {
+        map.set(group.id, []);
+      }
+    }
+    return map;
+  });
   const [quantity, setQuantity] = useState(1);
 
-  const toggleExtra = (extra: ItemExtra) => {
-    setSelectedExtras((prev) => {
-      const exists = prev.some((e) => e.name === extra.name);
-      if (exists) return prev.filter((e) => e.name !== extra.name);
-      return [...prev, { name: extra.name, price: extra.price }];
+  const toggleOption = (group: OptionGroup, optItem: OptionGroupItem) => {
+    setSelections((prev) => {
+      const next = new Map(prev);
+      const current = next.get(group.id) ?? [];
+      if (group.inputType === "single") {
+        next.set(group.id, [optItem.id]);
+      } else {
+        if (current.includes(optItem.id)) {
+          next.set(group.id, current.filter((id) => id !== optItem.id));
+        } else {
+          next.set(group.id, [...current, optItem.id]);
+        }
+      }
+      return next;
     });
   };
 
-  const basePrice = selectedVariant ? selectedVariant.price : item.price;
-  const extrasTotal = selectedExtras.reduce((s, e) => s + e.price, 0);
-  const unitPrice = basePrice + extrasTotal;
+  // Build SelectedOption[] from current selections
+  function buildSelectedOptions(): SelectedOption[] {
+    const result: SelectedOption[] = [];
+    for (const group of optionGroups) {
+      const selectedIds = selections.get(group.id) ?? [];
+      for (const id of selectedIds) {
+        const optItem = group.items.find((i) => i.id === id);
+        if (!optItem) continue;
+        // For additive groups, resolve price from priceByVariant if available
+        let price = optItem.defaultPrice;
+        if (group.priceType === "additive" && optItem.priceByVariant) {
+          // Find the selected size name for the "absolute" group
+          const sizeGroup = optionGroups.find((g) => g.priceType === "absolute");
+          if (sizeGroup) {
+            const sizeIds = selections.get(sizeGroup.id) ?? [];
+            const sizeItem = sizeGroup.items.find((i) => i.id === sizeIds[0]);
+            if (sizeItem && optItem.priceByVariant[sizeItem.name] !== undefined) {
+              price = optItem.priceByVariant[sizeItem.name];
+            }
+          }
+        }
+        result.push({
+          groupId: group.id,
+          groupName: group.name,
+          optionItemId: optItem.id,
+          optionItemName: optItem.name,
+          price,
+          inputType: group.inputType as "single" | "multiple",
+          priceType: group.priceType as "absolute" | "additive",
+        });
+      }
+    }
+    return result;
+  }
+
+  // Validation: all required groups must have a selection
+  function isValid(): boolean {
+    return optionGroups
+      .filter((g) => g.required)
+      .every((g) => (selections.get(g.id) ?? []).length > 0);
+  }
+
+  const currentOptions = buildSelectedOptions();
+  const unitPrice = computeUnitPrice(item, currentOptions);
 
   const handleAdd = () => {
-    addItem(item, quantity, selectedVariant, selectedExtras);
+    if (!isValid()) return;
+    addItem(item, quantity, currentOptions);
     toast({
       title: "Zum Warenkorb hinzugefügt",
-      description: `${item.name}${selectedVariant ? ` (${selectedVariant.name})` : ""} wurde hinzugefügt.`,
+      description: `${item.name} wurde hinzugefügt.`,
     });
     onClose();
   };
@@ -68,52 +128,44 @@ function ProductDialog({ item, open, onClose }: ProductDialogProps) {
             )}
           </DialogHeader>
 
-          {/* Größenauswahl */}
-          {hasVariants && (
-            <div>
-              <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-3">
-                Größe auswählen *
-              </h3>
-              <div className="space-y-2">
-                {sortedVariants.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVariant(v)}
-                    className={`w-full flex items-center justify-between p-3 border transition-colors ${
-                      selectedVariant?.id === v.id
-                        ? "border-primary bg-primary/10 text-white"
-                        : "border-border text-muted-foreground hover:border-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedVariant?.id === v.id ? "border-primary" : "border-muted-foreground"}`}>
-                        {selectedVariant?.id === v.id && <div className="w-2 h-2 rounded-full bg-primary" />}
-                      </div>
-                      <span className="font-semibold">{v.name}</span>
-                    </div>
-                    <span className="font-bold text-primary">{v.price.toFixed(2)} €</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Option Groups */}
+          {optionGroups.map((group) => {
+            const selectedIds = selections.get(group.id) ?? [];
+            const isMultiple = group.inputType === "multiple";
 
-          {/* Extras */}
-          {hasExtras && (
-            <div>
-              <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-3">
-                Extras (optional)
-              </h3>
-              <div className="space-y-2">
-                {(item.extras ?? [])
-                  .filter((e) => e.available)
-                  .sort((a, b) => a.sortOrder - b.sortOrder)
-                  .map((extra) => {
-                    const selected = selectedExtras.some((e) => e.name === extra.name);
+            // For additive groups: resolve prices based on selected size
+            const getSizeOptItem = () => {
+              const sizeGroup = optionGroups.find((g) => g.priceType === "absolute");
+              if (!sizeGroup) return undefined;
+              const sizeIds = selections.get(sizeGroup.id) ?? [];
+              return sizeGroup.items.find((i) => i.id === sizeIds[0]);
+            };
+
+            return (
+              <div key={group.id}>
+                <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground mb-3">
+                  {group.name}
+                  {group.required && <span className="text-primary ml-1">*</span>}
+                  {isMultiple && (
+                    <span className="ml-2 text-muted-foreground font-normal">(optional)</span>
+                  )}
+                </h3>
+                <div className="space-y-2">
+                  {group.items.map((optItem) => {
+                    const selected = selectedIds.includes(optItem.id);
+                    // Resolve display price
+                    let displayPrice = optItem.defaultPrice;
+                    if (group.priceType === "additive" && optItem.priceByVariant) {
+                      const sizeItem = getSizeOptItem();
+                      if (sizeItem && optItem.priceByVariant[sizeItem.name] !== undefined) {
+                        displayPrice = optItem.priceByVariant[sizeItem.name];
+                      }
+                    }
+
                     return (
                       <button
-                        key={extra.id}
-                        onClick={() => toggleExtra(extra)}
+                        key={optItem.id}
+                        onClick={() => toggleOption(group, optItem)}
                         className={`w-full flex items-center justify-between p-3 border transition-colors ${
                           selected
                             ? "border-primary bg-primary/10 text-white"
@@ -121,20 +173,39 @@ function ProductDialog({ item, open, onClose }: ProductDialogProps) {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 border-2 flex items-center justify-center ${selected ? "border-primary bg-primary" : "border-muted-foreground"}`}>
-                            {selected && <Check className="h-3 w-3 text-white" />}
-                          </div>
-                          <span className="font-semibold">{extra.name}</span>
+                          {isMultiple ? (
+                            <div
+                              className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 ${
+                                selected ? "border-primary bg-primary" : "border-muted-foreground"
+                              }`}
+                            >
+                              {selected && <Check className="h-3 w-3 text-white" />}
+                            </div>
+                          ) : (
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                selected ? "border-primary" : "border-muted-foreground"
+                              }`}
+                            >
+                              {selected && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            </div>
+                          )}
+                          <span className="font-semibold text-left">{optItem.name}</span>
                         </div>
-                        {extra.price > 0 && (
-                          <span className="font-bold text-primary">+{extra.price.toFixed(2)} €</span>
-                        )}
+                        <span className="font-bold text-primary shrink-0 ml-2">
+                          {group.priceType === "absolute"
+                            ? `${displayPrice.toFixed(2)} €`
+                            : displayPrice > 0
+                            ? `+${displayPrice.toFixed(2)} €`
+                            : ""}
+                        </span>
                       </button>
                     );
                   })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
 
           {/* Menge + Hinzufügen */}
           <div className="flex items-center gap-4">
@@ -154,8 +225,9 @@ function ProductDialog({ item, open, onClose }: ProductDialogProps) {
               </button>
             </div>
             <Button
-              className="flex-1 h-12 rounded-none uppercase tracking-wider font-bold bg-primary hover:bg-primary/90 text-white"
+              className="flex-1 h-12 rounded-none uppercase tracking-wider font-bold bg-primary hover:bg-primary/90 text-white disabled:opacity-50"
               onClick={handleAdd}
+              disabled={!isValid()}
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
               {(unitPrice * quantity).toFixed(2)} € hinzufügen
@@ -175,12 +247,11 @@ export default function MenuPage() {
   const [dialogItem, setDialogItem] = useState<MenuItem | null>(null);
 
   const handleCardClick = (item: MenuItem) => {
-    const hasVariants = (item.variants?.length ?? 0) > 0;
-    const hasExtras = (item.extras?.length ?? 0) > 0;
-    if (hasVariants || hasExtras) {
+    const hasOptions = (item.optionGroups?.length ?? 0) > 0;
+    if (hasOptions) {
       setDialogItem(item);
     } else {
-      addItem(item, 1, undefined, []);
+      addItem(item, 1, []);
       toast({
         title: "Zum Warenkorb hinzugefügt",
         description: `${item.name} wurde zum Warenkorb hinzugefügt.`,
@@ -189,10 +260,10 @@ export default function MenuPage() {
   };
 
   const fallbackImages: Record<string, string> = {
-    "Burger": "/hero-burger.png",
-    "Pizza": "/pizza.png",
-    "Hähnchen": "/chicken-sandwich.png",
-    "Beilagen": "/fries.png",
+    Burger: "/hero-burger.png",
+    Pizza: "/pizza.png",
+    Hähnchen: "/chicken-sandwich.png",
+    Beilagen: "/fries.png",
   };
 
   if (categoriesLoading || itemsLoading) {
@@ -253,9 +324,14 @@ export default function MenuPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {categoryItems.map((item) => {
-                      const hasVariants = (item.variants?.length ?? 0) > 0;
-                      const sortedVariants = [...(item.variants ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
-                      const displayPrice = hasVariants ? sortedVariants[0]?.price ?? item.price : item.price;
+                      const hasOptions = (item.optionGroups?.length ?? 0) > 0;
+                      // Find the absolute price group (e.g. pizza size) to show price range
+                      const absoluteGroup = item.optionGroups?.find(
+                        (g) => g.priceType === "absolute",
+                      );
+                      const minPrice = absoluteGroup
+                        ? Math.min(...absoluteGroup.items.map((i) => i.defaultPrice))
+                        : item.price;
 
                       return (
                         <div
@@ -268,7 +344,7 @@ export default function MenuPage() {
                               alt={item.name}
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                             />
-                            {hasVariants && (
+                            {absoluteGroup && (
                               <div className="absolute top-3 left-3 bg-primary text-white text-xs font-bold uppercase px-2 py-1 tracking-wider">
                                 Größe wählbar
                               </div>
@@ -280,24 +356,33 @@ export default function MenuPage() {
                                 {item.name}
                               </h3>
                               <div className="text-right shrink-0">
-                                {hasVariants ? (
+                                {absoluteGroup ? (
                                   <div>
                                     <span className="text-xs text-muted-foreground block">ab</span>
-                                    <span className="text-primary font-bold">{displayPrice.toFixed(2)} €</span>
+                                    <span className="text-primary font-bold">
+                                      {minPrice.toFixed(2)} €
+                                    </span>
                                   </div>
                                 ) : (
-                                  <span className="text-primary font-bold">{item.price.toFixed(2)} €</span>
+                                  <span className="text-primary font-bold">
+                                    {item.price.toFixed(2)} €
+                                  </span>
                                 )}
                               </div>
                             </div>
                             {item.description && (
-                              <p className="text-muted-foreground text-sm flex-1 mb-6">{item.description}</p>
+                              <p className="text-muted-foreground text-sm flex-1 mb-6">
+                                {item.description}
+                              </p>
                             )}
-                            {hasVariants && (
+                            {absoluteGroup && (
                               <div className="flex gap-2 mb-4 flex-wrap">
-                                {sortedVariants.map((v) => (
-                                  <span key={v.id} className="text-xs border border-border px-2 py-1 text-muted-foreground">
-                                    {v.name}: {v.price.toFixed(2)} €
+                                {absoluteGroup.items.map((v) => (
+                                  <span
+                                    key={v.id}
+                                    className="text-xs border border-border px-2 py-1 text-muted-foreground"
+                                  >
+                                    {v.name}: {v.defaultPrice.toFixed(2)} €
                                   </span>
                                 ))}
                               </div>
@@ -311,7 +396,7 @@ export default function MenuPage() {
                               {item.available ? (
                                 <>
                                   <ShoppingBag className="mr-2 h-4 w-4" />
-                                  {hasVariants ? "Auswählen" : "Hinzufügen"}
+                                  {hasOptions ? "Auswählen" : "Hinzufügen"}
                                 </>
                               ) : (
                                 "Ausverkauft"
@@ -329,7 +414,6 @@ export default function MenuPage() {
         </Tabs>
       </div>
 
-      {/* Produkt-Dialog mit Größenwahl */}
       {dialogItem && (
         <ProductDialog
           item={dialogItem}

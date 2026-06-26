@@ -1,23 +1,27 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { MenuItem, ItemVariant, ItemExtra } from "@workspace/api-client-react";
+import { MenuItem, OptionGroup, OptionGroupItem } from "@workspace/api-client-react";
 
-export interface SelectedExtra {
-  name: string;
+export interface SelectedOption {
+  groupId: number;
+  groupName: string;
+  optionItemId: number;
+  optionItemName: string;
   price: number;
+  inputType: "single" | "multiple";
+  priceType: "absolute" | "additive";
 }
 
 export interface CartItem {
-  cartKey: string; // unique key: menuItemId + variantId + extraIds
+  cartKey: string;
   menuItem: MenuItem;
   quantity: number;
-  variant?: ItemVariant;
-  selectedExtras: SelectedExtra[];
-  unitPrice: number; // base + extras
+  selectedOptions: SelectedOption[];
+  unitPrice: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (menuItem: MenuItem, quantity?: number, variant?: ItemVariant, selectedExtras?: SelectedExtra[]) => void;
+  addItem: (menuItem: MenuItem, quantity?: number, selectedOptions?: SelectedOption[]) => void;
   removeItem: (cartKey: string) => void;
   updateQuantity: (cartKey: string, quantity: number) => void;
   clearCart: () => void;
@@ -27,21 +31,29 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-function buildCartKey(menuItemId: number, variantId?: number, extras?: SelectedExtra[]) {
-  const extraKey = (extras ?? []).map((e) => e.name).sort().join("|");
-  return `${menuItemId}-${variantId ?? "none"}-${extraKey}`;
+function buildCartKey(menuItemId: number, selectedOptions: SelectedOption[]) {
+  const optsKey = selectedOptions
+    .map((o) => `${o.groupId}:${o.optionItemId}`)
+    .sort()
+    .join("|");
+  return `${menuItemId}-${optsKey}`;
 }
 
-function computeUnitPrice(item: MenuItem, variant?: ItemVariant, extras?: SelectedExtra[]) {
-  const base = variant ? variant.price : item.price;
-  const extrasTotal = (extras ?? []).reduce((s, e) => s + e.price, 0);
-  return base + extrasTotal;
+export function computeUnitPrice(item: MenuItem, selectedOptions: SelectedOption[]): number {
+  // Find the absolute-priced option (e.g. pizza size) — it sets the base price
+  const absoluteOpt = selectedOptions.find((o) => o.priceType === "absolute");
+  const base = absoluteOpt ? absoluteOpt.price : item.price;
+  // Sum all additive options (extras)
+  const additivesTotal = selectedOptions
+    .filter((o) => o.priceType === "additive")
+    .reduce((s, o) => s + o.price, 0);
+  return base + additivesTotal;
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
-      const stored = localStorage.getItem("may_chicken_cart_v2");
+      const stored = localStorage.getItem("may_chicken_cart_v3");
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -49,20 +61,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem("may_chicken_cart_v2", JSON.stringify(items));
+    localStorage.setItem("may_chicken_cart_v3", JSON.stringify(items));
   }, [items]);
 
-  const addItem = (menuItem: MenuItem, quantity = 1, variant?: ItemVariant, selectedExtras: SelectedExtra[] = []) => {
-    const cartKey = buildCartKey(menuItem.id, variant?.id, selectedExtras);
-    const unitPrice = computeUnitPrice(menuItem, variant, selectedExtras);
+  const addItem = (menuItem: MenuItem, quantity = 1, selectedOptions: SelectedOption[] = []) => {
+    const cartKey = buildCartKey(menuItem.id, selectedOptions);
+    const unitPrice = computeUnitPrice(menuItem, selectedOptions);
     setItems((prev) => {
       const existing = prev.find((i) => i.cartKey === cartKey);
       if (existing) {
         return prev.map((i) =>
-          i.cartKey === cartKey ? { ...i, quantity: i.quantity + quantity } : i
+          i.cartKey === cartKey ? { ...i, quantity: i.quantity + quantity } : i,
         );
       }
-      return [...prev, { cartKey, menuItem, quantity, variant, selectedExtras, unitPrice }];
+      return [...prev, { cartKey, menuItem, quantity, selectedOptions, unitPrice }];
     });
   };
 
@@ -75,11 +87,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem(cartKey);
       return;
     }
-    setItems((prev) => prev.map((i) => i.cartKey === cartKey ? { ...i, quantity } : i));
+    setItems((prev) => prev.map((i) => (i.cartKey === cartKey ? { ...i, quantity } : i)));
   };
 
   const clearCart = () => setItems([]);
-
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
 
@@ -96,4 +107,11 @@ export function useCart() {
   const context = useContext(CartContext);
   if (!context) throw new Error("useCart must be used within CartProvider");
   return context;
+}
+
+// Helper: resolve selected options display name
+export function getCartItemDisplayName(item: CartItem): string {
+  const absoluteOpt = item.selectedOptions.find((o) => o.priceType === "absolute");
+  if (absoluteOpt) return `${item.menuItem.name} (${absoluteOpt.optionItemName})`;
+  return item.menuItem.name;
 }

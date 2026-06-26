@@ -12,7 +12,8 @@ import {
   TicketPercent,
   Settings,
   LogOut,
-  Menu
+  Menu,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAdminLogout } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -34,6 +35,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/orders", label: "Bestellungen", icon: ShoppingBag },
     { href: "/admin/products", label: "Produkte", icon: UtensilsCrossed },
     { href: "/admin/categories", label: "Kategorien", icon: Tags },
+    { href: "/admin/option-groups", label: "Optionsgruppen", icon: SlidersHorizontal },
     { href: "/admin/customers", label: "Kunden", icon: Users },
     { href: "/admin/delivery-areas", label: "Liefergebiete", icon: MapPin },
     { href: "/admin/opening-hours", label: "Öffnungszeiten", icon: Clock },

@@ -101,6 +101,21 @@ paths:
         "404":
           description: Not found
 
+  /menu/option-groups:
+    get:
+      operationId: listMenuOptionGroups
+      tags: [menu]
+      summary: List all global option groups with their items
+      responses:
+        "200":
+          description: Option groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OptionGroup"
+
   # ── PUBLIC RESTAURANT INFO ────────────────────────────────────────────────
   /restaurant/info:
     get:
@@ -579,6 +594,216 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  # ── ADMIN – OPTION GROUPS ─────────────────────────────────────────────────
+  /admin/option-groups:
+    get:
+      operationId: listAdminOptionGroups
+      tags: [admin]
+      summary: List all global option groups
+      responses:
+        "200":
+          description: Option groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OptionGroup"
+    post:
+      operationId: createAdminOptionGroup
+      tags: [admin]
+      summary: Create a global option group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptionGroupInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionGroup"
+
+  /admin/option-groups/{id}:
+    patch:
+      operationId: updateAdminOptionGroup
+      tags: [admin]
+      summary: Update an option group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptionGroupUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionGroup"
+    delete:
+      operationId: deleteAdminOptionGroup
+      tags: [admin]
+      summary: Delete an option group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/option-groups/{id}/items:
+    post:
+      operationId: createAdminOptionItem
+      tags: [admin]
+      summary: Add an item to an option group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptionItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionGroupItem"
+
+  /admin/option-items/{id}:
+    patch:
+      operationId: updateAdminOptionItem
+      tags: [admin]
+      summary: Update an option item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptionItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionGroupItem"
+    delete:
+      operationId: deleteAdminOptionItem
+      tags: [admin]
+      summary: Delete an option item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/option-groups/{id}/categories:
+    post:
+      operationId: linkCategoryToOptionGroup
+      tags: [admin]
+      summary: Link a category to an option group
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryOptionGroupLink"
+      responses:
+        "201":
+          description: Linked
+
+  /admin/category-option-groups/{id}:
+    delete:
+      operationId: unlinkCategoryFromOptionGroup
+      tags: [admin]
+      summary: Remove a category–option-group link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Unlinked
+
+  /admin/items/{id}/option-prices:
+    get:
+      operationId: getItemOptionPrices
+      tags: [admin]
+      summary: Get per-item option prices (e.g. pizza size prices)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Prices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemOptionPrice"
+    put:
+      operationId: setItemOptionPrices
+      tags: [admin]
+      summary: Set per-item option prices (bulk upsert)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemOptionPricesInput"
+      responses:
+        "200":
+          description: Prices updated
 
   # ── ADMIN – ORDERS ────────────────────────────────────────────────────────
   /admin/orders:
@@ -1068,6 +1293,173 @@ components:
         sortOrder:
           type: integer
 
+    # ── OPTION GROUPS ─────────────────────────────────────────────────────
+    OptionGroupItem:
+      type: object
+      required: [id, groupId, name, defaultPrice, sortOrder, available]
+      properties:
+        id:
+          type: integer
+        groupId:
+          type: integer
+        name:
+          type: string
+        defaultPrice:
+          type: number
+        priceByVariant:
+          type: object
+          additionalProperties:
+            type: number
+          nullable: true
+        sortOrder:
+          type: integer
+        available:
+          type: boolean
+
+    OptionGroup:
+      type: object
+      required: [id, name, slug, inputType, required, priceType, sortOrder, items]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: ["string", "null"]
+        inputType:
+          type: string
+          enum: [single, multiple]
+        required:
+          type: boolean
+        priceType:
+          type: string
+          enum: [absolute, additive]
+        sortOrder:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionGroupItem"
+        linkedCategoryIds:
+          type: array
+          items:
+            type: integer
+
+    OptionGroupInput:
+      type: object
+      required: [name, slug, inputType, required, priceType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        slug:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        inputType:
+          type: string
+          enum: [single, multiple]
+        required:
+          type: boolean
+        priceType:
+          type: string
+          enum: [absolute, additive]
+        sortOrder:
+          type: integer
+
+    OptionGroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        inputType:
+          type: string
+          enum: [single, multiple]
+        required:
+          type: boolean
+        priceType:
+          type: string
+          enum: [absolute, additive]
+        sortOrder:
+          type: integer
+
+    OptionItemInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        defaultPrice:
+          type: number
+          minimum: 0
+        priceByVariant:
+          type: object
+          additionalProperties:
+            type: number
+        sortOrder:
+          type: integer
+        available:
+          type: boolean
+
+    OptionItemUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        defaultPrice:
+          type: number
+        priceByVariant:
+          type: object
+          additionalProperties:
+            type: number
+        sortOrder:
+          type: integer
+        available:
+          type: boolean
+
+    CategoryOptionGroupLink:
+      type: object
+      required: [categoryId]
+      properties:
+        categoryId:
+          type: integer
+        sortOrder:
+          type: integer
+
+    ItemOptionPricesInput:
+      type: object
+      required: [prices]
+      properties:
+        prices:
+          type: array
+          items:
+            type: object
+            required: [optionItemId, price]
+            properties:
+              optionItemId:
+                type: integer
+              price:
+                type: number
+
+    ItemOptionPrice:
+      type: object
+      required: [id, menuItemId, optionItemId, price]
+      properties:
+        id:
+          type: integer
+        menuItemId:
+          type: integer
+        optionItemId:
+          type: integer
+        price:
+          type: number
+
     # ── MENU ITEM ─────────────────────────────────────────────────────────
     MenuItem:
       type: object
@@ -1101,6 +1493,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ItemExtra"
+        optionGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptionGroup"
         createdAt:
           type: string
           format: date-time
@@ -1374,6 +1770,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SelectedExtra"
+        selectedOptions:
+          type: array
+          description: Selected option group items (new system)
+          items:
+            type: object
+            required: [groupId, optionItemId, price]
+            properties:
+              groupId:
+                type: integer
+              optionItemId:
+                type: integer
+              price:
+                type: number
 
     OrderItem:
       type: object
@@ -1397,6 +1806,22 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SelectedExtra"
+        optionsSnapshot:
+          type: array
+          items:
+            type: object
+            required: [groupId, groupName, optionItemId, optionItemName, price]
+            properties:
+              groupId:
+                type: integer
+              groupName:
+                type: string
+              optionItemId:
+                type: integer
+              optionItemName:
+                type: string
+              price:
+                type: number
 
     OrderInput:
       type: object

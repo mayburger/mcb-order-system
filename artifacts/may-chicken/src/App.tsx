@@ -23,6 +23,7 @@ import AdminDeliveryAreas from "@/pages/admin/delivery-areas";
 import AdminOpeningHours from "@/pages/admin/opening-hours";
 import AdminCoupons from "@/pages/admin/coupons";
 import AdminSettings from "@/pages/admin/settings";
+import AdminOptionGroups from "@/pages/admin/option-groups";
 
 import KitchenPage from "@/pages/kitchen";
 
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/admin/opening-hours" component={AdminOpeningHours} />
       <Route path="/admin/coupons" component={AdminCoupons} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/option-groups" component={AdminOptionGroups} />
 
       <Route component={NotFound} />
     </Switch>

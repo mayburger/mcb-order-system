@@ -81,8 +81,11 @@ export default function CheckoutPage() {
           items: items.map((i) => ({
             menuItemId: i.menuItem.id,
             quantity: i.quantity,
-            variantId: i.variant?.id,
-            selectedExtras: i.selectedExtras,
+            selectedOptions: i.selectedOptions.map((o) => ({
+              groupId: o.groupId,
+              optionItemId: o.optionItemId,
+              price: o.price,
+            })),
           })),
         },
       },
@@ -270,12 +273,19 @@ export default function CheckoutPage() {
                     {(item.unitPrice * item.quantity).toFixed(2)} €
                   </span>
                 </div>
-                {item.variant && (
-                  <p className="text-xs text-muted-foreground pl-2">Größe: {item.variant.name}</p>
-                )}
-                {item.selectedExtras.length > 0 && (
+                {item.selectedOptions
+                  .filter((o) => o.priceType === "absolute")
+                  .map((o) => (
+                    <p key={o.optionItemId} className="text-xs text-muted-foreground pl-2">
+                      {o.groupName}: {o.optionItemName}
+                    </p>
+                  ))}
+                {item.selectedOptions.filter((o) => o.priceType === "additive").length > 0 && (
                   <p className="text-xs text-muted-foreground pl-2">
-                    +{item.selectedExtras.map((e) => e.name).join(", ")}
+                    +{item.selectedOptions
+                      .filter((o) => o.priceType === "additive")
+                      .map((o) => o.optionItemName)
+                      .join(", ")}
                   </p>
                 )}
               </div>

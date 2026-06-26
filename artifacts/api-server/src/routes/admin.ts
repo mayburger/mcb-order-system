@@ -11,8 +11,13 @@ import {
   deliveryAreas,
   coupons,
   settings,
+  optionGroups,
+  optionItems,
+  categoryOptionGroups,
+  itemOptionGroups,
+  itemOptionPrices,
 } from "@workspace/db/schema";
-import { eq, desc, asc, gte, and, sql, count } from "drizzle-orm";
+import { eq, desc, asc, gte, and, sql, count, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAdmin";
 import { serializeOrder } from "./orders";
 import bcrypt from "bcryptjs";
@@ -320,6 +325,132 @@ router.delete("/admin/extras/:id", async (req, res) => {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// ── OPTION GROUPS ─────────────────────────────────────────────────────────────
+async function serializeOptionGroup(group: typeof optionGroups.$inferSelect, items: Array<typeof optionItems.$inferSelect>, linkedCatIds: number[]) {
+  return {
+    ...group,
+    items: items.map((i) => ({
+      ...i,
+      defaultPrice: Number(i.defaultPrice),
+    })),
+    linkedCategoryIds: linkedCatIds,
+  };
+}
+
+router.get("/admin/option-groups", async (req, res) => {
+  try {
+    const groups = await db.select().from(optionGroups).orderBy(asc(optionGroups.sortOrder), asc(optionGroups.id));
+    if (groups.length === 0) return res.json([]);
+    const groupIds = groups.map((g) => g.id);
+    const allItems = await db.select().from(optionItems).where(inArray(optionItems.groupId, groupIds)).orderBy(asc(optionItems.sortOrder));
+    const catLinks = await db.select().from(categoryOptionGroups);
+    const itemsMap = new Map<number, typeof allItems>();
+    for (const i of allItems) { const arr = itemsMap.get(i.groupId) ?? []; arr.push(i); itemsMap.set(i.groupId, arr); }
+    const linkedCatMap = new Map<number, number[]>();
+    for (const l of catLinks) { const arr = linkedCatMap.get(l.groupId) ?? []; arr.push(l.categoryId); linkedCatMap.set(l.groupId, arr); }
+    const result = await Promise.all(groups.map((g) => serializeOptionGroup(g, itemsMap.get(g.id) ?? [], linkedCatMap.get(g.id) ?? [])));
+    res.json(result);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/admin/option-groups", async (req, res) => {
+  try {
+    const { name, slug, description, inputType, required, priceType, sortOrder } = req.body as {
+      name: string; slug: string; description?: string; inputType: string;
+      required: boolean; priceType: string; sortOrder?: number;
+    };
+    const [group] = await db.insert(optionGroups).values({ name, slug, description, inputType, required, priceType, sortOrder: sortOrder ?? 0 }).returning();
+    res.status(201).json(await serializeOptionGroup(group, [], []));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.patch("/admin/option-groups/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const update: Record<string, unknown> = { ...req.body };
+    const [group] = await db.update(optionGroups).set(update).where(eq(optionGroups.id, id)).returning();
+    if (!group) return res.status(404).json({ error: "Not found" });
+    const items = await db.select().from(optionItems).where(eq(optionItems.groupId, id)).orderBy(asc(optionItems.sortOrder));
+    const catLinks = await db.select().from(categoryOptionGroups).where(eq(categoryOptionGroups.groupId, id));
+    res.json(await serializeOptionGroup(group, items, catLinks.map((l) => l.categoryId)));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/admin/option-groups/:id", async (req, res) => {
+  try {
+    await db.delete(optionGroups).where(eq(optionGroups.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/admin/option-groups/:id/items", async (req, res) => {
+  try {
+    const groupId = Number(req.params["id"]);
+    const { name, defaultPrice, priceByVariant, sortOrder, available } = req.body as {
+      name: string; defaultPrice?: number; priceByVariant?: Record<string, number>; sortOrder?: number; available?: boolean;
+    };
+    const [item] = await db.insert(optionItems).values({
+      groupId, name, defaultPrice: String(defaultPrice ?? 0),
+      priceByVariant: priceByVariant ?? null, sortOrder: sortOrder ?? 0, available: available ?? true,
+    }).returning();
+    res.status(201).json({ ...item, defaultPrice: Number(item.defaultPrice) });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.patch("/admin/option-items/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const update: Record<string, unknown> = { ...req.body };
+    if (update["defaultPrice"] !== undefined) update["defaultPrice"] = String(update["defaultPrice"]);
+    const [item] = await db.update(optionItems).set(update).where(eq(optionItems.id, id)).returning();
+    if (!item) return res.status(404).json({ error: "Not found" });
+    res.json({ ...item, defaultPrice: Number(item.defaultPrice) });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/admin/option-items/:id", async (req, res) => {
+  try {
+    await db.delete(optionItems).where(eq(optionItems.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/admin/option-groups/:id/categories", async (req, res) => {
+  try {
+    const groupId = Number(req.params["id"]);
+    const { categoryId, sortOrder } = req.body as { categoryId: number; sortOrder?: number };
+    await db.insert(categoryOptionGroups).values({ groupId, categoryId, sortOrder: sortOrder ?? 0 }).onConflictDoNothing();
+    res.status(201).json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/admin/category-option-groups/:id", async (req, res) => {
+  try {
+    await db.delete(categoryOptionGroups).where(eq(categoryOptionGroups.id, Number(req.params["id"])));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.get("/admin/items/:id/option-prices", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const prices = await db.select().from(itemOptionPrices).where(eq(itemOptionPrices.menuItemId, menuItemId));
+    res.json(prices.map((p) => ({ ...p, price: Number(p.price) })));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.put("/admin/items/:id/option-prices", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const { prices } = req.body as { prices: Array<{ optionItemId: number; price: number }> };
+    for (const p of prices) {
+      await db.insert(itemOptionPrices).values({ menuItemId, optionItemId: p.optionItemId, price: String(p.price) })
+        .onConflictDoUpdate({ target: [itemOptionPrices.menuItemId, itemOptionPrices.optionItemId], set: { price: String(p.price) } });
+    }
+    res.json({ ok: true });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // ── ORDERS ────────────────────────────────────────────────────────────────────

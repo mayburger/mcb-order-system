@@ -8,6 +8,7 @@
 import type { Category } from './category';
 import type { ItemExtra } from './itemExtra';
 import type { ItemVariant } from './itemVariant';
+import type { OptionGroup } from './optionGroup';
 
 export interface MenuItem {
   id: number;
@@ -24,5 +25,6 @@ export interface MenuItem {
   category?: Category;
   variants?: ItemVariant[];
   extras?: ItemExtra[];
+  optionGroups?: OptionGroup[];
   createdAt: Date;
 }

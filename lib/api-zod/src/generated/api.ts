@@ -77,6 +77,26 @@ export const ListMenuItemsResponseItem = zod.object({
   "available": zod.boolean(),
   "sortOrder": zod.number()
 })).optional(),
+  "optionGroups": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 export const ListMenuItemsResponse = zod.array(ListMenuItemsResponseItem)
@@ -125,8 +145,54 @@ export const GetMenuItemResponse = zod.object({
   "available": zod.boolean(),
   "sortOrder": zod.number()
 })).optional(),
+  "optionGroups": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary List all global option groups with their items
+ */
+export const ListMenuOptionGroupsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})
+export const ListMenuOptionGroupsResponse = zod.array(ListMenuOptionGroupsResponseItem)
 
 
 /**
@@ -200,7 +266,12 @@ export const CreateOrderBody = zod.object({
   "selectedExtras": zod.array(zod.object({
   "name": zod.string(),
   "price": zod.number()
-})).optional()
+})).optional(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "optionItemId": zod.number(),
+  "price": zod.number()
+})).optional().describe('Selected option group items (new system)')
 })).min(1)
 })
 
@@ -231,6 +302,13 @@ export const CreateOrderResponse = zod.object({
   "variantName": zod.string().nullish(),
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
   "price": zod.number()
 })).optional()
 })),
@@ -272,6 +350,13 @@ export const GetOrderStatusResponse = zod.object({
   "variantName": zod.string().nullish(),
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
   "price": zod.number()
 })).optional()
 })),
@@ -474,6 +559,26 @@ export const ListAdminItemsResponseItem = zod.object({
   "available": zod.boolean(),
   "sortOrder": zod.number()
 })).optional(),
+  "optionGroups": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdminItemsResponse = zod.array(ListAdminItemsResponseItem)
@@ -534,6 +639,26 @@ export const CreateAdminMenuItemResponse = zod.object({
   "available": zod.boolean(),
   "sortOrder": zod.number()
 })).optional(),
+  "optionGroups": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})).optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -591,6 +716,26 @@ export const UpdateAdminMenuItemResponse = zod.object({
   "price": zod.number(),
   "available": zod.boolean(),
   "sortOrder": zod.number()
+})).optional(),
+  "optionGroups": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
 })).optional(),
   "createdAt": zod.coerce.date()
 })
@@ -767,6 +912,244 @@ export const DeleteItemExtraResponse = zod.void()
 
 
 /**
+ * @summary List all global option groups
+ */
+export const ListAdminOptionGroupsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})
+export const ListAdminOptionGroupsResponse = zod.array(ListAdminOptionGroupsResponseItem)
+
+
+/**
+ * @summary Create a global option group
+ */
+
+
+
+
+export const CreateAdminOptionGroupBody = zod.object({
+  "name": zod.string().min(1),
+  "slug": zod.string().min(1),
+  "description": zod.string().optional(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number().optional()
+})
+
+export const CreateAdminOptionGroupResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})
+
+
+/**
+ * @summary Update an option group
+ */
+export const UpdateAdminOptionGroupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminOptionGroupBody = zod.object({
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "inputType": zod.enum(['single', 'multiple']).optional(),
+  "required": zod.boolean().optional(),
+  "priceType": zod.enum(['absolute', 'additive']).optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateAdminOptionGroupResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "inputType": zod.enum(['single', 'multiple']),
+  "required": zod.boolean(),
+  "priceType": zod.enum(['absolute', 'additive']),
+  "sortOrder": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})),
+  "linkedCategoryIds": zod.array(zod.number()).optional()
+})
+
+
+/**
+ * @summary Delete an option group
+ */
+export const DeleteAdminOptionGroupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAdminOptionGroupResponse = zod.void()
+
+
+/**
+ * @summary Add an item to an option group
+ */
+export const CreateAdminOptionItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const createAdminOptionItemBodyDefaultPriceMin = 0;
+
+
+
+export const CreateAdminOptionItemBody = zod.object({
+  "name": zod.string().min(1),
+  "defaultPrice": zod.number().min(createAdminOptionItemBodyDefaultPriceMin).optional(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).optional(),
+  "sortOrder": zod.number().optional(),
+  "available": zod.boolean().optional()
+})
+
+export const CreateAdminOptionItemResponse = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})
+
+
+/**
+ * @summary Update an option item
+ */
+export const UpdateAdminOptionItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminOptionItemBody = zod.object({
+  "name": zod.string().optional(),
+  "defaultPrice": zod.number().optional(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).optional(),
+  "sortOrder": zod.number().optional(),
+  "available": zod.boolean().optional()
+})
+
+export const UpdateAdminOptionItemResponse = zod.object({
+  "id": zod.number(),
+  "groupId": zod.number(),
+  "name": zod.string(),
+  "defaultPrice": zod.number(),
+  "priceByVariant": zod.record(zod.string(), zod.number()).nullish(),
+  "sortOrder": zod.number(),
+  "available": zod.boolean()
+})
+
+
+/**
+ * @summary Delete an option item
+ */
+export const DeleteAdminOptionItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAdminOptionItemResponse = zod.void()
+
+
+/**
+ * @summary Link a category to an option group
+ */
+export const LinkCategoryToOptionGroupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const LinkCategoryToOptionGroupBody = zod.object({
+  "categoryId": zod.number(),
+  "sortOrder": zod.number().optional()
+})
+
+export const LinkCategoryToOptionGroupResponse = zod.void()
+
+
+/**
+ * @summary Remove a category–option-group link
+ */
+export const UnlinkCategoryFromOptionGroupParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnlinkCategoryFromOptionGroupResponse = zod.void()
+
+
+/**
+ * @summary Get per-item option prices (e.g. pizza size prices)
+ */
+export const GetItemOptionPricesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetItemOptionPricesResponseItem = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "optionItemId": zod.number(),
+  "price": zod.number()
+})
+export const GetItemOptionPricesResponse = zod.array(GetItemOptionPricesResponseItem)
+
+
+/**
+ * @summary Set per-item option prices (bulk upsert)
+ */
+export const SetItemOptionPricesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetItemOptionPricesBody = zod.object({
+  "prices": zod.array(zod.object({
+  "optionItemId": zod.number(),
+  "price": zod.number()
+}))
+})
+
+export const SetItemOptionPricesResponse = zod.unknown()
+
+
+/**
  * @summary List all orders (admin)
  */
 export const ListAdminOrdersQueryParams = zod.object({
@@ -802,6 +1185,13 @@ export const ListAdminOrdersResponseItem = zod.object({
   "variantName": zod.string().nullish(),
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
   "price": zod.number()
 })).optional()
 })),
@@ -844,6 +1234,13 @@ export const GetAdminOrderResponse = zod.object({
   "variantName": zod.string().nullish(),
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
   "price": zod.number()
 })).optional()
 })),
@@ -890,6 +1287,13 @@ export const UpdateAdminOrderResponse = zod.object({
   "variantName": zod.string().nullish(),
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
   "price": zod.number()
 })).optional()
 })),
@@ -1208,6 +1612,13 @@ export const ListKitchenOrdersResponseItem = zod.object({
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
   "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
 })).optional()
 })),
   "createdAt": zod.coerce.date()
@@ -1253,6 +1664,13 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
   "variantName": zod.string().nullish(),
   "extrasSnapshot": zod.array(zod.object({
   "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
   "price": zod.number()
 })).optional()
 })),

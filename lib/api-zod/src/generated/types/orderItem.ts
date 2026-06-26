@@ -5,6 +5,7 @@
  * May Chicken & Burger Restaurant API
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderItemOptionsSnapshotItem } from './orderItemOptionsSnapshotItem';
 import type { SelectedExtra } from './selectedExtra';
 
 export interface OrderItem {
@@ -18,4 +19,5 @@ export interface OrderItem {
   /** @nullable */
   variantName?: string | null;
   extrasSnapshot?: SelectedExtra[];
+  optionsSnapshot?: OrderItemOptionsSnapshotItem[];
 }
