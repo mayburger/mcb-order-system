@@ -48,13 +48,13 @@ export default function CartPage() {
     return (
       <Layout>
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-          <ShoppingBag className="h-20 w-20 text-muted-foreground mb-6" />
-          <h1 className="text-3xl font-display font-bold uppercase text-white mb-2">
+          <ShoppingBag className="h-16 w-16 md:h-20 md:w-20 text-muted-foreground mb-6" />
+          <h1 className="text-2xl md:text-3xl font-display font-bold uppercase text-white mb-2">
             Dein Warenkorb ist leer
           </h1>
           <p className="text-muted-foreground mb-8">Füge Artikel hinzu, um zu starten.</p>
           <Link href="/menu">
-            <Button className="uppercase tracking-widest font-bold rounded-none bg-primary hover:bg-primary/90">
+            <Button className="uppercase tracking-widest font-bold rounded-none bg-primary hover:bg-primary/90 w-full sm:w-auto">
               Zur Speisekarte <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
@@ -65,86 +65,90 @@ export default function CartPage() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-display font-bold uppercase tracking-tight text-white mb-10">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <h1 className="text-3xl md:text-4xl font-display font-bold uppercase tracking-tight text-white mb-6 md:mb-10">
           Deine Bestellung
         </h1>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Artikel */}
-          <div className="lg:col-span-2 space-y-4">
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
+          {/* ── Artikel ──────────────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-3">
             {items.map((item) => (
               <div
                 key={item.cartKey}
-                className="flex items-start gap-4 bg-card border border-border p-4"
+                className="bg-card border border-border p-3 md:p-4"
               >
-                <div className="flex-1">
-                  <p className="font-bold text-white text-lg">{item.menuItem.name}</p>
-                  {item.selectedOptions
-                    .filter((o) => o.priceType === "absolute")
-                    .map((o) => (
-                      <p key={o.optionItemId} className="text-xs text-muted-foreground mt-0.5">
-                        {o.groupName}: {o.optionItemName}
+                {/* Top row: name + delete */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-white text-base leading-snug">{item.menuItem.name}</p>
+                    {item.selectedOptions
+                      .filter((o) => o.priceType === "absolute")
+                      .map((o) => (
+                        <p key={o.optionItemId} className="text-xs text-muted-foreground">
+                          {o.groupName}: {o.optionItemName}
+                        </p>
+                      ))}
+                    {item.selectedOptions.filter((o) => o.priceType === "additive" && o.price > 0).length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        +{item.selectedOptions
+                          .filter((o) => o.priceType === "additive" && o.price > 0)
+                          .map((o) => o.optionItemName)
+                          .join(", ")}
                       </p>
-                    ))}
-                  {item.selectedOptions.filter((o) => o.priceType === "additive").length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Extras:{" "}
-                      {item.selectedOptions
-                        .filter((o) => o.priceType === "additive")
-                        .map((o) => o.optionItemName)
-                        .join(", ")}
-                    </p>
-                  )}
-                  <p className="text-primary font-semibold mt-1">{item.unitPrice.toFixed(2)} € / Stk.</p>
-                </div>
-                <div className="flex items-center gap-2">
+                    )}
+                  </div>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8 rounded-none border-border"
-                    onClick={() => updateQuantity(item.cartKey, item.quantity - 1)}
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeItem(item.cartKey)}
                   >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="w-8 text-center font-bold text-white">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 rounded-none border-border"
-                    onClick={() => updateQuantity(item.cartKey, item.quantity + 1)}
-                  >
-                    <Plus className="h-3 w-3" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <p className="w-24 text-right font-bold text-white">
-                  {(item.unitPrice * item.quantity).toFixed(2)} €
-                </p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => removeItem(item.cartKey)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+
+                {/* Bottom row: qty controls + price */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center border border-border">
+                    <button
+                      className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-white"
+                      onClick={() => updateQuantity(item.cartKey, item.quantity - 1)}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-8 text-center font-bold text-white text-sm">{item.quantity}</span>
+                    <button
+                      className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-white"
+                      onClick={() => updateQuantity(item.cartKey, item.quantity + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-white">{(item.unitPrice * item.quantity).toFixed(2)} €</p>
+                    <p className="text-xs text-muted-foreground">{item.unitPrice.toFixed(2)} € / Stk.</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Übersicht */}
-          <div className="bg-card border border-border p-6 h-fit space-y-6">
+          {/* ── Übersicht ─────────────────────────────────────────────── */}
+          <div className="bg-card border border-border p-5 md:p-6 h-fit space-y-5">
             <h2 className="text-xl font-display font-bold uppercase text-white">Übersicht</h2>
 
             {/* Gutschein */}
             {!appliedCoupon ? (
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground uppercase tracking-wider font-semibold">
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold block">
                   Gutscheincode
                 </label>
                 <div className="flex gap-2">
                   <Input
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
                     placeholder="WELCOME10"
                     className="rounded-none border-border bg-background text-white uppercase"
                   />
@@ -163,24 +167,20 @@ export default function CartPage() {
                 <span className="text-primary font-semibold text-sm">{appliedCoupon} angewendet</span>
                 <button
                   className="text-muted-foreground text-xs hover:text-white"
-                  onClick={() => {
-                    setDiscount(0);
-                    setAppliedCoupon(null);
-                    setCouponCode("");
-                  }}
+                  onClick={() => { setDiscount(0); setAppliedCoupon(null); setCouponCode(""); }}
                 >
                   Entfernen
                 </button>
               </div>
             )}
 
-            <div className="space-y-3 border-t border-border pt-4">
-              <div className="flex justify-between text-muted-foreground">
+            <div className="space-y-2.5 border-t border-border pt-4">
+              <div className="flex justify-between text-muted-foreground text-sm">
                 <span>Zwischensumme</span>
                 <span>{subtotal.toFixed(2)} €</span>
               </div>
               {discount > 0 && (
-                <div className="flex justify-between text-primary">
+                <div className="flex justify-between text-primary text-sm">
                   <span>Rabatt</span>
                   <span>-{discount.toFixed(2)} €</span>
                 </div>

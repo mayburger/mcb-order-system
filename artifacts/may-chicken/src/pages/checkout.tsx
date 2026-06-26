@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/lib/cart-context";
 import { useCreateOrder, useListDeliveryAreas, useValidateCoupon } from "@workspace/api-client-react";
-import { Truck, ShoppingBag, Tag, ArrowRight } from "lucide-react";
+import { Truck, ShoppingBag, Tag, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CheckoutPage() {
@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const { data: areas } = useListDeliveryAreas();
   const createOrder = useCreateOrder();
@@ -49,8 +50,7 @@ export default function CheckoutPage() {
           setAppliedCoupon(couponCode.trim().toUpperCase());
           toast({ title: "Gutschein angewendet!", description: `Du sparst ${d.toFixed(2)} €` });
         },
-        onError: () =>
-          toast({ title: "Ungültiger Gutschein", variant: "destructive" }),
+        onError: () => toast({ title: "Ungültiger Gutschein", variant: "destructive" }),
       }
     );
   };
@@ -90,57 +90,44 @@ export default function CheckoutPage() {
         },
       },
       {
-        onSuccess: (order) => {
-          clearCart();
-          navigate(`/order/${order.id}`);
-        },
+        onSuccess: (order) => { clearCart(); navigate(`/order/${order.id}`); },
         onError: () =>
-          toast({
-            title: "Bestellung fehlgeschlagen",
-            description: "Bitte versuche es erneut.",
-            variant: "destructive",
-          }),
+          toast({ title: "Bestellung fehlgeschlagen", description: "Bitte versuche es erneut.", variant: "destructive" }),
       }
     );
   };
 
-  if (items.length === 0) {
-    navigate("/cart");
-    return null;
-  }
+  if (items.length === 0) { navigate("/cart"); return null; }
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-display font-bold uppercase tracking-tight text-white mb-10">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <h1 className="text-3xl md:text-4xl font-display font-bold uppercase tracking-tight text-white mb-6 md:mb-10">
           Kasse
         </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
+          {/* ── Form ──────────────────────────────────────────────────── */}
+          <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6 md:space-y-8">
             {/* Bestellart */}
             <div>
-              <h2 className="text-lg font-display font-bold uppercase text-white mb-4">
+              <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
                 Bestellart
               </h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {(["delivery", "pickup"] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setOrderType(type)}
-                    className={`flex flex-col items-center gap-3 p-6 border transition-colors ${
+                    className={`flex flex-col items-center gap-2 p-4 md:p-6 border transition-colors ${
                       orderType === type
                         ? "border-primary bg-primary/10 text-white"
                         : "border-border text-muted-foreground hover:border-white"
                     }`}
                   >
-                    {type === "delivery" ? (
-                      <Truck className="h-8 w-8" />
-                    ) : (
-                      <ShoppingBag className="h-8 w-8" />
-                    )}
-                    <span className="font-bold uppercase tracking-wider">
+                    {type === "delivery" ? <Truck className="h-6 w-6 md:h-8 md:w-8" /> : <ShoppingBag className="h-6 w-6 md:h-8 md:w-8" />}
+                    <span className="font-bold uppercase tracking-wider text-sm">
                       {type === "delivery" ? "Lieferung" : "Abholung"}
                     </span>
                     <span className="text-xs">
@@ -153,10 +140,10 @@ export default function CheckoutPage() {
 
             {/* Kontaktdaten */}
             <div>
-              <h2 className="text-lg font-display font-bold uppercase text-white mb-4">
+              <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
                 Deine Angaben
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">
                     Vollständiger Name *
@@ -166,6 +153,7 @@ export default function CheckoutPage() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="rounded-none border-border bg-background text-white"
+                    autoComplete="name"
                   />
                 </div>
                 <div>
@@ -176,10 +164,12 @@ export default function CheckoutPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
+                    type="tel"
                     className="rounded-none border-border bg-background text-white"
+                    autoComplete="tel"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">
                     E-Mail (optional)
                   </label>
@@ -188,6 +178,7 @@ export default function CheckoutPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     type="email"
                     className="rounded-none border-border bg-background text-white"
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -196,11 +187,11 @@ export default function CheckoutPage() {
             {/* Lieferadresse */}
             {orderType === "delivery" && (
               <div>
-                <h2 className="text-lg font-display font-bold uppercase text-white mb-4">
+                <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
                   Lieferadresse
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                  <div className="sm:col-span-2">
                     <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">
                       Straße & Hausnummer *
                     </label>
@@ -209,6 +200,7 @@ export default function CheckoutPage() {
                       onChange={(e) => setAddress(e.target.value)}
                       required={orderType === "delivery"}
                       className="rounded-none border-border bg-background text-white"
+                      autoComplete="street-address"
                     />
                   </div>
                   <div>
@@ -219,6 +211,8 @@ export default function CheckoutPage() {
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
                       className="rounded-none border-border bg-background text-white"
+                      autoComplete="postal-code"
+                      inputMode="numeric"
                     />
                   </div>
                   <div>
@@ -229,6 +223,7 @@ export default function CheckoutPage() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="rounded-none border-border bg-background text-white"
+                      autoComplete="address-level2"
                     />
                   </div>
                 </div>
@@ -243,7 +238,7 @@ export default function CheckoutPage() {
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-none border border-border bg-background text-white p-3 h-24 resize-none focus:outline-none focus:border-primary"
+                className="w-full rounded-none border border-border bg-background text-white p-3 h-20 resize-none focus:outline-none focus:border-primary text-sm"
                 placeholder="Allergien, Sonderwünsche..."
               />
             </div>
@@ -251,101 +246,112 @@ export default function CheckoutPage() {
             <Button
               type="submit"
               disabled={createOrder.isPending}
-              className="w-full rounded-none h-14 uppercase tracking-widest font-bold bg-primary hover:bg-primary/90 text-white text-base"
+              className="w-full rounded-none h-13 md:h-14 uppercase tracking-widest font-bold bg-primary hover:bg-primary/90 text-white text-base"
             >
-              {createOrder.isPending ? "Bestellung wird aufgegeben..." : "Bestellung aufgeben"}{" "}
+              {createOrder.isPending ? "Wird aufgegeben…" : "Bestellung aufgeben"}{" "}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </form>
 
-          {/* Bestellübersicht */}
-          <div className="bg-card border border-border p-6 space-y-4 h-fit">
-            <h2 className="text-lg font-display font-bold uppercase text-white">
-              Bestellübersicht
-            </h2>
-            {items.map((item) => (
-              <div key={item.cartKey} className="text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {item.menuItem.name} × {item.quantity}
-                  </span>
-                  <span className="text-white">
-                    {(item.unitPrice * item.quantity).toFixed(2)} €
-                  </span>
+          {/* ── Bestellübersicht ──────────────────────────────────────── */}
+          <div className="h-fit">
+            {/* Mobile: collapsible toggle */}
+            <button
+              className="lg:hidden w-full flex items-center justify-between bg-card border border-border p-4 mb-0"
+              onClick={() => setSummaryOpen((v) => !v)}
+            >
+              <span className="font-display font-bold uppercase text-white text-sm">
+                Bestellübersicht · {total.toFixed(2)} €
+              </span>
+              {summaryOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </button>
+
+            <div className={`bg-card border border-border border-t-0 lg:border-t p-5 md:p-6 space-y-4 ${summaryOpen ? "block" : "hidden lg:block"}`}>
+              <h2 className="text-base md:text-lg font-display font-bold uppercase text-white hidden lg:block">
+                Bestellübersicht
+              </h2>
+
+              {/* Items */}
+              <div className="space-y-2">
+                {items.map((item) => (
+                  <div key={item.cartKey} className="text-sm">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-muted-foreground truncate">
+                        {item.menuItem.name} × {item.quantity}
+                      </span>
+                      <span className="text-white shrink-0">
+                        {(item.unitPrice * item.quantity).toFixed(2)} €
+                      </span>
+                    </div>
+                    {item.selectedOptions
+                      .filter((o) => o.priceType === "absolute")
+                      .map((o) => (
+                        <p key={o.optionItemId} className="text-xs text-muted-foreground pl-2">
+                          {o.groupName}: {o.optionItemName}
+                        </p>
+                      ))}
+                    {item.selectedOptions.filter((o) => o.priceType === "additive" && o.price > 0).length > 0 && (
+                      <p className="text-xs text-muted-foreground pl-2">
+                        +{item.selectedOptions
+                          .filter((o) => o.priceType === "additive" && o.price > 0)
+                          .map((o) => o.optionItemName)
+                          .join(", ")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Gutschein */}
+              {!appliedCoupon ? (
+                <div className="flex gap-2 pt-1">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    placeholder="Gutscheincode"
+                    className="rounded-none border-border bg-background text-white text-sm uppercase"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-none border-border shrink-0"
+                    onClick={handleApplyCoupon}
+                    disabled={validateCoupon.isPending}
+                  >
+                    <Tag className="h-4 w-4" />
+                  </Button>
                 </div>
-                {item.selectedOptions
-                  .filter((o) => o.priceType === "absolute")
-                  .map((o) => (
-                    <p key={o.optionItemId} className="text-xs text-muted-foreground pl-2">
-                      {o.groupName}: {o.optionItemName}
-                    </p>
-                  ))}
-                {item.selectedOptions.filter((o) => o.priceType === "additive").length > 0 && (
-                  <p className="text-xs text-muted-foreground pl-2">
-                    +{item.selectedOptions
-                      .filter((o) => o.priceType === "additive")
-                      .map((o) => o.optionItemName)
-                      .join(", ")}
-                  </p>
-                )}
-              </div>
-            ))}
-
-            {/* Gutschein */}
-            {!appliedCoupon ? (
-              <div className="flex gap-2 pt-2">
-                <Input
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  placeholder="Gutscheincode"
-                  className="rounded-none border-border bg-background text-white text-sm uppercase"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-none border-border shrink-0"
-                  onClick={handleApplyCoupon}
-                  disabled={validateCoupon.isPending}
-                >
-                  <Tag className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center bg-primary/10 border border-primary/30 p-2 text-sm">
-                <span className="text-primary">{appliedCoupon}</span>
-                <button
-                  className="text-muted-foreground text-xs"
-                  onClick={() => {
-                    setDiscount(0);
-                    setAppliedCoupon(null);
-                    setCouponCode("");
-                  }}
-                >
-                  Entfernen
-                </button>
-              </div>
-            )}
-
-            <div className="border-t border-border pt-4 space-y-2">
-              <div className="flex justify-between text-muted-foreground text-sm">
-                <span>Zwischensumme</span>
-                <span>{subtotal.toFixed(2)} €</span>
-              </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-primary text-sm">
-                  <span>Rabatt</span>
-                  <span>-{discount.toFixed(2)} €</span>
+              ) : (
+                <div className="flex justify-between items-center bg-primary/10 border border-primary/30 p-2 text-sm">
+                  <span className="text-primary">{appliedCoupon}</span>
+                  <button className="text-muted-foreground text-xs" onClick={() => { setDiscount(0); setAppliedCoupon(null); setCouponCode(""); }}>
+                    Entfernen
+                  </button>
                 </div>
               )}
-              {orderType === "delivery" && (
+
+              <div className="border-t border-border pt-3 space-y-2">
                 <div className="flex justify-between text-muted-foreground text-sm">
-                  <span>Liefergebühr</span>
-                  <span>{deliveryFee.toFixed(2)} €</span>
+                  <span>Zwischensumme</span>
+                  <span>{subtotal.toFixed(2)} €</span>
                 </div>
-              )}
-              <div className="flex justify-between text-white font-bold text-lg border-t border-border pt-2">
-                <span>Gesamt</span>
-                <span>{total.toFixed(2)} €</span>
+                {discount > 0 && (
+                  <div className="flex justify-between text-primary text-sm">
+                    <span>Rabatt</span>
+                    <span>-{discount.toFixed(2)} €</span>
+                  </div>
+                )}
+                {orderType === "delivery" && (
+                  <div className="flex justify-between text-muted-foreground text-sm">
+                    <span>Liefergebühr</span>
+                    <span>{deliveryFee.toFixed(2)} €</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-white font-bold text-lg border-t border-border pt-2">
+                  <span>Gesamt</span>
+                  <span>{total.toFixed(2)} €</span>
+                </div>
               </div>
             </div>
           </div>
