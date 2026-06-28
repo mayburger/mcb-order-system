@@ -3,9 +3,16 @@ import {
   useListKitchenOrders,
   getListKitchenOrdersQueryKey,
   useUpdateKitchenOrderStatus,
+  useGetAdminSettings,
 } from "@workspace/api-client-react";
 import type { Order } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  printKitchenTicket,
+  printCustomerTicket,
+  printDriverTicket,
+  type PrintSettings,
+} from "@/lib/print-utils";
 import {
   Clock,
   ChefHat,
@@ -198,104 +205,18 @@ function playAlert() {
   }
 }
 
-// ── Print helpers ─────────────────────────────────────────────────────────────
-
-type OptSnap = { optionItemName: string; price: number; priceType?: string };
-
-function printKitchenTicket(order: Order) {
-  const items = order.items
-    .map((item) => {
-      const variant = item.variantName ? ` [${item.variantName}]` : "";
-      const extras =
-        ((item.optionsSnapshot ?? []) as OptSnap[])
-          .filter((o) => o.priceType !== "absolute")
-          .map((o) => `  + ${o.optionItemName}`)
-          .join("\n") || "";
-      return `${item.quantity}x  ${item.itemName}${variant}\n${extras}`;
-    })
-    .join("\n---\n");
-
-  const src = SOURCE_LABELS[order.source ?? ""] ?? { label: order.source ?? "" };
-  const win = window.open("", "_blank", "width=380,height=600");
-  if (!win) return;
-  win.document.write(`
-    <html><head><title>Küchenbon ${order.orderNumber}</title>
-    <style>
-      body { font-family: monospace; font-size: 14px; padding: 12px; max-width: 300px; }
-      h2 { font-size: 20px; margin: 0 0 4px; }
-      hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
-      pre { white-space: pre-wrap; font-size: 14px; line-height: 1.5; }
-      .big { font-size: 18px; font-weight: bold; }
-      .center { text-align: center; }
-    </style></head><body>
-    <div class="center"><h2>${order.orderNumber}</h2>
-    <div class="big">${src.label} · ${order.orderType === "delivery" ? "LIEFERUNG" : order.source === "dine_in" ? "TISCH" : "ABHOLUNG"}</div>
-    <div>${formatTime(order.createdAt as unknown as string)}</div></div>
-    <hr>
-    ${order.tableInfo ? `<div class="big center">🪑 ${order.tableInfo}</div><hr>` : ""}
-    <pre>${items}</pre>
-    <hr>
-    ${order.notes ? `<div>⚠️ Notiz: ${order.notes}</div><hr>` : ""}
-    <script>window.print(); window.close();</script>
-    </body></html>
-  `);
-  win.document.close();
-}
-
-function printCustomerTicket(order: Order) {
-  const items = order.items
-    .map((item) => {
-      const variant = item.variantName ? ` (${item.variantName})` : "";
-      const extras = ((item.optionsSnapshot ?? []) as OptSnap[])
-        .filter((o) => o.priceType !== "absolute" && (o.price ?? 0) > 0)
-        .map((o) => `  + ${o.optionItemName}  ${Number(o.price).toFixed(2)} €`)
-        .join("\n");
-      return `${item.quantity}x ${item.itemName}${variant}  ${Number(item.lineTotal).toFixed(2)} €\n${extras}`;
-    })
-    .join("\n");
-
-  const win = window.open("", "_blank", "width=380,height=700");
-  if (!win) return;
-  win.document.write(`
-    <html><head><title>Kundenbon ${order.orderNumber}</title>
-    <style>
-      body { font-family: monospace; font-size: 13px; padding: 12px; max-width: 300px; }
-      h2 { font-size: 18px; margin: 0 0 4px; text-align: center; }
-      hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
-      pre { white-space: pre-wrap; font-size: 13px; line-height: 1.5; }
-      .row { display: flex; justify-content: space-between; }
-      .total { font-size: 16px; font-weight: bold; }
-      .center { text-align: center; }
-    </style></head><body>
-    <h2>May Chicken &amp; Burger</h2>
-    <div class="center">${order.orderNumber}</div>
-    <div class="center">${formatTime(order.createdAt as unknown as string)}</div>
-    <hr>
-    <pre>${items}</pre>
-    <hr>
-    ${Number(order.deliveryFee) > 0 ? `<div class="row"><span>Liefergebühr</span><span>${Number(order.deliveryFee).toFixed(2)} €</span></div>` : ""}
-    ${Number(order.discountAmount) > 0 ? `<div class="row"><span>Rabatt (${order.couponCode})</span><span>-${Number(order.discountAmount).toFixed(2)} €</span></div>` : ""}
-    <div class="row total"><span>GESAMT</span><span>${Number(order.total).toFixed(2)} €</span></div>
-    <hr>
-    <div class="row"><span>Zahlung</span><span>${PAY_LABELS[order.paymentMethod ?? ""] ?? order.paymentMethod ?? "-"}</span></div>
-    ${order.orderType === "delivery" && order.deliveryAddress ? `<hr><div>${order.deliveryAddress}, ${order.postalCode ?? ""} ${order.city ?? ""}</div>` : ""}
-    ${order.notes ? `<hr><div>Notiz: ${order.notes}</div>` : ""}
-    <script>window.print(); window.close();</script>
-    </body></html>
-  `);
-  win.document.close();
-}
-
 // ── Order Card ────────────────────────────────────────────────────────────────
 
 function OrderCard({
   order,
   onStatus,
   isPending,
+  settings,
 }: {
   order: Order;
   onStatus: (id: number, status: string) => void;
   isPending: boolean;
+  settings: PrintSettings;
 }) {
   const status = (order.status ?? "pending") as StatusKey;
   const cfg = STATUS_CFG[status] ?? STATUS_CFG.pending;
@@ -529,21 +450,32 @@ function OrderCard({
       )}
 
       {/* Print buttons */}
-      <div className="px-4 pb-4 flex gap-2 border-t border-border/30 pt-3">
-        <button
-          onClick={() => printKitchenTicket(order)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-border/50 text-muted-foreground hover:text-white hover:border-white text-xs font-medium transition-colors rounded"
-        >
-          <Printer className="w-3.5 h-3.5" />
-          Küchenbon
-        </button>
-        <button
-          onClick={() => printCustomerTicket(order)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-border/50 text-muted-foreground hover:text-white hover:border-white text-xs font-medium transition-colors rounded"
-        >
-          <Printer className="w-3.5 h-3.5" />
-          Kundenbon
-        </button>
+      <div className="px-4 pb-4 border-t border-border/30 pt-3">
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => printKitchenTicket(order, settings)}
+            className="flex-1 flex items-center justify-center gap-1 py-2 border border-border/50 text-muted-foreground hover:text-white hover:border-white text-xs font-medium transition-colors rounded"
+          >
+            <Printer className="w-3 h-3" />
+            Küche
+          </button>
+          <button
+            onClick={() => printCustomerTicket(order, settings)}
+            className="flex-1 flex items-center justify-center gap-1 py-2 border border-border/50 text-muted-foreground hover:text-white hover:border-white text-xs font-medium transition-colors rounded"
+          >
+            <Printer className="w-3 h-3" />
+            Kunde
+          </button>
+          {order.orderType === "delivery" && (
+            <button
+              onClick={() => printDriverTicket(order, settings)}
+              className="flex-1 flex items-center justify-center gap-1 py-2 border border-purple-800/60 text-purple-400 hover:text-white hover:border-purple-400 text-xs font-medium transition-colors rounded"
+            >
+              <Printer className="w-3 h-3" />
+              Fahrer
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -561,6 +493,13 @@ export default function KitchenPage() {
   const knownIds = useRef<Set<number>>(new Set());
   const firstLoad = useRef(true);
   const updateStatus = useUpdateKitchenOrderStatus();
+  const { data: rawSettings } = useGetAdminSettings();
+  const printSettings: PrintSettings = {
+    restaurantName: rawSettings?.restaurantName ?? "May Chicken & Burger",
+    address: rawSettings?.address ?? "",
+    phone: rawSettings?.phone ?? "",
+    email: rawSettings?.email ?? "",
+  };
 
   const { data: allOrders = [], isLoading, refetch } = useListKitchenOrders({
     query: {
@@ -733,6 +672,7 @@ export default function KitchenPage() {
                 order={order}
                 onStatus={handleStatus}
                 isPending={updateStatus.isPending}
+                settings={printSettings}
               />
             ))}
           </div>
