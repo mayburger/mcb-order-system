@@ -609,11 +609,13 @@ export type KitchenOrderStatusPatchStatus = typeof KitchenOrderStatusPatchStatus
 
 
 export const KitchenOrderStatusPatchStatus = {
+  pending: 'pending',
   confirmed: 'confirmed',
   preparing: 'preparing',
   ready: 'ready',
   delivering: 'delivering',
   completed: 'completed',
+  cancelled: 'cancelled',
 } as const;
 
 export interface KitchenOrderStatusPatch {

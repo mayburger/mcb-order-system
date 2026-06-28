@@ -2440,7 +2440,7 @@ components:
       properties:
         status:
           type: string
-          enum: [confirmed, preparing, ready, delivering, completed]
+          enum: [pending, confirmed, preparing, ready, delivering, completed, cancelled]
 
     # ── CUSTOMERS ─────────────────────────────────────────────────────────
     Customer:

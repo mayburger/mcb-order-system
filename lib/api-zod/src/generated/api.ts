@@ -2411,7 +2411,7 @@ export const UpdateKitchenOrderStatusParams = zod.object({
 })
 
 export const UpdateKitchenOrderStatusBody = zod.object({
-  "status": zod.enum(['confirmed', 'preparing', 'ready', 'delivering', 'completed'])
+  "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled'])
 })
 
 export const UpdateKitchenOrderStatusResponse = zod.object({
