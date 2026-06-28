@@ -1831,7 +1831,7 @@ export const CreateQuickOrderBody = zod.object({
   "city": zod.string().optional(),
   "notes": zod.string().optional(),
   "tableInfo": zod.string().optional(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec', 'paypal', 'lieferando']).optional(),
   "couponCode": zod.string().optional(),
   "items": zod.array(zod.object({
   "menuItemId": zod.number(),

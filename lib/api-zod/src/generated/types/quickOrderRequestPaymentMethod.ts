@@ -11,5 +11,7 @@ export type QuickOrderRequestPaymentMethod = typeof QuickOrderRequestPaymentMeth
 
 export const QuickOrderRequestPaymentMethod = {
   cash: 'cash',
-  card: 'card',
+  ec: 'ec',
+  paypal: 'paypal',
+  lieferando: 'lieferando',
 } as const;

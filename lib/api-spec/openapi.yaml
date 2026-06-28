@@ -2879,7 +2879,7 @@ components:
           type: string
         paymentMethod:
           type: string
-          enum: [cash, card]
+          enum: [cash, ec, paypal, lieferando]
         couponCode:
           type: string
         items:

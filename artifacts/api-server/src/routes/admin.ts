@@ -1025,7 +1025,7 @@ router.post("/admin/quick-order", async (req, res) => {
       orderType: "delivery" | "pickup";
       customerName: string; customerPhone: string; customerEmail?: string;
       deliveryAddress?: string; postalCode?: string; city?: string;
-      notes?: string; tableInfo?: string; paymentMethod?: "cash" | "card";
+      notes?: string; tableInfo?: string; paymentMethod?: "cash" | "ec" | "paypal" | "lieferando";
       couponCode?: string;
       items: Array<{ menuItemId: number; quantity: number; variantId?: number; selectedExtras?: Array<{ name: string; price: number }>; selectedOptions?: Array<{ groupId: number; optionItemId: number; price: number }> }>;
     };
