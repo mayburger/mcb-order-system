@@ -19,4 +19,8 @@ export interface SettingsUpdate {
   estimatedPickupTime?: number;
   adminUsername?: string;
   adminPassword?: string;
+  ordersAutoArchiveEnabled?: boolean;
+  ordersAutoArchiveMonths?: number;
+  ordersArchiveAutoDeleteEnabled?: boolean;
+  ordersArchiveAutoDeleteYears?: number;
 }

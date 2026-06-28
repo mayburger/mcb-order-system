@@ -12,4 +12,8 @@ export type ListAdminOrdersParams = {
 status?: ListAdminOrdersStatus;
 orderType?: ListAdminOrdersOrderType;
 date?: Date;
+/**
+ * When true, returns only archived orders. Otherwise archived orders are excluded.
+ */
+archived?: boolean;
 };

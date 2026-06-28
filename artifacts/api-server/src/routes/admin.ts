@@ -7,6 +7,7 @@ import {
   itemExtras,
   orders,
   orderItems,
+  orderDeletionLog,
   openingHours,
   deliveryAreas,
   coupons,
@@ -526,10 +527,13 @@ router.put("/admin/items/:id/option-prices", async (req, res) => {
 // ── ORDERS ────────────────────────────────────────────────────────────────────
 router.get("/admin/orders", async (req, res) => {
   try {
-    const { status, orderType, date } = req.query as { status?: string; orderType?: string; date?: string };
+    const { status, orderType, date, archived } = req.query as { status?: string; orderType?: string; date?: string; archived?: string };
+    const wantArchived = archived === "true" || archived === "1";
     let allOrders = await db.query.orders.findMany({
       orderBy: [desc(orders.createdAt)],
     });
+    // Archived orders are hidden from the normal list; only shown when explicitly requested.
+    allOrders = allOrders.filter((o) => (wantArchived ? o.archivedAt !== null : o.archivedAt === null));
     if (status) allOrders = allOrders.filter((o) => o.status === status);
     if (orderType) allOrders = allOrders.filter((o) => o.orderType === orderType);
     if (date) {
@@ -579,6 +583,66 @@ router.patch("/admin/orders/:id", async (req, res) => {
     if (!order) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
     res.json(serializeOrder(order, items));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Archive a completed or cancelled order (hidden from the normal list).
+router.post("/admin/orders/:id/archive", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const existing = await db.query.orders.findFirst({ where: (o, { eq: eqFn }) => eqFn(o.id, id) });
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    if (existing.status !== "completed" && existing.status !== "cancelled") {
+      return res.status(400).json({ error: "Only completed or cancelled orders can be archived" });
+    }
+    const [order] = await db.update(orders).set({ archivedAt: new Date() }).where(eq(orders.id, id)).returning();
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    res.json(serializeOrder(order!, items));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Restore an archived order back to the active list.
+router.post("/admin/orders/:id/restore", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const [order] = await db.update(orders).set({ archivedAt: null }).where(eq(orders.id, id)).returning();
+    if (!order) return res.status(404).json({ error: "Not found" });
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    res.json(serializeOrder(order, items));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Permanently delete an order (with optional reason). Removes it from all lists/stats,
+// keeping only an audit record in the deletion log.
+router.post("/admin/orders/:id/delete", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const { reason } = (req.body ?? {}) as { reason?: string };
+    const existing = await db.query.orders.findFirst({ where: (o, { eq: eqFn }) => eqFn(o.id, id) });
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    const deletedBy = req.session.adminUsername ?? "admin";
+    // Audit log + delete must be atomic so we never log a deletion that did not happen.
+    await db.transaction(async (tx) => {
+      await tx.insert(orderDeletionLog).values({
+        orderNumber: existing.orderNumber,
+        customerName: existing.customerName,
+        total: existing.total,
+        reason: reason && reason.trim().length > 0 ? reason.trim() : null,
+        deletedBy,
+      });
+      // orderItems cascade-delete via FK.
+      await tx.delete(orders).where(eq(orders.id, id));
+    });
+    res.json({ success: true });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -1133,6 +1197,10 @@ router.get("/admin/settings", async (req, res) => {
       estimatedPickupTime: Number(map.get("estimatedPickupTime") ?? 15),
       adminUsername: map.get("adminUsername") ?? "admin",
       adminPassword: "",
+      ordersAutoArchiveEnabled: map.get("ordersAutoArchiveEnabled") === "true",
+      ordersAutoArchiveMonths: Number(map.get("ordersAutoArchiveMonths") ?? 6),
+      ordersArchiveAutoDeleteEnabled: map.get("ordersArchiveAutoDeleteEnabled") === "true",
+      ordersArchiveAutoDeleteYears: Number(map.get("ordersArchiveAutoDeleteYears") ?? 2),
     });
   } catch (err) {
     req.log.error(err);
@@ -1147,6 +1215,8 @@ router.put("/admin/settings", async (req, res) => {
       deliveryEnabled?: boolean; pickupEnabled?: boolean; minDeliveryOrder?: number;
       estimatedDeliveryTime?: number; estimatedPickupTime?: number;
       adminUsername?: string; adminPassword?: string;
+      ordersAutoArchiveEnabled?: boolean; ordersAutoArchiveMonths?: number;
+      ordersArchiveAutoDeleteEnabled?: boolean; ordersArchiveAutoDeleteYears?: number;
     };
 
     const upsert = async (key: string, value: string) => {
@@ -1173,6 +1243,10 @@ router.put("/admin/settings", async (req, res) => {
       const hash = await bcrypt.hash(body.adminPassword, 10);
       await upsert("adminPasswordHash", hash);
     }
+    if (body.ordersAutoArchiveEnabled !== undefined) await upsert("ordersAutoArchiveEnabled", String(body.ordersAutoArchiveEnabled));
+    if (body.ordersAutoArchiveMonths !== undefined) await upsert("ordersAutoArchiveMonths", String(body.ordersAutoArchiveMonths));
+    if (body.ordersArchiveAutoDeleteEnabled !== undefined) await upsert("ordersArchiveAutoDeleteEnabled", String(body.ordersArchiveAutoDeleteEnabled));
+    if (body.ordersArchiveAutoDeleteYears !== undefined) await upsert("ordersArchiveAutoDeleteYears", String(body.ordersArchiveAutoDeleteYears));
 
     const rows = await db.select().from(settings);
     const map = new Map(rows.map((r) => [r.key, r.value]));
@@ -1189,6 +1263,10 @@ router.put("/admin/settings", async (req, res) => {
       estimatedPickupTime: Number(map.get("estimatedPickupTime") ?? 15),
       adminUsername: map.get("adminUsername") ?? "admin",
       adminPassword: "",
+      ordersAutoArchiveEnabled: map.get("ordersAutoArchiveEnabled") === "true",
+      ordersAutoArchiveMonths: Number(map.get("ordersAutoArchiveMonths") ?? 6),
+      ordersArchiveAutoDeleteEnabled: map.get("ordersArchiveAutoDeleteEnabled") === "true",
+      ordersArchiveAutoDeleteYears: Number(map.get("ordersArchiveAutoDeleteYears") ?? 2),
     });
   } catch (err) {
     req.log.error(err);

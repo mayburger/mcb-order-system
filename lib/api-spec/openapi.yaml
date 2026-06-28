@@ -912,6 +912,11 @@ paths:
           schema:
             type: string
             format: date
+        - name: archived
+          in: query
+          description: When true, returns only archived orders. Otherwise archived orders are excluded.
+          schema:
+            type: boolean
       responses:
         "200":
           description: Orders
@@ -988,6 +993,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Order"
+
+  /admin/orders/{id}/archive:
+    post:
+      operationId: archiveOrder
+      tags: [admin]
+      summary: Archive a completed or cancelled order (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Archived order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /admin/orders/{id}/restore:
+    post:
+      operationId: restoreOrder
+      tags: [admin]
+      summary: Restore an archived order back to the active list (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Restored order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /admin/orders/{id}/delete:
+    post:
+      operationId: deleteOrder
+      tags: [admin]
+      summary: Permanently delete an order with an optional reason (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderDeleteRequest"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
 
   # ── ADMIN – PAYMENT METHODS ───────────────────────────────────────────────
   /admin/payment-methods:
@@ -2630,9 +2701,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OrderItem"
+        archivedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
+
+    OrderDeleteRequest:
+      type: object
+      properties:
+        reason:
+          type: string
 
     OrderStatusPatch:
       type: object
@@ -2914,6 +2994,14 @@ components:
           type: string
         adminPassword:
           type: string
+        ordersAutoArchiveEnabled:
+          type: boolean
+        ordersAutoArchiveMonths:
+          type: integer
+        ordersArchiveAutoDeleteEnabled:
+          type: boolean
+        ordersArchiveAutoDeleteYears:
+          type: integer
 
     SettingsUpdate:
       type: object
@@ -2942,6 +3030,14 @@ components:
           type: string
         adminPassword:
           type: string
+        ordersAutoArchiveEnabled:
+          type: boolean
+        ordersAutoArchiveMonths:
+          type: integer
+        ordersArchiveAutoDeleteEnabled:
+          type: boolean
+        ordersArchiveAutoDeleteYears:
+          type: integer
 
     # ── CUSTOMER ACCOUNT ──────────────────────────────────────────────────────
     CustomerProfile:

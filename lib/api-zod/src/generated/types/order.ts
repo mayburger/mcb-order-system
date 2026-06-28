@@ -42,5 +42,7 @@ export interface Order {
   /** @nullable */
   tableInfo?: string | null;
   items: OrderItem[];
+  /** @nullable */
+  archivedAt?: Date | null;
   createdAt: Date;
 }

@@ -603,7 +603,13 @@ export interface Order {
   /** @nullable */
   tableInfo?: string | null;
   items: OrderItem[];
+  /** @nullable */
+  archivedAt?: string | null;
   createdAt: string;
+}
+
+export interface OrderDeleteRequest {
+  reason?: string;
 }
 
 export type OrderStatusPatchStatus = typeof OrderStatusPatchStatus[keyof typeof OrderStatusPatchStatus];
@@ -799,6 +805,10 @@ export interface AppSettings {
   estimatedPickupTime?: number;
   adminUsername?: string;
   adminPassword?: string;
+  ordersAutoArchiveEnabled?: boolean;
+  ordersAutoArchiveMonths?: number;
+  ordersArchiveAutoDeleteEnabled?: boolean;
+  ordersArchiveAutoDeleteYears?: number;
 }
 
 export interface SettingsUpdate {
@@ -814,6 +824,10 @@ export interface SettingsUpdate {
   estimatedPickupTime?: number;
   adminUsername?: string;
   adminPassword?: string;
+  ordersAutoArchiveEnabled?: boolean;
+  ordersAutoArchiveMonths?: number;
+  ordersArchiveAutoDeleteEnabled?: boolean;
+  ordersArchiveAutoDeleteYears?: number;
 }
 
 export interface CustomerProfile {
@@ -1136,6 +1150,10 @@ export type ListAdminOrdersParams = {
 status?: ListAdminOrdersStatus;
 orderType?: ListAdminOrdersOrderType;
 date?: string;
+/**
+ * When true, returns only archived orders. Otherwise archived orders are excluded.
+ */
+archived?: boolean;
 };
 
 export type ListAdminOrdersStatus = typeof ListAdminOrdersStatus[keyof typeof ListAdminOrdersStatus];
@@ -1158,6 +1176,10 @@ export const ListAdminOrdersOrderType = {
   delivery: 'delivery',
   pickup: 'pickup',
 } as const;
+
+export type DeleteOrder200 = {
+  success?: boolean;
+};
 
 export type ListStockMovementsParams = {
 stockItemId?: number;

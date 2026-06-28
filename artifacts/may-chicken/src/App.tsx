@@ -17,6 +17,7 @@ import NotFound from "@/pages/not-found";
 import AdminLoginPage from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminOrders from "@/pages/admin/orders";
+import AdminArchive from "@/pages/admin/archive";
 import AdminProducts from "@/pages/admin/products";
 import AdminCategories from "@/pages/admin/categories";
 import AdminCustomers from "@/pages/admin/customers";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/backstage" component={AdminLoginPage} />
       <Route path="/backstage/dashboard" component={AdminDashboard} />
       <Route path="/backstage/orders" component={AdminOrders} />
+      <Route path="/backstage/archive" component={AdminArchive} />
       <Route path="/backstage/products" component={AdminProducts} />
       <Route path="/backstage/categories" component={AdminCategories} />
       <Route path="/backstage/customers" component={AdminCustomers} />

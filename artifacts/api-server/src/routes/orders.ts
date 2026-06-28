@@ -51,6 +51,7 @@ function serializeOrder(
     source: order.source,
     tableInfo: order.tableInfo ?? null,
     createdAt: order.createdAt,
+    archivedAt: order.archivedAt ?? null,
     items: items.map((i) => ({
       id: i.id,
       menuItemId: i.menuItemId,

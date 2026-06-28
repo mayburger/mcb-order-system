@@ -3,12 +3,13 @@ import { AdminLayout } from "@/components/admin-layout";
 import {
   useListAdminOrders, getListAdminOrdersQueryKey,
   useUpdateAdminOrder, useGetAdminSession, getGetAdminSessionQueryKey,
+  useArchiveOrder, useDeleteOrder,
   OrderItem,
 } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Banknote, CreditCard, Truck, Package } from "lucide-react";
+import { ChevronDown, ChevronUp, Banknote, CreditCard, Truck, Package, Archive, Trash2, AlertTriangle, X } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   pending:    "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
@@ -67,6 +68,8 @@ export default function AdminOrders() {
   const [, navigate] = useLocation();
   const [statusFilter, setStatusFilter] = useState("");
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; orderNumber: string } | null>(null);
+  const [deleteReason, setDeleteReason] = useState("");
   const qc = useQueryClient();
 
   const { data: session, isLoading: sessionLoading } = useGetAdminSession({ query: { queryKey: getGetAdminSessionQueryKey() } });
@@ -75,6 +78,8 @@ export default function AdminOrders() {
     query: { queryKey: getListAdminOrdersQueryKey(params), refetchInterval: 30000 }
   });
   const updateOrder = useUpdateAdminOrder();
+  const archiveOrder = useArchiveOrder();
+  const deleteOrder = useDeleteOrder();
 
   useEffect(() => {
     if (!sessionLoading && !session?.authenticated) navigate("/backstage");
@@ -82,10 +87,31 @@ export default function AdminOrders() {
 
   if (sessionLoading || (!session?.authenticated)) return null;
 
+  const invalidate = () => qc.invalidateQueries({ queryKey: getListAdminOrdersQueryKey(params) });
+
   const handleStatusChange = (id: number, status: string) => {
     updateOrder.mutate(
       { id, data: { status: status as "pending" | "confirmed" | "preparing" | "ready" | "delivering" | "completed" | "cancelled" } },
-      { onSuccess: () => qc.invalidateQueries({ queryKey: getListAdminOrdersQueryKey(params) }) }
+      { onSuccess: invalidate }
+    );
+  };
+
+  const handleArchive = (id: number) => {
+    archiveOrder.mutate({ id }, { onSuccess: invalidate });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    const reason = deleteReason.trim();
+    deleteOrder.mutate(
+      { id: deleteTarget.id, data: reason ? { reason } : {} },
+      {
+        onSuccess: () => {
+          invalidate();
+          setDeleteTarget(null);
+          setDeleteReason("");
+        },
+      }
     );
   };
 
@@ -219,11 +245,69 @@ export default function AdminOrders() {
                         Stornieren
                       </Button>
                     )}
+                    {(order.status === "completed" || order.status === "cancelled") && (
+                      <>
+                        <Button size="sm" variant="outline" className="rounded-none uppercase tracking-wider text-xs font-bold border-border text-muted-foreground hover:border-white hover:text-white gap-1.5"
+                          disabled={archiveOrder.isPending}
+                          onClick={() => handleArchive(order.id)}>
+                          <Archive className="h-3.5 w-3.5" /> Archivieren
+                        </Button>
+                        <Button size="sm" variant="outline" className="rounded-none uppercase tracking-wider text-xs font-bold border-destructive/50 text-destructive hover:bg-destructive/10 gap-1.5"
+                          onClick={() => { setDeleteTarget({ id: order.id, orderNumber: order.orderNumber }); setDeleteReason(""); }}>
+                          <Trash2 className="h-3.5 w-3.5" /> Endgültig löschen
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Delete confirmation modal ──────────────────────────────── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => { if (!deleteOrder.isPending) setDeleteTarget(null); }}>
+          <div className="bg-card border border-destructive/40 max-w-md w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-4 right-4 text-muted-foreground hover:text-white" onClick={() => { if (!deleteOrder.isPending) setDeleteTarget(null); }}>
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 flex items-center justify-center bg-destructive/10 border border-destructive/30 shrink-0">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <h2 className="font-display font-bold uppercase text-white text-lg">Bestellung löschen</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              Bestellung <span className="font-mono text-white">{deleteTarget.orderNumber}</span>
+            </p>
+            <p className="text-sm text-white mb-4">
+              Möchtest du diese Bestellung wirklich dauerhaft löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.
+            </p>
+            <div className="mb-5">
+              <label className="text-xs text-muted-foreground uppercase tracking-wider mb-1 block">Löschgrund (optional)</label>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                rows={3}
+                placeholder="z. B. Testbestellung, doppelte Erfassung …"
+                className="w-full rounded-none border border-border bg-background text-white text-sm p-2 resize-none focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" className="rounded-none uppercase tracking-wider text-xs font-bold border-border text-muted-foreground hover:text-white"
+                disabled={deleteOrder.isPending}
+                onClick={() => setDeleteTarget(null)}>
+                Abbrechen
+              </Button>
+              <Button className="rounded-none uppercase tracking-wider text-xs font-bold bg-destructive hover:bg-destructive/90 text-white gap-1.5"
+                disabled={deleteOrder.isPending}
+                onClick={handleConfirmDelete}>
+                <Trash2 className="h-3.5 w-3.5" /> {deleteOrder.isPending ? "Wird gelöscht …" : "Dauerhaft löschen"}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </AdminLayout>

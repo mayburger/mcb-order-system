@@ -341,6 +341,7 @@ export const CreateOrderResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -394,6 +395,7 @@ export const GetOrderStatusResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -1351,7 +1353,8 @@ export const SetItemOptionPricesResponse = zod.unknown()
 export const ListAdminOrdersQueryParams = zod.object({
   "status": zod.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'completed', 'cancelled']).optional(),
   "orderType": zod.enum(['delivery', 'pickup']).optional(),
-  "date": zod.date().optional()
+  "date": zod.date().optional(),
+  "archived": zod.coerce.boolean().optional().describe('When true, returns only archived orders. Otherwise archived orders are excluded.')
 })
 
 export const ListAdminOrdersResponseItem = zod.object({
@@ -1396,6 +1399,7 @@ export const ListAdminOrdersResponseItem = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdminOrdersResponse = zod.array(ListAdminOrdersResponseItem)
@@ -1450,6 +1454,7 @@ export const GetAdminOrderResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -1508,6 +1513,7 @@ export const UpdateAdminOrderResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -1565,7 +1571,132 @@ export const UpdateOrderPaymentStatusResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Archive a completed or cancelled order (admin only)
+ */
+export const ArchiveOrderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ArchiveOrderResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "archivedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Restore an archived order back to the active list (admin only)
+ */
+export const RestoreOrderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RestoreOrderResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "archivedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Permanently delete an order with an optional reason (admin only)
+ */
+export const DeleteOrderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteOrderBody = zod.object({
+  "reason": zod.string().optional()
+})
+
+export const DeleteOrderResponse = zod.object({
+  "success": zod.boolean().optional()
 })
 
 
@@ -2074,6 +2205,7 @@ export const CreateQuickOrderResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -2093,7 +2225,11 @@ export const GetAdminSettingsResponse = zod.object({
   "estimatedDeliveryTime": zod.number().optional(),
   "estimatedPickupTime": zod.number().optional(),
   "adminUsername": zod.string().optional(),
-  "adminPassword": zod.string().optional()
+  "adminPassword": zod.string().optional(),
+  "ordersAutoArchiveEnabled": zod.boolean().optional(),
+  "ordersAutoArchiveMonths": zod.number().optional(),
+  "ordersArchiveAutoDeleteEnabled": zod.boolean().optional(),
+  "ordersArchiveAutoDeleteYears": zod.number().optional()
 })
 
 
@@ -2112,7 +2248,11 @@ export const UpdateAdminSettingsBody = zod.object({
   "estimatedDeliveryTime": zod.number().optional(),
   "estimatedPickupTime": zod.number().optional(),
   "adminUsername": zod.string().optional(),
-  "adminPassword": zod.string().optional()
+  "adminPassword": zod.string().optional(),
+  "ordersAutoArchiveEnabled": zod.boolean().optional(),
+  "ordersAutoArchiveMonths": zod.number().optional(),
+  "ordersArchiveAutoDeleteEnabled": zod.boolean().optional(),
+  "ordersArchiveAutoDeleteYears": zod.number().optional()
 })
 
 export const UpdateAdminSettingsResponse = zod.object({
@@ -2127,7 +2267,11 @@ export const UpdateAdminSettingsResponse = zod.object({
   "estimatedDeliveryTime": zod.number().optional(),
   "estimatedPickupTime": zod.number().optional(),
   "adminUsername": zod.string().optional(),
-  "adminPassword": zod.string().optional()
+  "adminPassword": zod.string().optional(),
+  "ordersAutoArchiveEnabled": zod.boolean().optional(),
+  "ordersAutoArchiveMonths": zod.number().optional(),
+  "ordersArchiveAutoDeleteEnabled": zod.boolean().optional(),
+  "ordersArchiveAutoDeleteYears": zod.number().optional()
 })
 
 
@@ -2270,6 +2414,7 @@ export const ListCustomerOrdersResponseItem = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListCustomerOrdersResponse = zod.array(ListCustomerOrdersResponseItem)
@@ -2324,6 +2469,7 @@ export const GetCustomerOrderResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -2511,6 +2657,7 @@ export const GetAdminCustomerResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "notes": zod.array(zod.object({
@@ -2646,6 +2793,7 @@ export const GetCrmCustomerResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "notes": zod.array(zod.object({
@@ -2767,6 +2915,7 @@ export const UpdateCrmCustomerResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "notes": zod.array(zod.object({
@@ -2881,6 +3030,7 @@ export const ListKitchenOrdersResponseItem = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListKitchenOrdersResponse = zod.array(ListKitchenOrdersResponseItem)
@@ -2939,6 +3089,7 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
   "price": zod.number()
 })).optional()
 })),
+  "archivedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 

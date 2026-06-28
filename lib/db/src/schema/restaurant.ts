@@ -242,7 +242,22 @@ export const orders = pgTable("restaurant_orders", {
   couponCode: text("coupon_code"),
   source: orderSourceEnum("source").notNull().default("online"),
   tableInfo: text("table_info"),
+  archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ── ORDER DELETION LOG ────────────────────────────────────────────────────────
+// Audit trail for permanently deleted orders. The order row itself is removed
+// (so it no longer appears in lists/stats), but this record preserves who
+// deleted it, when, and the optional reason.
+export const orderDeletionLog = pgTable("restaurant_order_deletion_log", {
+  id: serial("id").primaryKey(),
+  orderNumber: text("order_number").notNull(),
+  customerName: text("customer_name").notNull(),
+  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason"),
+  deletedBy: text("deleted_by"),
+  deletedAt: timestamp("deleted_at").notNull().defaultNow(),
 });
 
 // ── ORDER ITEMS ───────────────────────────────────────────────────────────────
