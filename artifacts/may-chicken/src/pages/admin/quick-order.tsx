@@ -45,7 +45,7 @@ import {
 
 type Source = "phone" | "lieferando" | "takeaway" | "dine_in";
 type OrderType = "delivery" | "pickup";
-type PayMethod = "cash" | "ec" | "paypal" | "lieferando";
+type PayMethod = "cash" | "ec_pickup" | "ec_delivery" | "paypal" | "lieferando";
 
 interface StaffCartLine {
   cartKey: string;
@@ -101,10 +101,11 @@ const SOURCES: { id: Source; label: string; icon: React.ReactNode; bg: string; a
 ];
 
 const PAY_METHODS: { id: PayMethod; label: string }[] = [
-  { id: "cash", label: "Bar" },
-  { id: "ec", label: "EC" },
-  { id: "paypal", label: "PayPal" },
-  { id: "lieferando", label: "Lieferando" },
+  { id: "cash",        label: "Bar" },
+  { id: "ec_pickup",   label: "EC Abholung" },
+  { id: "ec_delivery", label: "EC Lieferung" },
+  { id: "paypal",      label: "PayPal" },
+  { id: "lieferando",  label: "Lieferando" },
 ];
 
 // ── Staff Product Dialog ──────────────────────────────────────────────────────
@@ -729,7 +730,7 @@ export default function AdminQuickOrder() {
           tableInfo: tableInfo.trim() || undefined,
           notes: notes.trim() || undefined,
           couponCode: couponCode.trim() || undefined,
-          paymentMethod: payMethod as "cash" | "ec" | "paypal" | "lieferando",
+          paymentMethod: payMethod as any,
           items: cart.map((l) => ({
             menuItemId: l.menuItemId,
             quantity: l.quantity,

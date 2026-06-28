@@ -282,7 +282,7 @@ export const CreateOrderBody = zod.object({
   "city": zod.string().optional(),
   "notes": zod.string().optional(),
   "couponCode": zod.string().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "items": zod.array(zod.object({
   "menuItemId": zod.number(),
   "quantity": zod.number().min(1),
@@ -304,8 +304,9 @@ export const CreateOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -356,8 +357,9 @@ export const GetOrderStatusResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1299,8 +1301,9 @@ export const ListAdminOrdersResponseItem = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1352,8 +1355,9 @@ export const GetAdminOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1409,8 +1413,9 @@ export const UpdateAdminOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -1447,6 +1452,126 @@ export const UpdateAdminOrderResponse = zod.object({
 })),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Update payment status of an order
+ */
+export const UpdateOrderPaymentStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateOrderPaymentStatusBody = zod.object({
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed'])
+})
+
+export const UpdateOrderPaymentStatusResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List all payment method settings
+ */
+export const ListPaymentMethodsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "isActive": zod.boolean(),
+  "forDelivery": zod.boolean(),
+  "forPickup": zod.boolean(),
+  "onlineVisible": zod.boolean(),
+  "adminVisible": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const ListPaymentMethodsResponse = zod.array(ListPaymentMethodsResponseItem)
+
+
+/**
+ * @summary Update a payment method setting
+ */
+export const UpdatePaymentMethodParams = zod.object({
+  "key": zod.coerce.string()
+})
+
+export const UpdatePaymentMethodBody = zod.object({
+  "isActive": zod.boolean().optional(),
+  "forDelivery": zod.boolean().optional(),
+  "forPickup": zod.boolean().optional(),
+  "onlineVisible": zod.boolean().optional(),
+  "adminVisible": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdatePaymentMethodResponse = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "isActive": zod.boolean(),
+  "forDelivery": zod.boolean(),
+  "forPickup": zod.boolean(),
+  "onlineVisible": zod.boolean(),
+  "adminVisible": zod.boolean(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary List active payment methods for online checkout
+ */
+export const ListPublicPaymentMethodsResponseItem = zod.object({
+  "id": zod.number(),
+  "key": zod.string(),
+  "label": zod.string(),
+  "isActive": zod.boolean(),
+  "forDelivery": zod.boolean(),
+  "forPickup": zod.boolean(),
+  "onlineVisible": zod.boolean(),
+  "adminVisible": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const ListPublicPaymentMethodsResponse = zod.array(ListPublicPaymentMethodsResponseItem)
 
 
 /**
@@ -1831,7 +1956,7 @@ export const CreateQuickOrderBody = zod.object({
   "city": zod.string().optional(),
   "notes": zod.string().optional(),
   "tableInfo": zod.string().optional(),
-  "paymentMethod": zod.enum(['cash', 'ec', 'paypal', 'lieferando']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "couponCode": zod.string().optional(),
   "items": zod.array(zod.object({
   "menuItemId": zod.number(),
@@ -1854,8 +1979,9 @@ export const CreateQuickOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -2049,8 +2175,9 @@ export const ListCustomerOrdersResponseItem = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -2102,8 +2229,9 @@ export const GetCustomerOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -2288,8 +2416,9 @@ export const GetAdminCustomerResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -2362,8 +2491,9 @@ export const ListKitchenOrdersResponseItem = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),
@@ -2419,8 +2549,9 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
   "orderNumber": zod.string(),
   "orderType": zod.enum(['delivery', 'pickup']),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
   "customerId": zod.number().nullish(),
-  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
   "customerName": zod.string(),
   "customerPhone": zod.string(),
   "customerEmail": zod.string().nullish(),

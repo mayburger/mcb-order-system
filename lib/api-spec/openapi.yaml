@@ -950,6 +950,88 @@ paths:
               schema:
                 $ref: "#/components/schemas/Order"
 
+  /admin/orders/{id}/payment-status:
+    patch:
+      operationId: updateOrderPaymentStatus
+      tags: [admin]
+      summary: Update payment status of an order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderPaymentStatusPatch"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  # ── ADMIN – PAYMENT METHODS ───────────────────────────────────────────────
+  /admin/payment-methods:
+    get:
+      operationId: listPaymentMethods
+      tags: [admin]
+      summary: List all payment method settings
+      responses:
+        "200":
+          description: Payment method settings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentMethodSetting"
+
+  /admin/payment-methods/{key}:
+    put:
+      operationId: updatePaymentMethod
+      tags: [admin]
+      summary: Update a payment method setting
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentMethodSettingPatch"
+      responses:
+        "200":
+          description: Updated setting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethodSetting"
+
+  # ── PUBLIC – PAYMENT METHODS ──────────────────────────────────────────────
+  /restaurant/payment-methods:
+    get:
+      operationId: listPublicPaymentMethods
+      tags: [restaurant]
+      summary: List active payment methods for online checkout
+      responses:
+        "200":
+          description: Active payment methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentMethodSetting"
+
   # ── ADMIN – CUSTOMERS ─────────────────────────────────────────────────────
   /admin/customers:
     get:
@@ -2362,7 +2444,7 @@ components:
           type: ["string", "null"]
         paymentMethod:
           type: string
-          enum: [cash, card]
+          enum: [cash, ec_pickup, ec_delivery, paypal, stripe, lieferando]
         items:
           type: array
           items:
@@ -2371,7 +2453,7 @@ components:
 
     Order:
       type: object
-      required: [id, orderNumber, orderType, status, customerName, customerPhone, subtotal, deliveryFee, discountAmount, total, items, createdAt]
+      required: [id, orderNumber, orderType, status, paymentStatus, customerName, customerPhone, subtotal, deliveryFee, discountAmount, total, items, createdAt]
       properties:
         id:
           type: integer
@@ -2382,11 +2464,14 @@ components:
           enum: [delivery, pickup]
         status:
           type: string
+        paymentStatus:
+          type: string
+          enum: [open, paid, refunded, failed]
         customerId:
           type: ["integer", "null"]
         paymentMethod:
           type: string
-          enum: [cash, card]
+          enum: [cash, ec_pickup, ec_delivery, paypal, stripe, lieferando]
         customerName:
           type: string
         customerPhone:
@@ -2441,6 +2526,53 @@ components:
         status:
           type: string
           enum: [pending, confirmed, preparing, ready, delivering, completed, cancelled]
+
+    OrderPaymentStatusPatch:
+      type: object
+      required: [paymentStatus]
+      properties:
+        paymentStatus:
+          type: string
+          enum: [open, paid, refunded, failed]
+
+    PaymentMethodSetting:
+      type: object
+      required: [id, key, label, isActive, forDelivery, forPickup, onlineVisible, adminVisible, sortOrder]
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        label:
+          type: string
+        isActive:
+          type: boolean
+        forDelivery:
+          type: boolean
+        forPickup:
+          type: boolean
+        onlineVisible:
+          type: boolean
+        adminVisible:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    PaymentMethodSettingPatch:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        forDelivery:
+          type: boolean
+        forPickup:
+          type: boolean
+        onlineVisible:
+          type: boolean
+        adminVisible:
+          type: boolean
+        sortOrder:
+          type: integer
 
     # ── CUSTOMERS ─────────────────────────────────────────────────────────
     Customer:
@@ -2879,7 +3011,7 @@ components:
           type: string
         paymentMethod:
           type: string
-          enum: [cash, ec, paypal, lieferando]
+          enum: [cash, ec_pickup, ec_delivery, paypal, stripe, lieferando]
         couponCode:
           type: string
         items:

@@ -33,6 +33,7 @@ function serializeOrder(
     orderNumber: order.orderNumber,
     orderType: order.orderType,
     status: order.status,
+    paymentStatus: order.paymentStatus,
     customerId: order.customerId ?? null,
     paymentMethod: order.paymentMethod,
     customerName: order.customerName,
@@ -103,7 +104,7 @@ router.post("/restaurant/orders", async (req, res) => {
       city?: string;
       notes?: string;
       couponCode?: string;
-      paymentMethod?: "cash" | "card";
+      paymentMethod?: "cash" | "ec_pickup" | "ec_delivery" | "paypal" | "stripe" | "lieferando";
       items: Array<{
         menuItemId: number;
         quantity: number;

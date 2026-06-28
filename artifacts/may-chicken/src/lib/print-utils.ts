@@ -368,6 +368,7 @@ export const MOCK_ORDER: Order = {
   discountAmount: 0,
   total: 27.80,
   paymentMethod: "cash",
+  paymentStatus: "paid",
   couponCode: null,
   source: "phone",
   tableInfo: null,

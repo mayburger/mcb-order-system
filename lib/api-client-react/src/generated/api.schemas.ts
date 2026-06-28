@@ -505,7 +505,11 @@ export type OrderInputPaymentMethod = typeof OrderInputPaymentMethod[keyof typeo
 
 export const OrderInputPaymentMethod = {
   cash: 'cash',
-  card: 'card',
+  ec_pickup: 'ec_pickup',
+  ec_delivery: 'ec_delivery',
+  paypal: 'paypal',
+  stripe: 'stripe',
+  lieferando: 'lieferando',
 } as const;
 
 export interface OrderInput {
@@ -535,12 +539,26 @@ export const OrderOrderType = {
   pickup: 'pickup',
 } as const;
 
+export type OrderPaymentStatus = typeof OrderPaymentStatus[keyof typeof OrderPaymentStatus];
+
+
+export const OrderPaymentStatus = {
+  open: 'open',
+  paid: 'paid',
+  refunded: 'refunded',
+  failed: 'failed',
+} as const;
+
 export type OrderPaymentMethod = typeof OrderPaymentMethod[keyof typeof OrderPaymentMethod];
 
 
 export const OrderPaymentMethod = {
   cash: 'cash',
-  card: 'card',
+  ec_pickup: 'ec_pickup',
+  ec_delivery: 'ec_delivery',
+  paypal: 'paypal',
+  stripe: 'stripe',
+  lieferando: 'lieferando',
 } as const;
 
 export type OrderSource = typeof OrderSource[keyof typeof OrderSource];
@@ -559,6 +577,7 @@ export interface Order {
   orderNumber: string;
   orderType: OrderOrderType;
   status: string;
+  paymentStatus: OrderPaymentStatus;
   /** @nullable */
   customerId?: number | null;
   paymentMethod?: OrderPaymentMethod;
@@ -620,6 +639,41 @@ export const KitchenOrderStatusPatchStatus = {
 
 export interface KitchenOrderStatusPatch {
   status: KitchenOrderStatusPatchStatus;
+}
+
+export type OrderPaymentStatusPatchPaymentStatus = typeof OrderPaymentStatusPatchPaymentStatus[keyof typeof OrderPaymentStatusPatchPaymentStatus];
+
+
+export const OrderPaymentStatusPatchPaymentStatus = {
+  open: 'open',
+  paid: 'paid',
+  refunded: 'refunded',
+  failed: 'failed',
+} as const;
+
+export interface OrderPaymentStatusPatch {
+  paymentStatus: OrderPaymentStatusPatchPaymentStatus;
+}
+
+export interface PaymentMethodSetting {
+  id: number;
+  key: string;
+  label: string;
+  isActive: boolean;
+  forDelivery: boolean;
+  forPickup: boolean;
+  onlineVisible: boolean;
+  adminVisible: boolean;
+  sortOrder: number;
+}
+
+export interface PaymentMethodSettingPatch {
+  isActive?: boolean;
+  forDelivery?: boolean;
+  forPickup?: boolean;
+  onlineVisible?: boolean;
+  adminVisible?: boolean;
+  sortOrder?: number;
 }
 
 export interface Customer {
@@ -883,8 +937,10 @@ export type QuickOrderRequestPaymentMethod = typeof QuickOrderRequestPaymentMeth
 
 export const QuickOrderRequestPaymentMethod = {
   cash: 'cash',
-  ec: 'ec',
+  ec_pickup: 'ec_pickup',
+  ec_delivery: 'ec_delivery',
   paypal: 'paypal',
+  stripe: 'stripe',
   lieferando: 'lieferando',
 } as const;
 

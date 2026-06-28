@@ -28,6 +28,7 @@ import AdminOptionGroups from "@/pages/admin/option-groups";
 import AdminInventory from "@/pages/admin/inventory";
 import AdminQuickOrder from "@/pages/admin/quick-order";
 import AdminPrintSettings from "@/pages/admin/print-settings";
+import AdminPayments from "@/pages/admin/payments";
 
 import KitchenPage from "@/pages/kitchen";
 
@@ -86,6 +87,7 @@ function Router() {
       <Route path="/backstage/inventory" component={AdminInventory} />
       <Route path="/backstage/quick-order" component={AdminQuickOrder} />
       <Route path="/backstage/print-settings" component={AdminPrintSettings} />
+      <Route path="/backstage/payments" component={AdminPayments} />
 
       <Route component={NotFound} />
     </Switch>

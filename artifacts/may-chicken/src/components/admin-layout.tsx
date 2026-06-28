@@ -17,6 +17,7 @@ import {
   Package,
   PhoneCall,
   Printer,
+  CreditCard,
 } from "lucide-react";
 import { useAdminLogout } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -46,6 +47,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/backstage/inventory", label: "Lager", icon: Package },
     { href: "/backstage/quick-order", label: "Schnellbestellung", icon: PhoneCall },
     { href: "/backstage/print-settings", label: "Drucker & Bons", icon: Printer },
+    { href: "/backstage/payments", label: "Zahlungen", icon: CreditCard },
     { href: "/backstage/settings", label: "Einstellungen", icon: Settings },
   ];
 

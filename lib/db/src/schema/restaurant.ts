@@ -41,6 +41,12 @@ export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
   "consumption",
   "cancellation",
 ]);
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "open",
+  "paid",
+  "refunded",
+  "failed",
+]);
 
 // ── CATEGORIES ──────────────────────────────────────────────────────────────
 export const categories = pgTable("restaurant_categories", {
@@ -208,6 +214,7 @@ export const orders = pgTable("restaurant_orders", {
   city: text("city"),
   notes: text("notes"),
   paymentMethod: text("payment_method").notNull().default("cash"),
+  paymentStatus: paymentStatusEnum("payment_status").notNull().default("open"),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
   deliveryFee: numeric("delivery_fee", { precision: 10, scale: 2 })
     .notNull()
@@ -485,3 +492,16 @@ export const favoriteOrdersRelations = relations(favoriteOrders, ({ one }) => ({
 export const customerNotesRelations = relations(customerNotes, ({ one }) => ({
   customer: one(customers, { fields: [customerNotes.customerId], references: [customers.id] }),
 }));
+
+// ── PAYMENT METHOD SETTINGS ────────────────────────────────────────────────
+export const paymentMethodSettings = pgTable("restaurant_payment_method_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  forDelivery: boolean("for_delivery").notNull().default(true),
+  forPickup: boolean("for_pickup").notNull().default(true),
+  onlineVisible: boolean("online_visible").notNull().default(true),
+  adminVisible: boolean("admin_visible").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+});

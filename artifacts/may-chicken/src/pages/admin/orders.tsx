@@ -125,10 +125,10 @@ export default function AdminOrders() {
                         : <><Package className="h-3 w-3" /> Abholung</>
                       }
                     </span>
-                    {order.paymentMethod === "card"
-                      ? <span className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="h-3 w-3" /> Karte</span>
-                      : <span className="text-xs text-muted-foreground flex items-center gap-1"><Banknote className="h-3 w-3" /> Bar</span>
-                    }
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      {order.paymentMethod === "cash" ? <Banknote className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
+                      {order.paymentMethod ?? "Bar"}
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{order.customerName} · {order.customerPhone}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -166,9 +166,9 @@ export default function AdminOrders() {
                     <div>
                       <p className="text-muted-foreground text-xs uppercase tracking-wider mb-0.5">Zahlung</p>
                       <p className="text-white flex items-center gap-1.5">
-                        {order.paymentMethod === "card"
-                          ? <><CreditCard className="h-3.5 w-3.5 text-primary" /> Kartenzahlung</>
-                          : <><Banknote className="h-3.5 w-3.5 text-primary" /> Barzahlung</>
+                        {order.paymentMethod === "cash"
+                          ? <><Banknote className="h-3.5 w-3.5 text-primary" /> Barzahlung</>
+                          : <><CreditCard className="h-3.5 w-3.5 text-primary" /> {order.paymentMethod ?? "Bar"}</>
                         }
                       </p>
                     </div>

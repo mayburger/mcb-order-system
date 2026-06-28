@@ -3,6 +3,7 @@ import {
   useListKitchenOrders,
   getListKitchenOrdersQueryKey,
   useUpdateKitchenOrderStatus,
+  useUpdateOrderPaymentStatus,
   useGetAdminSettings,
 } from "@workspace/api-client-react";
 import type { Order } from "@workspace/api-client-react";
@@ -205,16 +206,53 @@ function playAlert() {
   }
 }
 
+// ── Payment Badge ─────────────────────────────────────────────────────────────
+
+const PAY_STATUS_CFG: Record<string, { label: string; cls: string }> = {
+  open:      { label: "Offen",          cls: "bg-yellow-500/20 text-yellow-300 border-yellow-500/40" },
+  paid:      { label: "Bezahlt",         cls: "bg-green-500/20  text-green-300  border-green-500/40"  },
+  refunded:  { label: "Zurückerstattet", cls: "bg-blue-500/20   text-blue-300   border-blue-500/40"   },
+  failed:    { label: "Fehlgeschlagen",  cls: "bg-red-500/20    text-red-300    border-red-500/40"    },
+};
+
+function PaymentBadge({
+  order,
+  onPaymentStatus,
+}: {
+  order: Order;
+  onPaymentStatus: (id: number, status: string) => void;
+}) {
+  const ps = order.paymentStatus ?? "open";
+  const cfg = PAY_STATUS_CFG[ps] ?? PAY_STATUS_CFG.open;
+  const next = ps === "open" ? "paid" : ps === "paid" ? "refunded" : "open";
+  const pm = PAY_LABELS[order.paymentMethod ?? ""] ?? order.paymentMethod ?? "";
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="text-xs text-muted-foreground">{pm}</span>
+      <button
+        onClick={() => onPaymentStatus(order.id, next)}
+        title={`Klick → ${PAY_STATUS_CFG[next]?.label}`}
+        className={`text-xs px-2 py-0.5 border rounded font-medium transition-opacity hover:opacity-80 ${cfg.cls}`}
+      >
+        {cfg.label}
+      </button>
+    </div>
+  );
+}
+
 // ── Order Card ────────────────────────────────────────────────────────────────
 
 function OrderCard({
   order,
   onStatus,
+  onPaymentStatus,
   isPending,
   settings,
 }: {
   order: Order;
   onStatus: (id: number, status: string) => void;
+  onPaymentStatus: (id: number, status: string) => void;
   isPending: boolean;
   settings: PrintSettings;
 }) {
@@ -363,13 +401,28 @@ function OrderCard({
         </div>
       )}
 
-      {/* Total */}
+      {/* Total + Payment */}
       <div className="px-4 py-2 border-t border-border/50 flex justify-between items-center">
-        <span className="text-muted-foreground text-sm">Gesamt</span>
+        <div>
+          <span className="text-muted-foreground text-sm">Gesamt</span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <PaymentBadge order={order} onPaymentStatus={onPaymentStatus} />
+          </div>
+        </div>
         <span className="text-white font-mono font-bold text-lg">
           {Number(order.total).toFixed(2)} €
         </span>
       </div>
+
+      {/* Cash collection warning */}
+      {order.paymentMethod === "cash" && order.paymentStatus === "open" && (
+        <div className="mx-4 mb-2 flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-3 py-2 rounded">
+          <span className="text-green-400 text-base">💵</span>
+          <span className="text-green-300 text-sm font-bold">
+            Bitte {Number(order.total).toFixed(2)} € kassieren
+          </span>
+        </div>
+      )}
 
       {/* Action buttons */}
       {status !== "completed" && status !== "cancelled" && (
@@ -529,9 +582,18 @@ export default function KitchenPage() {
     for (const o of allOrders) knownIds.current.add(o.id);
   }, [allOrders, soundEnabled]);
 
+  const updatePaymentStatus = useUpdateOrderPaymentStatus();
+
   const handleStatus = (id: number, status: string) => {
     updateStatus.mutate(
       { id, data: { status: status as any } },
+      { onSuccess: () => qc.invalidateQueries({ queryKey: getListKitchenOrdersQueryKey() }) },
+    );
+  };
+
+  const handlePaymentStatus = (id: number, paymentStatus: string) => {
+    updatePaymentStatus.mutate(
+      { id, data: { paymentStatus: paymentStatus as any } },
       { onSuccess: () => qc.invalidateQueries({ queryKey: getListKitchenOrdersQueryKey() }) },
     );
   };
@@ -671,6 +733,7 @@ export default function KitchenPage() {
                 key={order.id}
                 order={order}
                 onStatus={handleStatus}
+                onPaymentStatus={handlePaymentStatus}
                 isPending={updateStatus.isPending}
                 settings={printSettings}
               />

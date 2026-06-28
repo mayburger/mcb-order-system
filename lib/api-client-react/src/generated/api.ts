@@ -74,7 +74,10 @@ import type {
   OptionItemUpdate,
   Order,
   OrderInput,
+  OrderPaymentStatusPatch,
   OrderStatusPatch,
+  PaymentMethodSetting,
+  PaymentMethodSettingPatch,
   QuickOrderRequest,
   RestaurantInfo,
   SettingsUpdate,
@@ -3710,6 +3713,302 @@ export const useUpdateAdminOrder = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getUpdateAdminOrderMutationOptions(options));
     }
+
+export const getUpdateOrderPaymentStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/orders/${id}/payment-status`
+}
+
+/**
+ * @summary Update payment status of an order
+ */
+export const updateOrderPaymentStatus = async (id: number,
+    orderPaymentStatusPatch: OrderPaymentStatusPatch, options?: RequestInit): Promise<Order> => {
+
+  return customFetch<Order>(getUpdateOrderPaymentStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(orderPaymentStatusPatch)
+  }
+);}
+
+
+
+
+export const getUpdateOrderPaymentStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderPaymentStatus>>, TError,{id: number;data: BodyType<OrderPaymentStatusPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOrderPaymentStatus>>, TError,{id: number;data: BodyType<OrderPaymentStatusPatch>}, TContext> => {
+
+const mutationKey = ['updateOrderPaymentStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOrderPaymentStatus>>, {id: number;data: BodyType<OrderPaymentStatusPatch>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateOrderPaymentStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateOrderPaymentStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateOrderPaymentStatus>>>
+    export type UpdateOrderPaymentStatusMutationBody = BodyType<OrderPaymentStatusPatch>
+    export type UpdateOrderPaymentStatusMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update payment status of an order
+ */
+export const useUpdateOrderPaymentStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderPaymentStatus>>, TError,{id: number;data: BodyType<OrderPaymentStatusPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateOrderPaymentStatus>>,
+        TError,
+        {id: number;data: BodyType<OrderPaymentStatusPatch>},
+        TContext
+      > => {
+      return useMutation(getUpdateOrderPaymentStatusMutationOptions(options));
+    }
+
+export const getListPaymentMethodsUrl = () => {
+
+
+
+
+  return `/api/admin/payment-methods`
+}
+
+/**
+ * @summary List all payment method settings
+ */
+export const listPaymentMethods = async ( options?: RequestInit): Promise<PaymentMethodSetting[]> => {
+
+  return customFetch<PaymentMethodSetting[]>(getListPaymentMethodsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaymentMethodsQueryKey = () => {
+    return [
+    `/api/admin/payment-methods`
+    ] as const;
+    }
+
+
+export const getListPaymentMethodsQueryOptions = <TData = Awaited<ReturnType<typeof listPaymentMethods>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaymentMethods>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaymentMethodsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaymentMethods>>> = ({ signal }) => listPaymentMethods({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaymentMethods>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaymentMethodsQueryResult = NonNullable<Awaited<ReturnType<typeof listPaymentMethods>>>
+export type ListPaymentMethodsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all payment method settings
+ */
+
+export function useListPaymentMethods<TData = Awaited<ReturnType<typeof listPaymentMethods>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaymentMethods>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaymentMethodsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePaymentMethodUrl = (key: string,) => {
+
+
+
+
+  return `/api/admin/payment-methods/${key}`
+}
+
+/**
+ * @summary Update a payment method setting
+ */
+export const updatePaymentMethod = async (key: string,
+    paymentMethodSettingPatch: PaymentMethodSettingPatch, options?: RequestInit): Promise<PaymentMethodSetting> => {
+
+  return customFetch<PaymentMethodSetting>(getUpdatePaymentMethodUrl(key),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentMethodSettingPatch)
+  }
+);}
+
+
+
+
+export const getUpdatePaymentMethodMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentMethod>>, TError,{key: string;data: BodyType<PaymentMethodSettingPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePaymentMethod>>, TError,{key: string;data: BodyType<PaymentMethodSettingPatch>}, TContext> => {
+
+const mutationKey = ['updatePaymentMethod'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePaymentMethod>>, {key: string;data: BodyType<PaymentMethodSettingPatch>}> = (props) => {
+          const {key,data} = props ?? {};
+
+          return  updatePaymentMethod(key,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePaymentMethodMutationResult = NonNullable<Awaited<ReturnType<typeof updatePaymentMethod>>>
+    export type UpdatePaymentMethodMutationBody = BodyType<PaymentMethodSettingPatch>
+    export type UpdatePaymentMethodMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a payment method setting
+ */
+export const useUpdatePaymentMethod = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaymentMethod>>, TError,{key: string;data: BodyType<PaymentMethodSettingPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePaymentMethod>>,
+        TError,
+        {key: string;data: BodyType<PaymentMethodSettingPatch>},
+        TContext
+      > => {
+      return useMutation(getUpdatePaymentMethodMutationOptions(options));
+    }
+
+export const getListPublicPaymentMethodsUrl = () => {
+
+
+
+
+  return `/api/restaurant/payment-methods`
+}
+
+/**
+ * @summary List active payment methods for online checkout
+ */
+export const listPublicPaymentMethods = async ( options?: RequestInit): Promise<PaymentMethodSetting[]> => {
+
+  return customFetch<PaymentMethodSetting[]>(getListPublicPaymentMethodsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPublicPaymentMethodsQueryKey = () => {
+    return [
+    `/api/restaurant/payment-methods`
+    ] as const;
+    }
+
+
+export const getListPublicPaymentMethodsQueryOptions = <TData = Awaited<ReturnType<typeof listPublicPaymentMethods>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPaymentMethods>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPublicPaymentMethodsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublicPaymentMethods>>> = ({ signal }) => listPublicPaymentMethods({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPublicPaymentMethods>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPublicPaymentMethodsQueryResult = NonNullable<Awaited<ReturnType<typeof listPublicPaymentMethods>>>
+export type ListPublicPaymentMethodsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active payment methods for online checkout
+ */
+
+export function useListPublicPaymentMethods<TData = Awaited<ReturnType<typeof listPublicPaymentMethods>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicPaymentMethods>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPublicPaymentMethodsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListCustomersUrl = () => {
 

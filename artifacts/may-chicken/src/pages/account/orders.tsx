@@ -195,7 +195,7 @@ function OrderCard({ order }: { order: Order }) {
             {order.deliveryAddress && (
               <p>📍 {order.deliveryAddress}{order.postalCode && `, ${order.postalCode}`}{order.city && ` ${order.city}`}</p>
             )}
-            <p>💳 {order.paymentMethod === "card" ? "Kartenzahlung" : "Barzahlung"}</p>
+            <p>💳 {order.paymentMethod ?? "Bar"}</p>
             {order.notes && <p>📝 {order.notes}</p>}
           </div>
         </div>

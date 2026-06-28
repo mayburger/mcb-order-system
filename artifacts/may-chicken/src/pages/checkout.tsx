@@ -11,9 +11,10 @@ import {
   useValidateCoupon,
   useListCustomerNotes,
   useCreateCustomerNote,
+  useListPublicPaymentMethods,
   getListCustomerNotesQueryKey,
 } from "@workspace/api-client-react";
-import { Truck, ShoppingBag, Tag, ArrowRight, ChevronDown, ChevronUp, Banknote, CreditCard, FileText, Plus } from "lucide-react";
+import { Truck, ShoppingBag, Tag, ArrowRight, ChevronDown, ChevronUp, Banknote, CreditCard, Car, Globe, FileText, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -32,7 +33,7 @@ export default function CheckoutPage() {
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export default function CheckoutPage() {
   }, [customer]);
 
   const { data: areas } = useListDeliveryAreas();
+  const { data: paymentMethods = [] } = useListPublicPaymentMethods();
   const { data: savedNotes } = useListCustomerNotes({
     query: { queryKey: getListCustomerNotesQueryKey(), enabled: isAuthenticated },
   });
@@ -146,7 +148,7 @@ export default function CheckoutPage() {
           postalCode: postalCode.trim() || undefined,
           city: city.trim() || undefined,
           notes: notes.trim() || undefined,
-          paymentMethod,
+          paymentMethod: paymentMethod as any,
           couponCode: appliedCoupon ?? undefined,
           items: items.map((i) => ({
             menuItemId: i.menuItem.id,
@@ -347,25 +349,42 @@ export default function CheckoutPage() {
               <h2 className="text-base md:text-lg font-display font-bold uppercase text-white mb-3">
                 Zahlungsart
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                {(["cash", "card"] as const).map((method) => (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPaymentMethod(method)}
-                    className={`flex items-center gap-3 p-4 border transition-colors ${
-                      paymentMethod === method
-                        ? "border-primary bg-primary/10 text-white"
-                        : "border-border text-muted-foreground hover:border-white"
-                    }`}
-                  >
-                    {method === "cash" ? <Banknote className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
-                    <span className="font-bold uppercase tracking-wider text-sm">
-                      {method === "cash" ? "Barzahlung" : "Kartenzahlung"}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              {paymentMethods.length === 0 ? (
+                <div className="text-sm text-muted-foreground border border-border p-4">
+                  Keine Zahlungsarten verfügbar.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {paymentMethods
+                    .filter((m) =>
+                      orderType === "delivery" ? m.forDelivery : m.forPickup,
+                    )
+                    .map((method) => {
+                      const Icon =
+                        method.key === "cash" ? Banknote
+                        : method.key === "ec_pickup" || method.key === "ec_delivery" || method.key === "stripe" ? CreditCard
+                        : method.key === "lieferando" ? ShoppingBag
+                        : Globe;
+                      return (
+                        <button
+                          key={method.key}
+                          type="button"
+                          onClick={() => setPaymentMethod(method.key)}
+                          className={`flex items-center gap-3 p-4 border transition-colors ${
+                            paymentMethod === method.key
+                              ? "border-primary bg-primary/10 text-white"
+                              : "border-border text-muted-foreground hover:border-white"
+                          }`}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" />
+                          <span className="font-bold uppercase tracking-wider text-sm text-left">
+                            {method.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
             </div>
 
             {/* Anmerkungen */}
