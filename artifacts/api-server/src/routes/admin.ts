@@ -19,6 +19,8 @@ import {
   customers,
   favoriteOrders,
   customerNotes,
+  stockItems,
+  stockMovements,
 } from "@workspace/db/schema";
 import { eq, desc, asc, gte, and, sql, count, inArray } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAdmin";
@@ -898,6 +900,219 @@ router.delete("/admin/coupons/:id", async (req, res) => {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// ── INVENTORY ────────────────────────────────────────────────────────────────
+function serializeStockItem(si: typeof stockItems.$inferSelect) {
+  return {
+    id: si.id,
+    menuItemId: si.menuItemId ?? null,
+    name: si.name,
+    currentStock: Number(si.currentStock),
+    minStock: Number(si.minStock),
+    unit: si.unit,
+    trackStock: si.trackStock,
+    isLow: Number(si.currentStock) <= Number(si.minStock),
+    createdAt: si.createdAt,
+    updatedAt: si.updatedAt,
+  };
+}
+
+function serializeStockMovement(sm: typeof stockMovements.$inferSelect) {
+  return {
+    id: sm.id,
+    stockItemId: sm.stockItemId ?? null,
+    menuItemId: sm.menuItemId ?? null,
+    itemName: sm.itemName,
+    movementType: sm.movementType,
+    quantity: Number(sm.quantity),
+    previousStock: Number(sm.previousStock),
+    newStock: Number(sm.newStock),
+    orderId: sm.orderId ?? null,
+    notes: sm.notes ?? null,
+    createdAt: sm.createdAt,
+  };
+}
+
+router.get("/admin/inventory", async (req, res) => {
+  try {
+    const items = await db.select().from(stockItems).orderBy(asc(stockItems.name));
+    res.json(items.map(serializeStockItem));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/admin/inventory", async (req, res) => {
+  try {
+    const body = req.body as { menuItemId?: number; name: string; currentStock?: number; minStock?: number; unit?: string; trackStock?: boolean };
+    if (!body.name?.trim()) { res.status(400).json({ error: "Name required" }); return; }
+    const [si] = await db.insert(stockItems).values({
+      menuItemId: body.menuItemId ?? null,
+      name: body.name.trim(),
+      currentStock: (body.currentStock ?? 0).toFixed(2),
+      minStock: (body.minStock ?? 5).toFixed(2),
+      unit: body.unit ?? "Stück",
+      trackStock: body.trackStock ?? true,
+    }).returning();
+    res.status(201).json(serializeStockItem(si!));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.patch("/admin/inventory/:id", async (req, res) => {
+  try {
+    const id = Number(req.params["id"]);
+    const body = req.body as { name?: string; currentStock?: number; minStock?: number; unit?: string; trackStock?: boolean };
+    const update: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.name !== undefined) update["name"] = body.name;
+    if (body.currentStock !== undefined) update["currentStock"] = body.currentStock.toFixed(2);
+    if (body.minStock !== undefined) update["minStock"] = body.minStock.toFixed(2);
+    if (body.unit !== undefined) update["unit"] = body.unit;
+    if (body.trackStock !== undefined) update["trackStock"] = body.trackStock;
+    const [si] = await db.update(stockItems).set(update).where(eq(stockItems.id, id)).returning();
+    if (!si) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(serializeStockItem(si));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/admin/inventory/:id", async (req, res) => {
+  try {
+    await db.delete(stockItems).where(eq(stockItems.id, Number(req.params["id"])));
+    res.status(204).end();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.get("/admin/inventory/movements", async (req, res) => {
+  try {
+    const { stockItemId, limit } = req.query as { stockItemId?: string; limit?: string };
+    let q = db.select().from(stockMovements).orderBy(desc(stockMovements.createdAt)).$dynamic();
+    if (stockItemId) q = q.where(eq(stockMovements.stockItemId, Number(stockItemId)));
+    const rows = await q.limit(Number(limit ?? 200));
+    res.json(rows.map(serializeStockMovement));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/admin/inventory/movements", async (req, res) => {
+  try {
+    const body = req.body as { stockItemId: number; movementType: "restock" | "correction" | "loss" | "consumption" | "cancellation"; quantity: number; notes?: string };
+    if (!body.stockItemId || !body.movementType || body.quantity === undefined) {
+      res.status(400).json({ error: "stockItemId, movementType, quantity required" }); return;
+    }
+    const si = await db.query.stockItems.findFirst({ where: (s, { eq: eqFn }) => eqFn(s.id, body.stockItemId) });
+    if (!si) { res.status(404).json({ error: "Stock item not found" }); return; }
+
+    const prev = Number(si.currentStock);
+    const delta = body.movementType === "restock" || body.movementType === "cancellation"
+      ? Math.abs(body.quantity)
+      : body.movementType === "loss" || body.movementType === "consumption"
+      ? -Math.abs(body.quantity)
+      : body.quantity;
+    const next = prev + delta;
+
+    await db.update(stockItems).set({ currentStock: next.toFixed(2), updatedAt: new Date() }).where(eq(stockItems.id, si.id));
+    const [sm] = await db.insert(stockMovements).values({
+      stockItemId: si.id, menuItemId: si.menuItemId, itemName: si.name,
+      movementType: body.movementType, quantity: delta.toFixed(2),
+      previousStock: prev.toFixed(2), newStock: next.toFixed(2), notes: body.notes ?? null,
+    }).returning();
+    res.status(201).json(serializeStockMovement(sm!));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── QUICK ORDER ───────────────────────────────────────────────────────────────
+router.post("/admin/quick-order", async (req, res) => {
+  try {
+    const body = req.body as {
+      source: "phone" | "lieferando" | "takeaway" | "dine_in";
+      orderType: "delivery" | "pickup";
+      customerName: string; customerPhone: string; customerEmail?: string;
+      deliveryAddress?: string; postalCode?: string; city?: string;
+      notes?: string; tableInfo?: string; paymentMethod?: "cash" | "card";
+      couponCode?: string;
+      items: Array<{ menuItemId: number; quantity: number; variantId?: number; selectedExtras?: Array<{ name: string; price: number }>; selectedOptions?: Array<{ groupId: number; optionItemId: number; price: number }> }>;
+    };
+
+    if (!body.items?.length) return res.status(400).json({ error: "At least one item required" });
+    if (!body.customerName || !body.customerPhone) return res.status(400).json({ error: "Customer name and phone required" });
+
+    const itemIds = body.items.map((i) => i.menuItemId);
+    const dbMenuItems = await db.query.menuItems.findMany({ with: { variants: true }, where: (item, { inArray: inArr }) => inArr(item.id, itemIds) });
+
+    const allOptionItemIds = body.items.flatMap((i) => (i.selectedOptions ?? []).map((o) => o.optionItemId));
+    const allGroupIds = body.items.flatMap((i) => (i.selectedOptions ?? []).map((o) => o.groupId));
+    const dbOI = allOptionItemIds.length > 0 ? await db.select().from(optionItems).where(inArray(optionItems.id, allOptionItemIds)) : [];
+    const dbOG = allGroupIds.length > 0 ? await db.select().from(optionGroups).where(inArray(optionGroups.id, allGroupIds)) : [];
+    const oiMap = new Map(dbOI.map((i) => [i.id, i]));
+    const ogMap = new Map(dbOG.map((g) => [g.id, g]));
+    const itemMap = new Map(dbMenuItems.map((i) => [i.id, i]));
+
+    let subtotal = 0;
+    const resolvedItems: Array<{ menuItemId: number; itemName: string; itemPrice: number; quantity: number; lineTotal: number; variantName: string | null; extrasSnapshot: Array<{ name: string; price: number }>; optionsSnapshot: Array<{ groupId: number; groupName: string; optionItemId: number; optionItemName: string; price: number }> }> = [];
+
+    for (const ordered of body.items) {
+      const dbItem = itemMap.get(ordered.menuItemId);
+      if (!dbItem) { res.status(400).json({ error: `Item ${ordered.menuItemId} not found` }); return; }
+      let price = Number(dbItem.price);
+      let variantName: string | null = null;
+      const extras = ordered.selectedExtras ?? [];
+      const optionsSel = ordered.selectedOptions ?? [];
+      if (optionsSel.length > 0) {
+        const absOpt = optionsSel.find((o) => ogMap.get(o.groupId)?.priceType === "absolute");
+        if (absOpt) { price = absOpt.price; const ai = oiMap.get(absOpt.optionItemId); if (ai) variantName = ai.name; }
+        price += optionsSel.filter((o) => ogMap.get(o.groupId)?.priceType === "additive").reduce((s, o) => s + o.price, 0);
+      } else if (ordered.variantId) {
+        const v = dbItem.variants.find((vv) => vv.id === ordered.variantId);
+        if (v) { price = Number(v.price); variantName = v.name; }
+      } else if (dbItem.variants.length > 0) {
+        const sorted = [...dbItem.variants].sort((a, b) => a.sortOrder - b.sortOrder);
+        price = Number(sorted[0]!.price); variantName = sorted[0]!.name;
+      }
+      const unitPrice = price + extras.reduce((s, e) => s + e.price, 0);
+      const lineTotal = unitPrice * ordered.quantity;
+      subtotal += lineTotal;
+      resolvedItems.push({ menuItemId: ordered.menuItemId, itemName: dbItem.name, itemPrice: unitPrice, quantity: ordered.quantity, lineTotal, variantName, extrasSnapshot: extras, optionsSnapshot: optionsSel.map((o) => ({ groupId: o.groupId, groupName: ogMap.get(o.groupId)?.name ?? "", optionItemId: o.optionItemId, optionItemName: oiMap.get(o.optionItemId)?.name ?? "", price: o.price })) });
+    }
+
+    let discountAmount = 0; let usedCouponCode: string | null = null;
+    if (body.couponCode) {
+      const coupon = await db.query.coupons.findFirst({ where: (c, { eq: eqFn, and: andFn }) => andFn(eqFn(c.code, body.couponCode!.toUpperCase()), eqFn(c.active, true)) });
+      if (coupon && (!coupon.expiresAt || coupon.expiresAt > new Date())) {
+        discountAmount = coupon.discountType === "percentage" ? subtotal * (Number(coupon.discountValue) / 100) : Math.min(Number(coupon.discountValue), subtotal);
+        usedCouponCode = coupon.code;
+        await db.update(coupons).set({ usageCount: coupon.usageCount + 1 }).where(eq(coupons.id, coupon.id));
+      }
+    }
+
+    const total = subtotal - discountAmount;
+    const now = new Date();
+    const orderNumber = `MCB-${now.toISOString().slice(0,10).replace(/-/g,"")}${Math.floor(Math.random()*9000)+1000}`;
+
+    const [order] = await db.insert(orders).values({
+      orderNumber, orderType: body.orderType, source: body.source,
+      tableInfo: body.tableInfo ?? null, customerName: body.customerName,
+      customerPhone: body.customerPhone, customerEmail: body.customerEmail ?? null,
+      deliveryAddress: body.deliveryAddress ?? null, postalCode: body.postalCode ?? null,
+      city: body.city ?? null, notes: body.notes ?? null,
+      paymentMethod: body.paymentMethod ?? "cash",
+      subtotal: subtotal.toFixed(2), deliveryFee: "0.00",
+      discountAmount: discountAmount.toFixed(2), total: total.toFixed(2), couponCode: usedCouponCode,
+    }).returning();
+    if (!order) return res.status(500).json({ error: "Failed to create order" });
+
+    const insertedItems = await db.insert(orderItems).values(
+      resolvedItems.map((i) => ({ orderId: order.id, menuItemId: i.menuItemId, itemName: i.itemName, itemPrice: i.itemPrice.toFixed(2), quantity: i.quantity, lineTotal: i.lineTotal.toFixed(2), variantName: i.variantName, extrasSnapshot: i.extrasSnapshot.length > 0 ? i.extrasSnapshot : null, optionsSnapshot: i.optionsSnapshot.length > 0 ? i.optionsSnapshot : null }))
+    ).returning();
+
+    try {
+      for (const ri of resolvedItems) {
+        const si = await db.query.stockItems.findFirst({ where: (s, { eq: eqFn, and: andFn }) => andFn(eqFn(s.menuItemId, ri.menuItemId), eqFn(s.trackStock, true)) });
+        if (!si) continue;
+        const prev = Number(si.currentStock); const next = prev - ri.quantity;
+        await db.update(stockItems).set({ currentStock: next.toFixed(2), updatedAt: new Date() }).where(eq(stockItems.id, si.id));
+        await db.insert(stockMovements).values({ stockItemId: si.id, menuItemId: ri.menuItemId, itemName: ri.itemName, movementType: "sale", quantity: (-ri.quantity).toFixed(2), previousStock: prev.toFixed(2), newStock: next.toFixed(2), orderId: order.id });
+      }
+    } catch (stockErr) { req.log.warn({ err: stockErr }, "Stock deduction warning"); }
+
+    res.status(201).json(serializeOrder(order, insertedItems));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────────

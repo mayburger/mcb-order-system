@@ -61,6 +61,7 @@ import type {
   ListAdminItemsParams,
   ListAdminOrdersParams,
   ListMenuItemsParams,
+  ListStockMovementsParams,
   MenuItem,
   MenuItemInput,
   MenuItemUpdate,
@@ -74,9 +75,14 @@ import type {
   Order,
   OrderInput,
   OrderStatusPatch,
+  QuickOrderRequest,
   RestaurantInfo,
   SettingsUpdate,
-  SortOrderUpdate
+  SortOrderUpdate,
+  StockItem,
+  StockItemCreate,
+  StockMovement,
+  StockMovementCreate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -4503,6 +4509,518 @@ export const useDeleteCoupon = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteCouponMutationOptions(options));
+    }
+
+export const getListInventoryUrl = () => {
+
+
+
+
+  return `/api/admin/inventory`
+}
+
+/**
+ * @summary List all stock items
+ */
+export const listInventory = async ( options?: RequestInit): Promise<StockItem[]> => {
+
+  return customFetch<StockItem[]>(getListInventoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInventoryQueryKey = () => {
+    return [
+    `/api/admin/inventory`
+    ] as const;
+    }
+
+
+export const getListInventoryQueryOptions = <TData = Awaited<ReturnType<typeof listInventory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventory>>> = ({ signal }) => listInventory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInventoryQueryResult = NonNullable<Awaited<ReturnType<typeof listInventory>>>
+export type ListInventoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all stock items
+ */
+
+export function useListInventory<TData = Awaited<ReturnType<typeof listInventory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInventoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStockItemUrl = () => {
+
+
+
+
+  return `/api/admin/inventory`
+}
+
+/**
+ * @summary Create a stock tracking entry
+ */
+export const createStockItem = async (stockItemCreate: StockItemCreate, options?: RequestInit): Promise<StockItem> => {
+
+  return customFetch<StockItem>(getCreateStockItemUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockItemCreate)
+  }
+);}
+
+
+
+
+export const getCreateStockItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockItem>>, TError,{data: BodyType<StockItemCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStockItem>>, TError,{data: BodyType<StockItemCreate>}, TContext> => {
+
+const mutationKey = ['createStockItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStockItem>>, {data: BodyType<StockItemCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStockItem(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStockItemMutationResult = NonNullable<Awaited<ReturnType<typeof createStockItem>>>
+    export type CreateStockItemMutationBody = BodyType<StockItemCreate>
+    export type CreateStockItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a stock tracking entry
+ */
+export const useCreateStockItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockItem>>, TError,{data: BodyType<StockItemCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStockItem>>,
+        TError,
+        {data: BodyType<StockItemCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateStockItemMutationOptions(options));
+    }
+
+export const getUpdateStockItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/inventory/${id}`
+}
+
+/**
+ * @summary Update a stock item
+ */
+export const updateStockItem = async (id: number,
+    stockItemCreate: StockItemCreate, options?: RequestInit): Promise<StockItem> => {
+
+  return customFetch<StockItem>(getUpdateStockItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockItemCreate)
+  }
+);}
+
+
+
+
+export const getUpdateStockItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStockItem>>, TError,{id: number;data: BodyType<StockItemCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStockItem>>, TError,{id: number;data: BodyType<StockItemCreate>}, TContext> => {
+
+const mutationKey = ['updateStockItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStockItem>>, {id: number;data: BodyType<StockItemCreate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateStockItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStockItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateStockItem>>>
+    export type UpdateStockItemMutationBody = BodyType<StockItemCreate>
+    export type UpdateStockItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a stock item
+ */
+export const useUpdateStockItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStockItem>>, TError,{id: number;data: BodyType<StockItemCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStockItem>>,
+        TError,
+        {id: number;data: BodyType<StockItemCreate>},
+        TContext
+      > => {
+      return useMutation(getUpdateStockItemMutationOptions(options));
+    }
+
+export const getDeleteStockItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/inventory/${id}`
+}
+
+/**
+ * @summary Remove stock tracking entry
+ */
+export const deleteStockItem = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteStockItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteStockItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStockItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStockItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteStockItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStockItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteStockItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStockItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStockItem>>>
+
+    export type DeleteStockItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove stock tracking entry
+ */
+export const useDeleteStockItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStockItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStockItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteStockItemMutationOptions(options));
+    }
+
+export const getListStockMovementsUrl = (params?: ListStockMovementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/inventory/movements?${stringifiedParams}` : `/api/admin/inventory/movements`
+}
+
+/**
+ * @summary List stock movements
+ */
+export const listStockMovements = async (params?: ListStockMovementsParams, options?: RequestInit): Promise<StockMovement[]> => {
+
+  return customFetch<StockMovement[]>(getListStockMovementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStockMovementsQueryKey = (params?: ListStockMovementsParams,) => {
+    return [
+    `/api/admin/inventory/movements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListStockMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<unknown>>(params?: ListStockMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockMovementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockMovements>>> = ({ signal }) => listStockMovements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStockMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof listStockMovements>>>
+export type ListStockMovementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List stock movements
+ */
+
+export function useListStockMovements<TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<unknown>>(
+ params?: ListStockMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStockMovementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStockMovementUrl = () => {
+
+
+
+
+  return `/api/admin/inventory/movements`
+}
+
+/**
+ * @summary Create a manual stock movement
+ */
+export const createStockMovement = async (stockMovementCreate: StockMovementCreate, options?: RequestInit): Promise<StockMovement> => {
+
+  return customFetch<StockMovement>(getCreateStockMovementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stockMovementCreate)
+  }
+);}
+
+
+
+
+export const getCreateStockMovementMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockMovement>>, TError,{data: BodyType<StockMovementCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStockMovement>>, TError,{data: BodyType<StockMovementCreate>}, TContext> => {
+
+const mutationKey = ['createStockMovement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStockMovement>>, {data: BodyType<StockMovementCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStockMovement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStockMovementMutationResult = NonNullable<Awaited<ReturnType<typeof createStockMovement>>>
+    export type CreateStockMovementMutationBody = BodyType<StockMovementCreate>
+    export type CreateStockMovementMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a manual stock movement
+ */
+export const useCreateStockMovement = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockMovement>>, TError,{data: BodyType<StockMovementCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStockMovement>>,
+        TError,
+        {data: BodyType<StockMovementCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateStockMovementMutationOptions(options));
+    }
+
+export const getCreateQuickOrderUrl = () => {
+
+
+
+
+  return `/api/admin/quick-order`
+}
+
+/**
+ * @summary Admin quick order (phone, Lieferando, takeaway, dine-in)
+ */
+export const createQuickOrder = async (quickOrderRequest: QuickOrderRequest, options?: RequestInit): Promise<Order> => {
+
+  return customFetch<Order>(getCreateQuickOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(quickOrderRequest)
+  }
+);}
+
+
+
+
+export const getCreateQuickOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQuickOrder>>, TError,{data: BodyType<QuickOrderRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createQuickOrder>>, TError,{data: BodyType<QuickOrderRequest>}, TContext> => {
+
+const mutationKey = ['createQuickOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createQuickOrder>>, {data: BodyType<QuickOrderRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createQuickOrder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateQuickOrderMutationResult = NonNullable<Awaited<ReturnType<typeof createQuickOrder>>>
+    export type CreateQuickOrderMutationBody = BodyType<QuickOrderRequest>
+    export type CreateQuickOrderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Admin quick order (phone, Lieferando, takeaway, dine-in)
+ */
+export const useCreateQuickOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createQuickOrder>>, TError,{data: BodyType<QuickOrderRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createQuickOrder>>,
+        TError,
+        {data: BodyType<QuickOrderRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateQuickOrderMutationOptions(options));
     }
 
 export const getGetAdminSettingsUrl = () => {

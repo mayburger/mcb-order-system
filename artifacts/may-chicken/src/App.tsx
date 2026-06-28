@@ -25,6 +25,8 @@ import AdminOpeningHours from "@/pages/admin/opening-hours";
 import AdminCoupons from "@/pages/admin/coupons";
 import AdminSettings from "@/pages/admin/settings";
 import AdminOptionGroups from "@/pages/admin/option-groups";
+import AdminInventory from "@/pages/admin/inventory";
+import AdminQuickOrder from "@/pages/admin/quick-order";
 
 import KitchenPage from "@/pages/kitchen";
 
@@ -80,6 +82,8 @@ function Router() {
       <Route path="/backstage/coupons" component={AdminCoupons} />
       <Route path="/backstage/settings" component={AdminSettings} />
       <Route path="/backstage/option-groups" component={AdminOptionGroups} />
+      <Route path="/backstage/inventory" component={AdminInventory} />
+      <Route path="/backstage/quick-order" component={AdminQuickOrder} />
 
       <Route component={NotFound} />
     </Switch>

@@ -543,6 +543,17 @@ export const OrderPaymentMethod = {
   card: 'card',
 } as const;
 
+export type OrderSource = typeof OrderSource[keyof typeof OrderSource];
+
+
+export const OrderSource = {
+  online: 'online',
+  phone: 'phone',
+  lieferando: 'lieferando',
+  takeaway: 'takeaway',
+  dine_in: 'dine_in',
+} as const;
+
 export interface Order {
   id: number;
   orderNumber: string;
@@ -569,6 +580,9 @@ export interface Order {
   total: number;
   /** @nullable */
   couponCode?: string | null;
+  source?: OrderSource;
+  /** @nullable */
+  tableInfo?: string | null;
   items: OrderItem[];
   createdAt: string;
 }
@@ -773,6 +787,119 @@ export interface CustomerAdminDetail {
   favorites: FavoriteOrder[];
 }
 
+export interface StockItem {
+  id: number;
+  /** @nullable */
+  menuItemId?: number | null;
+  name: string;
+  currentStock: number;
+  minStock: number;
+  unit: string;
+  trackStock: boolean;
+  isLow: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockItemCreate {
+  menuItemId?: number;
+  name: string;
+  currentStock?: number;
+  minStock?: number;
+  unit?: string;
+  trackStock?: boolean;
+}
+
+export type StockMovementMovementType = typeof StockMovementMovementType[keyof typeof StockMovementMovementType];
+
+
+export const StockMovementMovementType = {
+  sale: 'sale',
+  restock: 'restock',
+  correction: 'correction',
+  loss: 'loss',
+  consumption: 'consumption',
+  cancellation: 'cancellation',
+} as const;
+
+export interface StockMovement {
+  id: number;
+  /** @nullable */
+  stockItemId?: number | null;
+  /** @nullable */
+  menuItemId?: number | null;
+  itemName: string;
+  movementType: StockMovementMovementType;
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  /** @nullable */
+  orderId?: number | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export type StockMovementCreateMovementType = typeof StockMovementCreateMovementType[keyof typeof StockMovementCreateMovementType];
+
+
+export const StockMovementCreateMovementType = {
+  restock: 'restock',
+  correction: 'correction',
+  loss: 'loss',
+  consumption: 'consumption',
+  cancellation: 'cancellation',
+} as const;
+
+export interface StockMovementCreate {
+  stockItemId: number;
+  movementType: StockMovementCreateMovementType;
+  quantity: number;
+  notes?: string;
+}
+
+export type QuickOrderRequestSource = typeof QuickOrderRequestSource[keyof typeof QuickOrderRequestSource];
+
+
+export const QuickOrderRequestSource = {
+  phone: 'phone',
+  lieferando: 'lieferando',
+  takeaway: 'takeaway',
+  dine_in: 'dine_in',
+} as const;
+
+export type QuickOrderRequestOrderType = typeof QuickOrderRequestOrderType[keyof typeof QuickOrderRequestOrderType];
+
+
+export const QuickOrderRequestOrderType = {
+  delivery: 'delivery',
+  pickup: 'pickup',
+} as const;
+
+export type QuickOrderRequestPaymentMethod = typeof QuickOrderRequestPaymentMethod[keyof typeof QuickOrderRequestPaymentMethod];
+
+
+export const QuickOrderRequestPaymentMethod = {
+  cash: 'cash',
+  card: 'card',
+} as const;
+
+export interface QuickOrderRequest {
+  source: QuickOrderRequestSource;
+  orderType: QuickOrderRequestOrderType;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  deliveryAddress?: string;
+  postalCode?: string;
+  city?: string;
+  notes?: string;
+  tableInfo?: string;
+  paymentMethod?: QuickOrderRequestPaymentMethod;
+  couponCode?: string;
+  items: OrderItemInput[];
+}
+
 export type ListMenuItemsParams = {
 categoryId?: number;
 available?: boolean;
@@ -809,4 +936,9 @@ export const ListAdminOrdersOrderType = {
   delivery: 'delivery',
   pickup: 'pickup',
 } as const;
+
+export type ListStockMovementsParams = {
+stockItemId?: number;
+limit?: number;
+};
 

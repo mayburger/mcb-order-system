@@ -8,6 +8,7 @@
 import type { OrderItem } from './orderItem';
 import type { OrderOrderType } from './orderOrderType';
 import type { OrderPaymentMethod } from './orderPaymentMethod';
+import type { OrderSource } from './orderSource';
 
 export interface Order {
   id: number;
@@ -35,6 +36,9 @@ export interface Order {
   total: number;
   /** @nullable */
   couponCode?: string | null;
+  source?: OrderSource;
+  /** @nullable */
+  tableInfo?: string | null;
   items: OrderItem[];
   createdAt: Date;
 }

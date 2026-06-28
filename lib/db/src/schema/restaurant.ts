@@ -26,6 +26,21 @@ export const discountTypeEnum = pgEnum("discount_type", [
   "percentage",
   "fixed",
 ]);
+export const orderSourceEnum = pgEnum("order_source", [
+  "online",
+  "phone",
+  "lieferando",
+  "takeaway",
+  "dine_in",
+]);
+export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
+  "sale",
+  "restock",
+  "correction",
+  "loss",
+  "consumption",
+  "cancellation",
+]);
 
 // ── CATEGORIES ──────────────────────────────────────────────────────────────
 export const categories = pgTable("restaurant_categories", {
@@ -202,6 +217,8 @@ export const orders = pgTable("restaurant_orders", {
     .default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
   couponCode: text("coupon_code"),
+  source: orderSourceEnum("source").notNull().default("online"),
+  tableInfo: text("table_info"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -228,6 +245,34 @@ export const orderItems = pgTable("restaurant_order_items", {
     optionItemName: string;
     price: number;
   }>>(),
+});
+
+// ── STOCK ITEMS ───────────────────────────────────────────────────────────────
+export const stockItems = pgTable("restaurant_stock_items", {
+  id: serial("id").primaryKey(),
+  menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  currentStock: numeric("current_stock", { precision: 10, scale: 2 }).notNull().default("0"),
+  minStock: numeric("min_stock", { precision: 10, scale: 2 }).notNull().default("5"),
+  unit: text("unit").notNull().default("Stück"),
+  trackStock: boolean("track_stock").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ── STOCK MOVEMENTS ───────────────────────────────────────────────────────────
+export const stockMovements = pgTable("restaurant_stock_movements", {
+  id: serial("id").primaryKey(),
+  stockItemId: integer("stock_item_id").references(() => stockItems.id, { onDelete: "set null" }),
+  menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "set null" }),
+  itemName: text("item_name").notNull(),
+  movementType: stockMovementTypeEnum("movement_type").notNull(),
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
+  previousStock: numeric("previous_stock", { precision: 10, scale: 2 }).notNull(),
+  newStock: numeric("new_stock", { precision: 10, scale: 2 }).notNull(),
+  orderId: integer("order_id").references(() => orders.id, { onDelete: "set null" }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // ── FAVORITE ORDERS ───────────────────────────────────────────────────────────
@@ -402,6 +447,17 @@ export const itemOptionPricesRelations = relations(itemOptionPrices, ({ one }) =
   }),
 }));
 
+export const stockItemsRelations = relations(stockItems, ({ one, many }) => ({
+  menuItem: one(menuItems, { fields: [stockItems.menuItemId], references: [menuItems.id] }),
+  movements: many(stockMovements),
+}));
+
+export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
+  stockItem: one(stockItems, { fields: [stockMovements.stockItemId], references: [stockItems.id] }),
+  menuItem: one(menuItems, { fields: [stockMovements.menuItemId], references: [menuItems.id] }),
+  order: one(orders, { fields: [stockMovements.orderId], references: [orders.id] }),
+}));
+
 export const customersRelations = relations(customers, ({ many }) => ({
   orders: many(orders),
   favoriteOrders: many(favoriteOrders),
@@ -411,6 +467,7 @@ export const customersRelations = relations(customers, ({ many }) => ({
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   customer: one(customers, { fields: [orders.customerId], references: [customers.id] }),
   items: many(orderItems),
+  stockMovements: many(stockMovements),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({

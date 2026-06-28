@@ -318,6 +318,8 @@ export const CreateOrderResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -368,6 +370,8 @@ export const GetOrderStatusResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -1309,6 +1313,8 @@ export const ListAdminOrdersResponseItem = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -1360,6 +1366,8 @@ export const GetAdminOrderResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -1415,6 +1423,8 @@ export const UpdateAdminOrderResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -1672,6 +1682,219 @@ export const DeleteCouponResponse = zod.void()
 
 
 /**
+ * @summary List all stock items
+ */
+export const ListInventoryResponseItem = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "name": zod.string(),
+  "currentStock": zod.number(),
+  "minStock": zod.number(),
+  "unit": zod.string(),
+  "trackStock": zod.boolean(),
+  "isLow": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListInventoryResponse = zod.array(ListInventoryResponseItem)
+
+
+/**
+ * @summary Create a stock tracking entry
+ */
+export const CreateStockItemBody = zod.object({
+  "menuItemId": zod.number().optional(),
+  "name": zod.string(),
+  "currentStock": zod.number().optional(),
+  "minStock": zod.number().optional(),
+  "unit": zod.string().optional(),
+  "trackStock": zod.boolean().optional()
+})
+
+export const CreateStockItemResponse = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "name": zod.string(),
+  "currentStock": zod.number(),
+  "minStock": zod.number(),
+  "unit": zod.string(),
+  "trackStock": zod.boolean(),
+  "isLow": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a stock item
+ */
+export const UpdateStockItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateStockItemBody = zod.object({
+  "menuItemId": zod.number().optional(),
+  "name": zod.string(),
+  "currentStock": zod.number().optional(),
+  "minStock": zod.number().optional(),
+  "unit": zod.string().optional(),
+  "trackStock": zod.boolean().optional()
+})
+
+export const UpdateStockItemResponse = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "name": zod.string(),
+  "currentStock": zod.number(),
+  "minStock": zod.number(),
+  "unit": zod.string(),
+  "trackStock": zod.boolean(),
+  "isLow": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove stock tracking entry
+ */
+export const DeleteStockItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteStockItemResponse = zod.void()
+
+
+/**
+ * @summary List stock movements
+ */
+export const ListStockMovementsQueryParams = zod.object({
+  "stockItemId": zod.coerce.number().optional(),
+  "limit": zod.coerce.number().optional()
+})
+
+export const ListStockMovementsResponseItem = zod.object({
+  "id": zod.number(),
+  "stockItemId": zod.number().nullish(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "movementType": zod.enum(['sale', 'restock', 'correction', 'loss', 'consumption', 'cancellation']),
+  "quantity": zod.number(),
+  "previousStock": zod.number(),
+  "newStock": zod.number(),
+  "orderId": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListStockMovementsResponse = zod.array(ListStockMovementsResponseItem)
+
+
+/**
+ * @summary Create a manual stock movement
+ */
+export const CreateStockMovementBody = zod.object({
+  "stockItemId": zod.number(),
+  "movementType": zod.enum(['restock', 'correction', 'loss', 'consumption', 'cancellation']),
+  "quantity": zod.number(),
+  "notes": zod.string().optional()
+})
+
+export const CreateStockMovementResponse = zod.object({
+  "id": zod.number(),
+  "stockItemId": zod.number().nullish(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "movementType": zod.enum(['sale', 'restock', 'correction', 'loss', 'consumption', 'cancellation']),
+  "quantity": zod.number(),
+  "previousStock": zod.number(),
+  "newStock": zod.number(),
+  "orderId": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Admin quick order (phone, Lieferando, takeaway, dine-in)
+ */
+
+
+
+export const CreateQuickOrderBody = zod.object({
+  "source": zod.enum(['phone', 'lieferando', 'takeaway', 'dine_in']),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().optional(),
+  "deliveryAddress": zod.string().optional(),
+  "postalCode": zod.string().optional(),
+  "city": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "tableInfo": zod.string().optional(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "couponCode": zod.string().optional(),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "quantity": zod.number().min(1),
+  "variantId": zod.number().optional().describe('ID of the chosen variant (e.g. pizza size)'),
+  "selectedExtras": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "optionItemId": zod.number(),
+  "price": zod.number()
+})).optional().describe('Selected option group items (new system)')
+}))
+})
+
+export const CreateQuickOrderResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'card']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get all app settings
  */
 export const GetAdminSettingsResponse = zod.object({
@@ -1840,6 +2063,8 @@ export const ListCustomerOrdersResponseItem = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -1891,6 +2116,8 @@ export const GetCustomerOrderResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -2075,6 +2302,8 @@ export const GetAdminCustomerResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -2147,6 +2376,8 @@ export const ListKitchenOrdersResponseItem = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
@@ -2202,6 +2433,8 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
   "discountAmount": zod.number(),
   "total": zod.number(),
   "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),

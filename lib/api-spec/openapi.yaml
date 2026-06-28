@@ -1144,6 +1144,136 @@ paths:
           description: Deleted
 
   # ── ADMIN – SETTINGS ─────────────────────────────────────────────────────
+  /admin/inventory:
+    get:
+      operationId: listInventory
+      tags: [admin]
+      summary: List all stock items
+      responses:
+        "200":
+          description: Stock items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockItem"
+    post:
+      operationId: createStockItem
+      tags: [admin]
+      summary: Create a stock tracking entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockItemCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItem"
+
+  /admin/inventory/{id}:
+    patch:
+      operationId: updateStockItem
+      tags: [admin]
+      summary: Update a stock item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockItemCreate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockItem"
+    delete:
+      operationId: deleteStockItem
+      tags: [admin]
+      summary: Remove stock tracking entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/inventory/movements:
+    get:
+      operationId: listStockMovements
+      tags: [admin]
+      summary: List stock movements
+      parameters:
+        - name: stockItemId
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockMovement"
+    post:
+      operationId: createStockMovement
+      tags: [admin]
+      summary: Create a manual stock movement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockMovementCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockMovement"
+
+  /admin/quick-order:
+    post:
+      operationId: createQuickOrder
+      tags: [admin]
+      summary: Admin quick order (phone, Lieferando, takeaway, dine-in)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickOrderRequest"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
   /admin/settings:
     get:
       operationId: getAdminSettings
@@ -2281,6 +2411,11 @@ components:
           type: number
         couponCode:
           type: ["string", "null"]
+        source:
+          type: string
+          enum: [online, phone, lieferando, takeaway, dine_in]
+        tableInfo:
+          type: ["string", "null"]
         items:
           type: array
           items:
@@ -2627,3 +2762,127 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FavoriteOrder"
+
+    # ── INVENTORY ──────────────────────────────────────────────────────────
+    StockItem:
+      type: object
+      required: [id, name, currentStock, minStock, unit, trackStock, isLow, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        menuItemId:
+          type: ["integer", "null"]
+        name:
+          type: string
+        currentStock:
+          type: number
+        minStock:
+          type: number
+        unit:
+          type: string
+        trackStock:
+          type: boolean
+        isLow:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StockItemCreate:
+      type: object
+      required: [name]
+      properties:
+        menuItemId:
+          type: integer
+        name:
+          type: string
+        currentStock:
+          type: number
+        minStock:
+          type: number
+        unit:
+          type: string
+        trackStock:
+          type: boolean
+
+    StockMovement:
+      type: object
+      required: [id, itemName, movementType, quantity, previousStock, newStock, createdAt]
+      properties:
+        id:
+          type: integer
+        stockItemId:
+          type: ["integer", "null"]
+        menuItemId:
+          type: ["integer", "null"]
+        itemName:
+          type: string
+        movementType:
+          type: string
+          enum: [sale, restock, correction, loss, consumption, cancellation]
+        quantity:
+          type: number
+        previousStock:
+          type: number
+        newStock:
+          type: number
+        orderId:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    StockMovementCreate:
+      type: object
+      required: [stockItemId, movementType, quantity]
+      properties:
+        stockItemId:
+          type: integer
+        movementType:
+          type: string
+          enum: [restock, correction, loss, consumption, cancellation]
+        quantity:
+          type: number
+        notes:
+          type: string
+
+    QuickOrderRequest:
+      type: object
+      required: [source, orderType, customerName, customerPhone, items]
+      properties:
+        source:
+          type: string
+          enum: [phone, lieferando, takeaway, dine_in]
+        orderType:
+          type: string
+          enum: [delivery, pickup]
+        customerName:
+          type: string
+        customerPhone:
+          type: string
+        customerEmail:
+          type: string
+        deliveryAddress:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        notes:
+          type: string
+        tableInfo:
+          type: string
+        paymentMethod:
+          type: string
+          enum: [cash, card]
+        couponCode:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
