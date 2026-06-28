@@ -702,6 +702,79 @@ export interface AdminStats {
   popularItems: PopularItem[];
 }
 
+export type DashboardStatsRevenue = {
+  today: number;
+  week: number;
+  month: number;
+  avgOrderValue: number;
+};
+
+export type DashboardStatsOrders = {
+  today: number;
+  total: number;
+  pending: number;
+  completed: number;
+  cancelled: number;
+};
+
+export type DashboardStatsBestsellersItem = {
+  name: string;
+  qty: number;
+  revenue: number;
+};
+
+export type DashboardStatsTopExtrasItem = {
+  name: string;
+  qty: number;
+};
+
+export type DashboardStatsBySourceItem = {
+  source: string;
+  count: number;
+  revenue: number;
+};
+
+export type DashboardStatsByPaymentItem = {
+  method: string;
+  count: number;
+  revenue: number;
+};
+
+export type DashboardStatsCustomers = {
+  total: number;
+  newToday: number;
+  newThisWeek: number;
+  regular: number;
+  inactive30d: number;
+};
+
+export type DashboardStatsKitchen = {
+  open: number;
+  completed: number;
+  /** @nullable */
+  avgPrepMinutes: number | null;
+};
+
+export type DashboardStatsStockWarningsItem = {
+  id: number;
+  name: string;
+  currentStock: number;
+  minStock: number;
+  unit: string;
+};
+
+export interface DashboardStats {
+  revenue: DashboardStatsRevenue;
+  orders: DashboardStatsOrders;
+  bestsellers: DashboardStatsBestsellersItem[];
+  topExtras: DashboardStatsTopExtrasItem[];
+  bySource: DashboardStatsBySourceItem[];
+  byPayment: DashboardStatsByPaymentItem[];
+  customers: DashboardStatsCustomers;
+  kitchen: DashboardStatsKitchen;
+  stockWarnings: DashboardStatsStockWarningsItem[];
+}
+
 export interface AdminCredentials {
   username: string;
   password: string;

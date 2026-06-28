@@ -46,6 +46,7 @@ import type {
   CustomerProfileUpdate,
   CustomerRegisterInput,
   CustomerSession,
+  DashboardStats,
   DayHours,
   DeliveryArea,
   DeliveryAreaInput,
@@ -1243,6 +1244,83 @@ export function useGetAdminStats<TData = Awaited<ReturnType<typeof getAdminStats
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAdminStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAdminDashboardUrl = () => {
+
+
+
+
+  return `/api/admin/dashboard`
+}
+
+/**
+ * @summary Full dashboard statistics (revenue, orders, bestsellers, extras, source, payment, customers, kitchen, stock)
+ */
+export const getAdminDashboard = async ( options?: RequestInit): Promise<DashboardStats> => {
+
+  return customFetch<DashboardStats>(getGetAdminDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminDashboardQueryKey = () => {
+    return [
+    `/api/admin/dashboard`
+    ] as const;
+    }
+
+
+export const getGetAdminDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAdminDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminDashboard>>> = ({ signal }) => getAdminDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDashboard>>>
+export type GetAdminDashboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Full dashboard statistics (revenue, orders, bestsellers, extras, source, payment, customers, kitchen, stock)
+ */
+
+export function useGetAdminDashboard<TData = Awaited<ReturnType<typeof getAdminDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminDashboardQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

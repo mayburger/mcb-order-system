@@ -468,6 +468,64 @@ export const GetAdminStatsResponse = zod.object({
 
 
 /**
+ * @summary Full dashboard statistics (revenue, orders, bestsellers, extras, source, payment, customers, kitchen, stock)
+ */
+export const GetAdminDashboardResponse = zod.object({
+  "revenue": zod.object({
+  "today": zod.number(),
+  "week": zod.number(),
+  "month": zod.number(),
+  "avgOrderValue": zod.number()
+}),
+  "orders": zod.object({
+  "today": zod.number(),
+  "total": zod.number(),
+  "pending": zod.number(),
+  "completed": zod.number(),
+  "cancelled": zod.number()
+}),
+  "bestsellers": zod.array(zod.object({
+  "name": zod.string(),
+  "qty": zod.number(),
+  "revenue": zod.number()
+})),
+  "topExtras": zod.array(zod.object({
+  "name": zod.string(),
+  "qty": zod.number()
+})),
+  "bySource": zod.array(zod.object({
+  "source": zod.string(),
+  "count": zod.number(),
+  "revenue": zod.number()
+})),
+  "byPayment": zod.array(zod.object({
+  "method": zod.string(),
+  "count": zod.number(),
+  "revenue": zod.number()
+})),
+  "customers": zod.object({
+  "total": zod.number(),
+  "newToday": zod.number(),
+  "newThisWeek": zod.number(),
+  "regular": zod.number(),
+  "inactive30d": zod.number()
+}),
+  "kitchen": zod.object({
+  "open": zod.number(),
+  "completed": zod.number(),
+  "avgPrepMinutes": zod.number().nullable()
+}),
+  "stockWarnings": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "currentStock": zod.number(),
+  "minStock": zod.number(),
+  "unit": zod.string()
+}))
+})
+
+
+/**
  * @summary List all categories (admin)
  */
 export const ListAdminCategoriesResponseItem = zod.object({

@@ -282,6 +282,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminStats"
 
+  # ── ADMIN – FULL DASHBOARD ────────────────────────────────────────────────
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Full dashboard statistics (revenue, orders, bestsellers, extras, source, payment, customers, kitchen, stock)
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
   # ── ADMIN – CATEGORIES ───────────────────────────────────────────────────
   /admin/categories:
     get:
@@ -2734,6 +2748,124 @@ components:
           type: string
         orderCount:
           type: integer
+
+    # ── DASHBOARD STATS ───────────────────────────────────────────────────
+    DashboardStats:
+      type: object
+      required: [revenue, orders, bestsellers, topExtras, bySource, byPayment, customers, kitchen, stockWarnings]
+      properties:
+        revenue:
+          type: object
+          required: [today, week, month, avgOrderValue]
+          properties:
+            today:
+              type: number
+            week:
+              type: number
+            month:
+              type: number
+            avgOrderValue:
+              type: number
+        orders:
+          type: object
+          required: [today, total, pending, completed, cancelled]
+          properties:
+            today:
+              type: integer
+            total:
+              type: integer
+            pending:
+              type: integer
+            completed:
+              type: integer
+            cancelled:
+              type: integer
+        bestsellers:
+          type: array
+          items:
+            type: object
+            required: [name, qty, revenue]
+            properties:
+              name:
+                type: string
+              qty:
+                type: integer
+              revenue:
+                type: number
+        topExtras:
+          type: array
+          items:
+            type: object
+            required: [name, qty]
+            properties:
+              name:
+                type: string
+              qty:
+                type: integer
+        bySource:
+          type: array
+          items:
+            type: object
+            required: [source, count, revenue]
+            properties:
+              source:
+                type: string
+              count:
+                type: integer
+              revenue:
+                type: number
+        byPayment:
+          type: array
+          items:
+            type: object
+            required: [method, count, revenue]
+            properties:
+              method:
+                type: string
+              count:
+                type: integer
+              revenue:
+                type: number
+        customers:
+          type: object
+          required: [total, newToday, newThisWeek, regular, inactive30d]
+          properties:
+            total:
+              type: integer
+            newToday:
+              type: integer
+            newThisWeek:
+              type: integer
+            regular:
+              type: integer
+            inactive30d:
+              type: integer
+        kitchen:
+          type: object
+          required: [open, completed, avgPrepMinutes]
+          properties:
+            open:
+              type: integer
+            completed:
+              type: integer
+            avgPrepMinutes:
+              type: ["number", "null"]
+        stockWarnings:
+          type: array
+          items:
+            type: object
+            required: [id, name, currentStock, minStock, unit]
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              currentStock:
+                type: number
+              minStock:
+                type: number
+              unit:
+                type: string
 
     # ── AUTH ─────────────────────────────────────────────────────────────
     AdminCredentials:
