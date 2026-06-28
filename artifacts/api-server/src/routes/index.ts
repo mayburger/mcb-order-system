@@ -8,6 +8,7 @@ import adminRouter from "./admin";
 import kitchenRouter from "./kitchen";
 import customerRouter from "./customer";
 import paymentRouter from "./payment";
+import crmRouter from "./crm";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(adminRouter);
 router.use(kitchenRouter);
 router.use(customerRouter);
 router.use(paymentRouter);
+router.use(crmRouter);
 
 export default router;

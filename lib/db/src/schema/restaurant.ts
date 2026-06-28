@@ -197,6 +197,22 @@ export const customers = pgTable("restaurant_customers", {
   lastName: text("last_name").notNull().default(""),
   phone: text("phone").notNull().default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // CRM fields
+  isBlocked: boolean("is_blocked").notNull().default(false),
+  isRegular: boolean("is_regular").notNull().default(false),
+  loyaltyPoints: integer("loyalty_points").notNull().default(0),
+  vipStatus: boolean("vip_status").notNull().default(false),
+  birthday: text("birthday"),
+});
+
+// ── CUSTOMER CRM NOTES (internal admin notes, not customer-visible) ────────────
+export const customerCrmNotes = pgTable("restaurant_customer_crm_notes", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // ── ORDERS ────────────────────────────────────────────────────────────────────
@@ -469,6 +485,11 @@ export const customersRelations = relations(customers, ({ many }) => ({
   orders: many(orders),
   favoriteOrders: many(favoriteOrders),
   notes: many(customerNotes),
+  crmNotes: many(customerCrmNotes),
+}));
+
+export const customerCrmNotesRelations = relations(customerCrmNotes, ({ one }) => ({
+  customer: one(customers, { fields: [customerCrmNotes.customerId], references: [customers.id] }),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({

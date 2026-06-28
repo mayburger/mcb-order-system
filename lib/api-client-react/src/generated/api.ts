@@ -32,6 +32,11 @@ import type {
   CouponInput,
   CouponUpdate,
   CouponValidationInput,
+  CrmCustomerDetail,
+  CrmCustomerListItem,
+  CrmCustomerPatch,
+  CrmNote,
+  CrmNoteInput,
   Customer,
   CustomerAdminDetail,
   CustomerLoginInput,
@@ -60,6 +65,7 @@ import type {
   KitchenOrderStatusPatch,
   ListAdminItemsParams,
   ListAdminOrdersParams,
+  ListCrmCustomersParams,
   ListMenuItemsParams,
   ListStockMovementsParams,
   MenuItem,
@@ -6490,6 +6496,381 @@ export function useGetAdminCustomer<TData = Awaited<ReturnType<typeof getAdminCu
 
 
 
+
+export const getListCrmCustomersUrl = (params?: ListCrmCustomersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/crm/customers?${stringifiedParams}` : `/api/admin/crm/customers`
+}
+
+/**
+ * @summary List all CRM customers (registered + guest) with stats and search
+ */
+export const listCrmCustomers = async (params?: ListCrmCustomersParams, options?: RequestInit): Promise<CrmCustomerListItem[]> => {
+
+  return customFetch<CrmCustomerListItem[]>(getListCrmCustomersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrmCustomersQueryKey = (params?: ListCrmCustomersParams,) => {
+    return [
+    `/api/admin/crm/customers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCrmCustomersQueryOptions = <TData = Awaited<ReturnType<typeof listCrmCustomers>>, TError = ErrorType<unknown>>(params?: ListCrmCustomersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmCustomers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrmCustomersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrmCustomers>>> = ({ signal }) => listCrmCustomers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrmCustomers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrmCustomersQueryResult = NonNullable<Awaited<ReturnType<typeof listCrmCustomers>>>
+export type ListCrmCustomersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all CRM customers (registered + guest) with stats and search
+ */
+
+export function useListCrmCustomers<TData = Awaited<ReturnType<typeof listCrmCustomers>>, TError = ErrorType<unknown>>(
+ params?: ListCrmCustomersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrmCustomers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrmCustomersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCrmCustomerUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/crm/customers/${id}`
+}
+
+/**
+ * @summary Get full CRM card for a registered customer
+ */
+export const getCrmCustomer = async (id: number, options?: RequestInit): Promise<CrmCustomerDetail> => {
+
+  return customFetch<CrmCustomerDetail>(getGetCrmCustomerUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCrmCustomerQueryKey = (id: number,) => {
+    return [
+    `/api/admin/crm/customers/${id}`
+    ] as const;
+    }
+
+
+export const getGetCrmCustomerQueryOptions = <TData = Awaited<ReturnType<typeof getCrmCustomer>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrmCustomer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCrmCustomerQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrmCustomer>>> = ({ signal }) => getCrmCustomer(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrmCustomer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCrmCustomerQueryResult = NonNullable<Awaited<ReturnType<typeof getCrmCustomer>>>
+export type GetCrmCustomerQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get full CRM card for a registered customer
+ */
+
+export function useGetCrmCustomer<TData = Awaited<ReturnType<typeof getCrmCustomer>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrmCustomer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCrmCustomerQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCrmCustomerUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/crm/customers/${id}`
+}
+
+/**
+ * @summary Update CRM fields (block, loyalty, VIP, etc.)
+ */
+export const updateCrmCustomer = async (id: number,
+    crmCustomerPatch: CrmCustomerPatch, options?: RequestInit): Promise<CrmCustomerDetail> => {
+
+  return customFetch<CrmCustomerDetail>(getUpdateCrmCustomerUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmCustomerPatch)
+  }
+);}
+
+
+
+
+export const getUpdateCrmCustomerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmCustomer>>, TError,{id: number;data: BodyType<CrmCustomerPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCrmCustomer>>, TError,{id: number;data: BodyType<CrmCustomerPatch>}, TContext> => {
+
+const mutationKey = ['updateCrmCustomer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCrmCustomer>>, {id: number;data: BodyType<CrmCustomerPatch>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCrmCustomer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCrmCustomerMutationResult = NonNullable<Awaited<ReturnType<typeof updateCrmCustomer>>>
+    export type UpdateCrmCustomerMutationBody = BodyType<CrmCustomerPatch>
+    export type UpdateCrmCustomerMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update CRM fields (block, loyalty, VIP, etc.)
+ */
+export const useUpdateCrmCustomer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCrmCustomer>>, TError,{id: number;data: BodyType<CrmCustomerPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCrmCustomer>>,
+        TError,
+        {id: number;data: BodyType<CrmCustomerPatch>},
+        TContext
+      > => {
+      return useMutation(getUpdateCrmCustomerMutationOptions(options));
+    }
+
+export const getCreateCrmNoteUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/crm/customers/${id}/crm-notes`
+}
+
+/**
+ * @summary Add internal admin CRM note to a customer
+ */
+export const createCrmNote = async (id: number,
+    crmNoteInput: CrmNoteInput, options?: RequestInit): Promise<CrmNote> => {
+
+  return customFetch<CrmNote>(getCreateCrmNoteUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(crmNoteInput)
+  }
+);}
+
+
+
+
+export const getCreateCrmNoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmNote>>, TError,{id: number;data: BodyType<CrmNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrmNote>>, TError,{id: number;data: BodyType<CrmNoteInput>}, TContext> => {
+
+const mutationKey = ['createCrmNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrmNote>>, {id: number;data: BodyType<CrmNoteInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createCrmNote(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrmNoteMutationResult = NonNullable<Awaited<ReturnType<typeof createCrmNote>>>
+    export type CreateCrmNoteMutationBody = BodyType<CrmNoteInput>
+    export type CreateCrmNoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add internal admin CRM note to a customer
+ */
+export const useCreateCrmNote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrmNote>>, TError,{id: number;data: BodyType<CrmNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrmNote>>,
+        TError,
+        {id: number;data: BodyType<CrmNoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCrmNoteMutationOptions(options));
+    }
+
+export const getDeleteCrmNoteUrl = (id: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/admin/crm/customers/${id}/crm-notes/${noteId}`
+}
+
+/**
+ * @summary Delete an internal CRM note
+ */
+export const deleteCrmNote = async (id: number,
+    noteId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCrmNoteUrl(id,noteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCrmNoteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCrmNote>>, TError,{id: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCrmNote>>, TError,{id: number;noteId: number}, TContext> => {
+
+const mutationKey = ['deleteCrmNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCrmNote>>, {id: number;noteId: number}> = (props) => {
+          const {id,noteId} = props ?? {};
+
+          return  deleteCrmNote(id,noteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCrmNoteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCrmNote>>>
+
+    export type DeleteCrmNoteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an internal CRM note
+ */
+export const useDeleteCrmNote = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCrmNote>>, TError,{id: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCrmNote>>,
+        TError,
+        {id: number;noteId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCrmNoteMutationOptions(options));
+    }
 
 export const getListKitchenOrdersUrl = () => {
 

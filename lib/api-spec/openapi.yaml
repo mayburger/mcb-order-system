@@ -1627,6 +1627,117 @@ paths:
         "404":
           description: Not found
 
+  # ── CRM ───────────────────────────────────────────────────────────────────
+  /admin/crm/customers:
+    get:
+      operationId: listCrmCustomers
+      tags: [admin]
+      summary: List all CRM customers (registered + guest) with stats and search
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, phone, email, address, or order number
+      responses:
+        "200":
+          description: CRM customer list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrmCustomerListItem"
+
+  /admin/crm/customers/{id}:
+    get:
+      operationId: getCrmCustomer
+      tags: [admin]
+      summary: Get full CRM card for a registered customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Full CRM customer card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmCustomerDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateCrmCustomer
+      tags: [admin]
+      summary: Update CRM fields (block, loyalty, VIP, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmCustomerPatch"
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmCustomerDetail"
+
+  /admin/crm/customers/{id}/crm-notes:
+    post:
+      operationId: createCrmNote
+      tags: [admin]
+      summary: Add internal admin CRM note to a customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrmNoteInput"
+      responses:
+        "201":
+          description: Created note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrmNote"
+
+  /admin/crm/customers/{id}/crm-notes/{noteId}:
+    delete:
+      operationId: deleteCrmNote
+      tags: [admin]
+      summary: Delete an internal CRM note
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
   # ── KITCHEN ───────────────────────────────────────────────────────────────
   /kitchen/orders:
     get:
@@ -2982,6 +3093,165 @@ components:
           type: number
         notes:
           type: string
+
+    # ── CRM SCHEMAS ────────────────────────────────────────────────────────
+    CrmCustomerListItem:
+      type: object
+      required: [isGuest, name, phone, orderCount, totalSpent, avgOrderValue, isBlocked, isRegular, vipStatus, loyaltyPoints]
+      properties:
+        id:
+          type: ["integer", "null"]
+        isGuest:
+          type: boolean
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        phone:
+          type: string
+        orderCount:
+          type: integer
+        totalSpent:
+          type: number
+        avgOrderValue:
+          type: number
+        lastOrderAt:
+          type: ["string", "null"]
+          format: date-time
+        firstOrderAt:
+          type: ["string", "null"]
+          format: date-time
+        isBlocked:
+          type: boolean
+        isRegular:
+          type: boolean
+        vipStatus:
+          type: boolean
+        loyaltyPoints:
+          type: integer
+        birthday:
+          type: ["string", "null"]
+        createdAt:
+          type: ["string", "null"]
+          format: date-time
+
+    CrmCustomerDetail:
+      type: object
+      required: [id, email, firstName, lastName, phone, createdAt, isBlocked, isRegular, vipStatus, loyaltyPoints, orderCount, totalSpent, avgOrderValue, orders, notes, favorites, crmNotes, topItems, topExtras, preferredOrderTime, preferredPaymentMethod, preferredOrderType]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        birthday:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        isBlocked:
+          type: boolean
+        isRegular:
+          type: boolean
+        vipStatus:
+          type: boolean
+        loyaltyPoints:
+          type: integer
+        orderCount:
+          type: integer
+        totalSpent:
+          type: number
+        avgOrderValue:
+          type: number
+        lastOrderAt:
+          type: ["string", "null"]
+          format: date-time
+        firstOrderAt:
+          type: ["string", "null"]
+          format: date-time
+        topItems:
+          type: array
+          items:
+            type: object
+            required: [itemName, count]
+            properties:
+              itemName:
+                type: string
+              count:
+                type: integer
+        topExtras:
+          type: array
+          items:
+            type: object
+            required: [name, count]
+            properties:
+              name:
+                type: string
+              count:
+                type: integer
+        preferredOrderTime:
+          type: ["string", "null"]
+        preferredPaymentMethod:
+          type: ["string", "null"]
+        preferredOrderType:
+          type: ["string", "null"]
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerNote"
+        favorites:
+          type: array
+          items:
+            $ref: "#/components/schemas/FavoriteOrder"
+        crmNotes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrmNote"
+
+    CrmCustomerPatch:
+      type: object
+      properties:
+        isBlocked:
+          type: boolean
+        isRegular:
+          type: boolean
+        vipStatus:
+          type: boolean
+        loyaltyPoints:
+          type: integer
+        birthday:
+          type: string
+
+    CrmNote:
+      type: object
+      required: [id, customerId, text, createdAt]
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CrmNoteInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
 
     QuickOrderRequest:
       type: object

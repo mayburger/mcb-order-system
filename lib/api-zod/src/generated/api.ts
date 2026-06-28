@@ -2484,6 +2484,301 @@ export const GetAdminCustomerResponse = zod.object({
 
 
 /**
+ * @summary List all CRM customers (registered + guest) with stats and search
+ */
+export const ListCrmCustomersQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Search by name, phone, email, address, or order number')
+})
+
+export const ListCrmCustomersResponseItem = zod.object({
+  "id": zod.number().nullish(),
+  "isGuest": zod.boolean(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string(),
+  "orderCount": zod.number(),
+  "totalSpent": zod.number(),
+  "avgOrderValue": zod.number(),
+  "lastOrderAt": zod.coerce.date().nullish(),
+  "firstOrderAt": zod.coerce.date().nullish(),
+  "isBlocked": zod.boolean(),
+  "isRegular": zod.boolean(),
+  "vipStatus": zod.boolean(),
+  "loyaltyPoints": zod.number(),
+  "birthday": zod.string().nullish(),
+  "createdAt": zod.coerce.date().nullish()
+})
+export const ListCrmCustomersResponse = zod.array(ListCrmCustomersResponseItem)
+
+
+/**
+ * @summary Get full CRM card for a registered customer
+ */
+export const GetCrmCustomerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCrmCustomerResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "birthday": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "isBlocked": zod.boolean(),
+  "isRegular": zod.boolean(),
+  "vipStatus": zod.boolean(),
+  "loyaltyPoints": zod.number(),
+  "orderCount": zod.number(),
+  "totalSpent": zod.number(),
+  "avgOrderValue": zod.number(),
+  "lastOrderAt": zod.coerce.date().nullish(),
+  "firstOrderAt": zod.coerce.date().nullish(),
+  "topItems": zod.array(zod.object({
+  "itemName": zod.string(),
+  "count": zod.number()
+})),
+  "topExtras": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number()
+})),
+  "preferredOrderTime": zod.string().nullable(),
+  "preferredPaymentMethod": zod.string().nullable(),
+  "preferredOrderType": zod.string().nullable(),
+  "orders": zod.array(zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})),
+  "notes": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "usageCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "favorites": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "itemName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number(),
+  "priceType": zod.string()
+}))
+})),
+  "createdAt": zod.coerce.date()
+})),
+  "crmNotes": zod.array(zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "text": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Update CRM fields (block, loyalty, VIP, etc.)
+ */
+export const UpdateCrmCustomerParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateCrmCustomerBody = zod.object({
+  "isBlocked": zod.boolean().optional(),
+  "isRegular": zod.boolean().optional(),
+  "vipStatus": zod.boolean().optional(),
+  "loyaltyPoints": zod.number().optional(),
+  "birthday": zod.string().optional()
+})
+
+export const UpdateCrmCustomerResponse = zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "phone": zod.string(),
+  "birthday": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "isBlocked": zod.boolean(),
+  "isRegular": zod.boolean(),
+  "vipStatus": zod.boolean(),
+  "loyaltyPoints": zod.number(),
+  "orderCount": zod.number(),
+  "totalSpent": zod.number(),
+  "avgOrderValue": zod.number(),
+  "lastOrderAt": zod.coerce.date().nullish(),
+  "firstOrderAt": zod.coerce.date().nullish(),
+  "topItems": zod.array(zod.object({
+  "itemName": zod.string(),
+  "count": zod.number()
+})),
+  "topExtras": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number()
+})),
+  "preferredOrderTime": zod.string().nullable(),
+  "preferredPaymentMethod": zod.string().nullable(),
+  "preferredOrderType": zod.string().nullable(),
+  "orders": zod.array(zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "createdAt": zod.coerce.date()
+})),
+  "notes": zod.array(zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "usageCount": zod.number(),
+  "createdAt": zod.coerce.date()
+})),
+  "favorites": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "items": zod.array(zod.object({
+  "menuItemId": zod.number(),
+  "itemName": zod.string(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "selectedOptions": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number(),
+  "priceType": zod.string()
+}))
+})),
+  "createdAt": zod.coerce.date()
+})),
+  "crmNotes": zod.array(zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "text": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Add internal admin CRM note to a customer
+ */
+export const CreateCrmNoteParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const CreateCrmNoteBody = zod.object({
+  "text": zod.string().min(1)
+})
+
+export const CreateCrmNoteResponse = zod.object({
+  "id": zod.number(),
+  "customerId": zod.number(),
+  "text": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an internal CRM note
+ */
+export const DeleteCrmNoteParams = zod.object({
+  "id": zod.coerce.number(),
+  "noteId": zod.coerce.number()
+})
+
+export const DeleteCrmNoteResponse = zod.unknown()
+
+
+/**
  * @summary Active orders for kitchen display
  */
 export const ListKitchenOrdersResponseItem = zod.object({

@@ -914,6 +914,95 @@ export interface StockMovementCreate {
   notes?: string;
 }
 
+export interface CrmCustomerListItem {
+  /** @nullable */
+  id?: number | null;
+  isGuest: boolean;
+  name: string;
+  /** @nullable */
+  email?: string | null;
+  phone: string;
+  orderCount: number;
+  totalSpent: number;
+  avgOrderValue: number;
+  /** @nullable */
+  lastOrderAt?: string | null;
+  /** @nullable */
+  firstOrderAt?: string | null;
+  isBlocked: boolean;
+  isRegular: boolean;
+  vipStatus: boolean;
+  loyaltyPoints: number;
+  /** @nullable */
+  birthday?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+export type CrmCustomerDetailTopItemsItem = {
+  itemName: string;
+  count: number;
+};
+
+export type CrmCustomerDetailTopExtrasItem = {
+  name: string;
+  count: number;
+};
+
+export interface CrmNote {
+  id: number;
+  customerId: number;
+  text: string;
+  createdAt: string;
+}
+
+export interface CrmCustomerDetail {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  /** @nullable */
+  birthday?: string | null;
+  createdAt: string;
+  isBlocked: boolean;
+  isRegular: boolean;
+  vipStatus: boolean;
+  loyaltyPoints: number;
+  orderCount: number;
+  totalSpent: number;
+  avgOrderValue: number;
+  /** @nullable */
+  lastOrderAt?: string | null;
+  /** @nullable */
+  firstOrderAt?: string | null;
+  topItems: CrmCustomerDetailTopItemsItem[];
+  topExtras: CrmCustomerDetailTopExtrasItem[];
+  /** @nullable */
+  preferredOrderTime: string | null;
+  /** @nullable */
+  preferredPaymentMethod: string | null;
+  /** @nullable */
+  preferredOrderType: string | null;
+  orders: Order[];
+  notes: CustomerNote[];
+  favorites: FavoriteOrder[];
+  crmNotes: CrmNote[];
+}
+
+export interface CrmCustomerPatch {
+  isBlocked?: boolean;
+  isRegular?: boolean;
+  vipStatus?: boolean;
+  loyaltyPoints?: number;
+  birthday?: string;
+}
+
+export interface CrmNoteInput {
+  /** @minLength 1 */
+  text: string;
+}
+
 export type QuickOrderRequestSource = typeof QuickOrderRequestSource[keyof typeof QuickOrderRequestSource];
 
 
@@ -1000,5 +1089,12 @@ export const ListAdminOrdersOrderType = {
 export type ListStockMovementsParams = {
 stockItemId?: number;
 limit?: number;
+};
+
+export type ListCrmCustomersParams = {
+/**
+ * Search by name, phone, email, address, or order number
+ */
+search?: string;
 };
 
