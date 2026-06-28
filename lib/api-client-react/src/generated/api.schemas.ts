@@ -767,6 +767,10 @@ export type DashboardStatsStockWarningsItem = {
   currentStock: number;
   minStock: number;
   unit: string;
+  /** @nullable */
+  servings?: number | null;
+  /** @nullable */
+  servingsProduct?: string | null;
 };
 
 export interface DashboardStats {
@@ -1006,9 +1010,16 @@ export interface StockItem {
   /** @nullable */
   menuItemId?: number | null;
   name: string;
+  /** @nullable */
+  category?: string | null;
   currentStock: number;
   minStock: number;
   unit: string;
+  /** @nullable */
+  purchasePrice?: number | null;
+  /** @nullable */
+  supplier?: string | null;
+  active: boolean;
   trackStock: boolean;
   isLow: boolean;
   createdAt: string;
@@ -1018,10 +1029,34 @@ export interface StockItem {
 export interface StockItemCreate {
   menuItemId?: number;
   name: string;
+  category?: string;
   currentStock?: number;
   minStock?: number;
   unit?: string;
+  purchasePrice?: number;
+  supplier?: string;
+  active?: boolean;
   trackStock?: boolean;
+}
+
+export interface RecipeLine {
+  id: number;
+  menuItemId: number;
+  stockItemId: number;
+  quantity: number;
+  /** @nullable */
+  stockItemName?: string | null;
+  /** @nullable */
+  unit?: string | null;
+}
+
+export type RecipeUpdateLinesItem = {
+  stockItemId: number;
+  quantity: number;
+};
+
+export interface RecipeUpdate {
+  lines: RecipeUpdateLinesItem[];
 }
 
 export type StockMovementMovementType = typeof StockMovementMovementType[keyof typeof StockMovementMovementType];

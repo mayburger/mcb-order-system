@@ -22,7 +22,9 @@ import {
   customerNotes,
   stockItems,
   stockMovements,
+  recipes,
 } from "@workspace/db/schema";
+import { deductStockForOrder } from "../lib/stockDeduction";
 import { eq, desc, asc, gte, and, sql, count, inArray } from "drizzle-orm";
 import { requireAuth, requirePermission } from "../middleware/auth";
 import { logActivity } from "../lib/activityLog";
@@ -1026,9 +1028,13 @@ function serializeStockItem(si: typeof stockItems.$inferSelect) {
     id: si.id,
     menuItemId: si.menuItemId ?? null,
     name: si.name,
+    category: si.category ?? null,
     currentStock: Number(si.currentStock),
     minStock: Number(si.minStock),
     unit: si.unit,
+    purchasePrice: si.purchasePrice === null ? null : Number(si.purchasePrice),
+    supplier: si.supplier ?? null,
+    active: si.active,
     trackStock: si.trackStock,
     isLow: Number(si.currentStock) <= Number(si.minStock),
     createdAt: si.createdAt,
@@ -1061,14 +1067,18 @@ router.get("/admin/inventory", async (req, res) => {
 
 router.post("/admin/inventory", async (req, res) => {
   try {
-    const body = req.body as { menuItemId?: number; name: string; currentStock?: number; minStock?: number; unit?: string; trackStock?: boolean };
+    const body = req.body as { menuItemId?: number; name: string; category?: string; currentStock?: number; minStock?: number; unit?: string; purchasePrice?: number; supplier?: string; active?: boolean; trackStock?: boolean };
     if (!body.name?.trim()) { res.status(400).json({ error: "Name required" }); return; }
     const [si] = await db.insert(stockItems).values({
       menuItemId: body.menuItemId ?? null,
       name: body.name.trim(),
+      category: body.category?.trim() || null,
       currentStock: (body.currentStock ?? 0).toFixed(2),
       minStock: (body.minStock ?? 5).toFixed(2),
       unit: body.unit ?? "Stück",
+      purchasePrice: body.purchasePrice === undefined || body.purchasePrice === null ? null : body.purchasePrice.toFixed(2),
+      supplier: body.supplier?.trim() || null,
+      active: body.active ?? true,
       trackStock: body.trackStock ?? true,
     }).returning();
     res.status(201).json(serializeStockItem(si!));
@@ -1078,12 +1088,16 @@ router.post("/admin/inventory", async (req, res) => {
 router.patch("/admin/inventory/:id", async (req, res) => {
   try {
     const id = Number(req.params["id"]);
-    const body = req.body as { name?: string; currentStock?: number; minStock?: number; unit?: string; trackStock?: boolean };
+    const body = req.body as { name?: string; category?: string | null; currentStock?: number; minStock?: number; unit?: string; purchasePrice?: number | null; supplier?: string | null; active?: boolean; trackStock?: boolean };
     const update: Record<string, unknown> = { updatedAt: new Date() };
     if (body.name !== undefined) update["name"] = body.name;
+    if (body.category !== undefined) update["category"] = body.category?.trim() || null;
     if (body.currentStock !== undefined) update["currentStock"] = body.currentStock.toFixed(2);
     if (body.minStock !== undefined) update["minStock"] = body.minStock.toFixed(2);
     if (body.unit !== undefined) update["unit"] = body.unit;
+    if (body.purchasePrice !== undefined) update["purchasePrice"] = body.purchasePrice === null ? null : body.purchasePrice.toFixed(2);
+    if (body.supplier !== undefined) update["supplier"] = body.supplier?.trim() || null;
+    if (body.active !== undefined) update["active"] = body.active;
     if (body.trackStock !== undefined) update["trackStock"] = body.trackStock;
     const [si] = await db.update(stockItems).set(update).where(eq(stockItems.id, id)).returning();
     if (!si) { res.status(404).json({ error: "Not found" }); return; }
@@ -1132,6 +1146,59 @@ router.post("/admin/inventory/movements", async (req, res) => {
       previousStock: prev.toFixed(2), newStock: next.toFixed(2), notes: body.notes ?? null,
     }).returning();
     res.status(201).json(serializeStockMovement(sm!));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── RECIPES (Rezepturen pro Produkt) ──────────────────────────────────────────
+// Gated über das /admin/items-Prefix (products.manage).
+function serializeRecipeLine(r: typeof recipes.$inferSelect, si?: typeof stockItems.$inferSelect) {
+  return {
+    id: r.id,
+    menuItemId: r.menuItemId,
+    stockItemId: r.stockItemId,
+    quantity: Number(r.quantity),
+    stockItemName: si?.name ?? null,
+    unit: si?.unit ?? null,
+  };
+}
+
+router.get("/admin/items/:id/recipe", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const rows = await db.select().from(recipes).where(eq(recipes.menuItemId, menuItemId));
+    const siIds = rows.map((r) => r.stockItemId);
+    const sis = siIds.length > 0 ? await db.select().from(stockItems).where(inArray(stockItems.id, siIds)) : [];
+    const siMap = new Map(sis.map((s) => [s.id, s]));
+    res.json(rows.map((r) => serializeRecipeLine(r, siMap.get(r.stockItemId))));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// Ersetzt die komplette Rezeptur eines Produkts.
+router.put("/admin/items/:id/recipe", async (req, res) => {
+  try {
+    const menuItemId = Number(req.params["id"]);
+    const body = req.body as { lines: Array<{ stockItemId: number; quantity: number }> };
+    if (!Array.isArray(body.lines)) { res.status(400).json({ error: "lines array required" }); return; }
+
+    const menuItem = await db.query.menuItems.findFirst({ where: (m, { eq: eqFn }) => eqFn(m.id, menuItemId) });
+    if (!menuItem) { res.status(404).json({ error: "Menu item not found" }); return; }
+
+    // Eindeutige, gültige Zeilen (eine Zutat nur einmal pro Rezeptur).
+    const seen = new Set<number>();
+    const clean = body.lines
+      .filter((l) => Number.isFinite(l.stockItemId) && Number.isFinite(l.quantity) && l.quantity > 0)
+      .filter((l) => (seen.has(l.stockItemId) ? false : (seen.add(l.stockItemId), true)));
+
+    await db.delete(recipes).where(eq(recipes.menuItemId, menuItemId));
+    if (clean.length > 0) {
+      await db.insert(recipes).values(clean.map((l) => ({ menuItemId, stockItemId: l.stockItemId, quantity: l.quantity.toFixed(2) })));
+    }
+
+    const rows = await db.select().from(recipes).where(eq(recipes.menuItemId, menuItemId));
+    const siIds = rows.map((r) => r.stockItemId);
+    const sis = siIds.length > 0 ? await db.select().from(stockItems).where(inArray(stockItems.id, siIds)) : [];
+    const siMap = new Map(sis.map((s) => [s.id, s]));
+    res.json(rows.map((r) => serializeRecipeLine(r, siMap.get(r.stockItemId))));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -1219,15 +1286,11 @@ router.post("/admin/quick-order", async (req, res) => {
       resolvedItems.map((i) => ({ orderId: order.id, menuItemId: i.menuItemId, itemName: i.itemName, itemPrice: i.itemPrice.toFixed(2), quantity: i.quantity, lineTotal: i.lineTotal.toFixed(2), variantName: i.variantName, extrasSnapshot: i.extrasSnapshot.length > 0 ? i.extrasSnapshot : null, optionsSnapshot: i.optionsSnapshot.length > 0 ? i.optionsSnapshot : null }))
     ).returning();
 
-    try {
-      for (const ri of resolvedItems) {
-        const si = await db.query.stockItems.findFirst({ where: (s, { eq: eqFn, and: andFn }) => andFn(eqFn(s.menuItemId, ri.menuItemId), eqFn(s.trackStock, true)) });
-        if (!si) continue;
-        const prev = Number(si.currentStock); const next = prev - ri.quantity;
-        await db.update(stockItems).set({ currentStock: next.toFixed(2), updatedAt: new Date() }).where(eq(stockItems.id, si.id));
-        await db.insert(stockMovements).values({ stockItemId: si.id, menuItemId: ri.menuItemId, itemName: ri.itemName, movementType: "sale", quantity: (-ri.quantity).toFixed(2), previousStock: prev.toFixed(2), newStock: next.toFixed(2), orderId: order.id });
-      }
-    } catch (stockErr) { req.log.warn({ err: stockErr }, "Stock deduction warning"); }
+    await deductStockForOrder(
+      order.id,
+      resolvedItems.map((ri) => ({ menuItemId: ri.menuItemId, itemName: ri.itemName, quantity: ri.quantity })),
+      req.log,
+    );
 
     res.status(201).json(serializeOrder(order, insertedItems));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

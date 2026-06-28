@@ -9,11 +9,10 @@ import {
   coupons,
   optionItems,
   optionGroups,
-  stockItems,
-  stockMovements,
 } from "@workspace/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getSettingsMap } from "./restaurant";
+import { deductStockForOrder } from "../lib/stockDeduction";
 
 const router = Router();
 
@@ -324,34 +323,12 @@ router.post("/restaurant/orders", async (req, res) => {
       )
       .returning();
 
-    // Deduct stock for each ordered item (fire-and-forget, never blocks the order)
-    try {
-      for (const ri of resolvedItems) {
-        if (!ri.menuItemId) continue;
-        const si = await db.query.stockItems.findFirst({
-          where: (s, { eq: eqFn, and: andFn }) =>
-            andFn(eqFn(s.menuItemId, ri.menuItemId), eqFn(s.trackStock, true)),
-        });
-        if (!si) continue;
-        const prev = Number(si.currentStock);
-        const next = prev - ri.quantity;
-        await db.update(stockItems)
-          .set({ currentStock: next.toFixed(2), updatedAt: new Date() })
-          .where(eq(stockItems.id, si.id));
-        await db.insert(stockMovements).values({
-          stockItemId: si.id,
-          menuItemId: ri.menuItemId,
-          itemName: ri.itemName,
-          movementType: "sale",
-          quantity: (-ri.quantity).toFixed(2),
-          previousStock: prev.toFixed(2),
-          newStock: next.toFixed(2),
-          orderId: order.id,
-        });
-      }
-    } catch (stockErr) {
-      req.log.warn({ err: stockErr }, "Stock deduction failed for order, continuing");
-    }
+    // Rezeptbasierte Lagerabbuchung (fire-and-forget, blockiert die Bestellung nie)
+    await deductStockForOrder(
+      order.id,
+      resolvedItems.map((ri) => ({ menuItemId: ri.menuItemId, itemName: ri.itemName, quantity: ri.quantity })),
+      req.log,
+    );
 
     res.status(201).json(serializeOrder(order, insertedItems));
   } catch (err) {

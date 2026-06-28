@@ -9,8 +9,12 @@
 export interface StockItemCreate {
   menuItemId?: number;
   name: string;
+  category?: string;
   currentStock?: number;
   minStock?: number;
   unit?: string;
+  purchasePrice?: number;
+  supplier?: string;
+  active?: boolean;
   trackStock?: boolean;
 }

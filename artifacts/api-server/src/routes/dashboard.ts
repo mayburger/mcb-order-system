@@ -5,6 +5,8 @@ import {
   orderItems,
   customers,
   stockItems,
+  recipes,
+  menuItems,
 } from "@workspace/db/schema";
 import { requireAuth, requirePermission } from "../middleware/auth";
 
@@ -23,12 +25,14 @@ router.get("/admin/dashboard", async (req, res) => {
     const ago30 = new Date(todayStart);
     ago30.setDate(ago30.getDate() - 30);
 
-    const [allOrders, allOrderItems, allStockItems, allCustomers] =
+    const [allOrders, allOrderItems, allStockItems, allCustomers, allRecipes, allMenuItems] =
       await Promise.all([
         db.select().from(orders),
         db.select().from(orderItems),
         db.select().from(stockItems),
         db.select().from(customers),
+        db.select().from(recipes),
+        db.select().from(menuItems),
       ]);
 
     const nonCancelled = allOrders.filter((o) => o.status !== "cancelled");
@@ -149,18 +153,47 @@ router.get("/admin/dashboard", async (req, res) => {
       return last !== undefined && last < ago30;
     }).length;
 
-    // Stock warnings (items with trackStock=true and currentStock <= minStock)
+    // Lagerwarnungen: aktive, getrackte Zutaten am/unter Mindestbestand.
+    // "reicht für X": pro knapper Zutat das am stärksten betroffene Produkt
+    // (kleinste mögliche Portionszahl = floor(Bestand / Rezeptmenge)).
+    const menuItemNameById = new Map(allMenuItems.map((m) => [m.id, m.name]));
+    const recipesByStockItem = new Map<number, typeof allRecipes>();
+    for (const r of allRecipes) {
+      const list = recipesByStockItem.get(r.stockItemId) ?? [];
+      list.push(r);
+      recipesByStockItem.set(r.stockItemId, list);
+    }
+
     const stockWarnings = allStockItems
       .filter(
-        (s) => s.trackStock && Number(s.currentStock) <= Number(s.minStock),
+        (s) =>
+          s.active &&
+          s.trackStock &&
+          Number(s.currentStock) <= Number(s.minStock),
       )
-      .map((s) => ({
-        id: s.id,
-        name: s.name,
-        currentStock: Number(s.currentStock),
-        minStock: Number(s.minStock),
-        unit: s.unit,
-      }));
+      .map((s) => {
+        const current = Number(s.currentStock);
+        let servings: number | null = null;
+        let servingsProduct: string | null = null;
+        for (const r of recipesByStockItem.get(s.id) ?? []) {
+          const qty = Number(r.quantity);
+          if (qty <= 0) continue;
+          const possible = Math.max(0, Math.floor(current / qty));
+          if (servings === null || possible < servings) {
+            servings = possible;
+            servingsProduct = menuItemNameById.get(r.menuItemId) ?? null;
+          }
+        }
+        return {
+          id: s.id,
+          name: s.name,
+          currentStock: current,
+          minStock: Number(s.minStock),
+          unit: s.unit,
+          servings,
+          servingsProduct,
+        };
+      });
 
     res.json({
       revenue: {

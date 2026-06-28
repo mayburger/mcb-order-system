@@ -725,6 +725,52 @@ paths:
               schema:
                 $ref: "#/components/schemas/ItemExtra"
 
+  /admin/items/{id}/recipe:
+    get:
+      operationId: getItemRecipe
+      tags: [admin]
+      summary: Get the recipe (ingredient lines) for a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recipe lines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecipeLine"
+    put:
+      operationId: updateItemRecipe
+      tags: [admin]
+      summary: Replace the recipe for a menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeUpdate"
+      responses:
+        "200":
+          description: Updated recipe lines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecipeLine"
+
   /admin/extras/{id}:
     patch:
       operationId: updateItemExtra
@@ -3100,6 +3146,10 @@ components:
                 type: number
               unit:
                 type: string
+              servings:
+                type: ["integer", "null"]
+              servingsProduct:
+                type: ["string", "null"]
 
     # ── AUTH ─────────────────────────────────────────────────────────────
     AdminCredentials:
@@ -3484,7 +3534,7 @@ components:
     # ── INVENTORY ──────────────────────────────────────────────────────────
     StockItem:
       type: object
-      required: [id, name, currentStock, minStock, unit, trackStock, isLow, createdAt, updatedAt]
+      required: [id, name, currentStock, minStock, unit, active, trackStock, isLow, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -3492,12 +3542,20 @@ components:
           type: ["integer", "null"]
         name:
           type: string
+        category:
+          type: ["string", "null"]
         currentStock:
           type: number
         minStock:
           type: number
         unit:
           type: string
+        purchasePrice:
+          type: ["number", "null"]
+        supplier:
+          type: ["string", "null"]
+        active:
+          type: boolean
         trackStock:
           type: boolean
         isLow:
@@ -3517,14 +3575,54 @@ components:
           type: integer
         name:
           type: string
+        category:
+          type: string
         currentStock:
           type: number
         minStock:
           type: number
         unit:
           type: string
+        purchasePrice:
+          type: number
+        supplier:
+          type: string
+        active:
+          type: boolean
         trackStock:
           type: boolean
+
+    RecipeLine:
+      type: object
+      required: [id, menuItemId, stockItemId, quantity]
+      properties:
+        id:
+          type: integer
+        menuItemId:
+          type: integer
+        stockItemId:
+          type: integer
+        quantity:
+          type: number
+        stockItemName:
+          type: ["string", "null"]
+        unit:
+          type: ["string", "null"]
+
+    RecipeUpdate:
+      type: object
+      required: [lines]
+      properties:
+        lines:
+          type: array
+          items:
+            type: object
+            required: [stockItemId, quantity]
+            properties:
+              stockItemId:
+                type: integer
+              quantity:
+                type: number
 
     StockMovement:
       type: object

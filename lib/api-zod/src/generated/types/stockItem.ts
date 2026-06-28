@@ -11,9 +11,16 @@ export interface StockItem {
   /** @nullable */
   menuItemId?: number | null;
   name: string;
+  /** @nullable */
+  category?: string | null;
   currentStock: number;
   minStock: number;
   unit: string;
+  /** @nullable */
+  purchasePrice?: number | null;
+  /** @nullable */
+  supplier?: string | null;
+  active: boolean;
   trackStock: boolean;
   isLow: boolean;
   createdAt: Date;

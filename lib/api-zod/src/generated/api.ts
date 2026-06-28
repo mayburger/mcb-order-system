@@ -735,7 +735,9 @@ export const GetAdminDashboardResponse = zod.object({
   "name": zod.string(),
   "currentStock": zod.number(),
   "minStock": zod.number(),
-  "unit": zod.string()
+  "unit": zod.string(),
+  "servings": zod.number().nullish(),
+  "servingsProduct": zod.string().nullish()
 }))
 })
 
@@ -1219,6 +1221,49 @@ export const CreateItemExtraResponse = zod.object({
   "available": zod.boolean(),
   "sortOrder": zod.number()
 })
+
+
+/**
+ * @summary Get the recipe (ingredient lines) for a menu item
+ */
+export const GetItemRecipeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetItemRecipeResponseItem = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "stockItemId": zod.number(),
+  "quantity": zod.number(),
+  "stockItemName": zod.string().nullish(),
+  "unit": zod.string().nullish()
+})
+export const GetItemRecipeResponse = zod.array(GetItemRecipeResponseItem)
+
+
+/**
+ * @summary Replace the recipe for a menu item
+ */
+export const UpdateItemRecipeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateItemRecipeBody = zod.object({
+  "lines": zod.array(zod.object({
+  "stockItemId": zod.number(),
+  "quantity": zod.number()
+}))
+})
+
+export const UpdateItemRecipeResponseItem = zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number(),
+  "stockItemId": zod.number(),
+  "quantity": zod.number(),
+  "stockItemName": zod.string().nullish(),
+  "unit": zod.string().nullish()
+})
+export const UpdateItemRecipeResponse = zod.array(UpdateItemRecipeResponseItem)
 
 
 /**
@@ -2215,9 +2260,13 @@ export const ListInventoryResponseItem = zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
   "name": zod.string(),
+  "category": zod.string().nullish(),
   "currentStock": zod.number(),
   "minStock": zod.number(),
   "unit": zod.string(),
+  "purchasePrice": zod.number().nullish(),
+  "supplier": zod.string().nullish(),
+  "active": zod.boolean(),
   "trackStock": zod.boolean(),
   "isLow": zod.boolean(),
   "createdAt": zod.coerce.date(),
@@ -2232,9 +2281,13 @@ export const ListInventoryResponse = zod.array(ListInventoryResponseItem)
 export const CreateStockItemBody = zod.object({
   "menuItemId": zod.number().optional(),
   "name": zod.string(),
+  "category": zod.string().optional(),
   "currentStock": zod.number().optional(),
   "minStock": zod.number().optional(),
   "unit": zod.string().optional(),
+  "purchasePrice": zod.number().optional(),
+  "supplier": zod.string().optional(),
+  "active": zod.boolean().optional(),
   "trackStock": zod.boolean().optional()
 })
 
@@ -2242,9 +2295,13 @@ export const CreateStockItemResponse = zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
   "name": zod.string(),
+  "category": zod.string().nullish(),
   "currentStock": zod.number(),
   "minStock": zod.number(),
   "unit": zod.string(),
+  "purchasePrice": zod.number().nullish(),
+  "supplier": zod.string().nullish(),
+  "active": zod.boolean(),
   "trackStock": zod.boolean(),
   "isLow": zod.boolean(),
   "createdAt": zod.coerce.date(),
@@ -2262,9 +2319,13 @@ export const UpdateStockItemParams = zod.object({
 export const UpdateStockItemBody = zod.object({
   "menuItemId": zod.number().optional(),
   "name": zod.string(),
+  "category": zod.string().optional(),
   "currentStock": zod.number().optional(),
   "minStock": zod.number().optional(),
   "unit": zod.string().optional(),
+  "purchasePrice": zod.number().optional(),
+  "supplier": zod.string().optional(),
+  "active": zod.boolean().optional(),
   "trackStock": zod.boolean().optional()
 })
 
@@ -2272,9 +2333,13 @@ export const UpdateStockItemResponse = zod.object({
   "id": zod.number(),
   "menuItemId": zod.number().nullish(),
   "name": zod.string(),
+  "category": zod.string().nullish(),
   "currentStock": zod.number(),
   "minStock": zod.number(),
   "unit": zod.string(),
+  "purchasePrice": zod.number().nullish(),
+  "supplier": zod.string().nullish(),
+  "active": zod.boolean(),
   "trackStock": zod.boolean(),
   "isLow": zod.boolean(),
   "createdAt": zod.coerce.date(),

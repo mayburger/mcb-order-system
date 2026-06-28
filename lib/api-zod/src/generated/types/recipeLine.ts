@@ -6,14 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type DashboardStatsStockWarningsItem = {
+export interface RecipeLine {
   id: number;
-  name: string;
-  currentStock: number;
-  minStock: number;
-  unit: string;
+  menuItemId: number;
+  stockItemId: number;
+  quantity: number;
   /** @nullable */
-  servings?: number | null;
+  stockItemName?: string | null;
   /** @nullable */
-  servingsProduct?: string | null;
-};
+  unit?: string | null;
+}

@@ -322,17 +322,40 @@ export const orderItems = pgTable("restaurant_order_items", {
   }>>(),
 });
 
-// ── STOCK ITEMS ───────────────────────────────────────────────────────────────
+// ── STOCK ITEMS (Zutaten / Artikel) ───────────────────────────────────────────
+// Eigenständige Zutaten/Artikel (Teig, Käse, Salami …). menuItemId ist optional
+// und nur für Alt-Datensätze relevant (1:1-Kopplung Produkt↔Lager). Neue Zutaten
+// werden über Rezepturen (recipes) mit Produkten verbunden.
 export const stockItems = pgTable("restaurant_stock_items", {
   id: serial("id").primaryKey(),
   menuItemId: integer("menu_item_id").references(() => menuItems.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  category: text("category"),
   currentStock: numeric("current_stock", { precision: 10, scale: 2 }).notNull().default("0"),
   minStock: numeric("min_stock", { precision: 10, scale: 2 }).notNull().default("5"),
   unit: text("unit").notNull().default("Stück"),
+  purchasePrice: numeric("purchase_price", { precision: 10, scale: 2 }),
+  supplier: text("supplier"),
+  active: boolean("active").notNull().default(true),
   trackStock: boolean("track_stock").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ── RECIPES (Rezepturen: Produkt → Zutaten) ───────────────────────────────────
+// Eine Zeile = "Produkt verbraucht Menge X einer Zutat". Eine Rezeptur pro
+// Produkt (alle Größen/Varianten verbrauchen gleich viel). Die Rezeptmenge nutzt
+// dieselbe Einheit wie die Zutat (keine Umrechnung).
+export const recipes = pgTable("restaurant_recipes", {
+  id: serial("id").primaryKey(),
+  menuItemId: integer("menu_item_id")
+    .notNull()
+    .references(() => menuItems.id, { onDelete: "cascade" }),
+  stockItemId: integer("stock_item_id")
+    .notNull()
+    .references(() => stockItems.id, { onDelete: "cascade" }),
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull().default("0"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // ── STOCK MOVEMENTS ───────────────────────────────────────────────────────────
@@ -455,6 +478,18 @@ export const menuItemsRelations = relations(menuItems, ({ one, many }) => ({
   extras: many(itemExtras),
   itemOptionGroups: many(itemOptionGroups),
   itemOptionPrices: many(itemOptionPrices),
+  recipes: many(recipes),
+}));
+
+export const recipesRelations = relations(recipes, ({ one }) => ({
+  menuItem: one(menuItems, {
+    fields: [recipes.menuItemId],
+    references: [menuItems.id],
+  }),
+  stockItem: one(stockItems, {
+    fields: [recipes.stockItemId],
+    references: [stockItems.id],
+  }),
 }));
 
 export const itemVariantsRelations = relations(itemVariants, ({ one }) => ({
@@ -525,6 +560,7 @@ export const itemOptionPricesRelations = relations(itemOptionPrices, ({ one }) =
 export const stockItemsRelations = relations(stockItems, ({ one, many }) => ({
   menuItem: one(menuItems, { fields: [stockItems.menuItemId], references: [menuItems.id] }),
   movements: many(stockMovements),
+  recipes: many(recipes),
 }));
 
 export const stockMovementsRelations = relations(stockMovements, ({ one }) => ({
