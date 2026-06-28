@@ -1,49 +1,67 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { settings } from "@workspace/db/schema";
+import { users } from "@workspace/db/schema";
+import { permissionsForRole, isRole } from "@workspace/authz";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-
-declare module "express-session" {
-  interface SessionData {
-    adminAuthenticated?: boolean;
-    adminUsername?: string;
-  }
-}
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
+type StaffUser = typeof users.$inferSelect;
+
+function sessionPayload(user: StaffUser) {
+  return {
+    authenticated: true as const,
+    username: user.username,
+    role: user.role,
+    permissions: [...permissionsForRole(user.role)],
+    mustChangePassword: user.mustChangePassword,
+  };
+}
+
+const ANON_SESSION = {
+  authenticated: false as const,
+  username: null,
+  role: null,
+  permissions: [] as string[],
+  mustChangePassword: false,
+};
+
 router.post("/auth/login", async (req, res) => {
   try {
-    const { username, password } = req.body as { username: string; password: string };
+    const { username, password } = (req.body ?? {}) as {
+      username?: unknown;
+      password?: unknown;
+    };
+    if (typeof username !== "string" || typeof password !== "string") {
+      return res.status(400).json({ error: "Invalid input" });
+    }
 
-    const rows = await db.select().from(settings);
-    const map = new Map(rows.map((r) => [r.key, r.value]));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
 
-    const storedUsername = map.get("adminUsername") ?? "admin";
-    const storedHash = map.get("adminPasswordHash");
-    const legacyPassword = map.get("adminPassword");
+    const valid = user
+      ? await bcrypt.compare(password, user.passwordHash)
+      : false;
 
-    let valid = false;
-
-    if (username !== storedUsername) {
+    if (!user || !user.active || !valid || !isRole(user.role)) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    if (storedHash) {
-      valid = await bcrypt.compare(password, storedHash);
-    } else if (legacyPassword) {
-      valid = password === legacyPassword;
-    } else {
-      valid = password === "admin123";
-    }
-
-    if (!valid) return res.status(401).json({ error: "Invalid credentials" });
-
-    req.session.adminAuthenticated = true;
-    req.session.adminUsername = storedUsername;
-
-    res.json({ authenticated: true, username: storedUsername });
+    // Regenerate the session id on login to prevent session fixation.
+    req.session.regenerate((err) => {
+      if (err) {
+        req.log.error(err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      req.session.role = user.role;
+      res.json(sessionPayload(user));
+    });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -56,11 +74,57 @@ router.post("/auth/logout", (req, res) => {
   });
 });
 
-router.get("/auth/me", (req, res) => {
-  if (req.session.adminAuthenticated) {
-    res.json({ authenticated: true, username: req.session.adminUsername ?? null });
-  } else {
-    res.json({ authenticated: false, username: null });
+router.get("/auth/me", async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.json(ANON_SESSION);
+
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user || !user.active || !isRole(user.role)) {
+      return req.session.destroy(() => res.json(ANON_SESSION));
+    }
+    res.json(sessionPayload(user));
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/auth/change-password", requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = (req.body ?? {}) as {
+      currentPassword?: unknown;
+      newPassword?: unknown;
+    };
+    if (
+      typeof currentPassword !== "string" ||
+      typeof newPassword !== "string" ||
+      newPassword.length < 8
+    ) {
+      return res.status(400).json({ error: "Invalid input" });
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, req.authUser!.id));
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      return res.status(401).json({ error: "Wrong current password" });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db
+      .update(users)
+      .set({ passwordHash, mustChangePassword: false, updatedAt: new Date() })
+      .where(eq(users.id, user.id));
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

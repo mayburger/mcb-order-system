@@ -5,6 +5,12 @@ import { Input } from "@/components/ui/input";
 import { useAdminLogin, useGetAdminSession, getGetAdminSessionQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
+import { landingPathForRole, isRole } from "@workspace/authz";
+
+function landingFor(role: unknown, mustChangePassword?: boolean | null) {
+  if (mustChangePassword) return "/backstage/change-password";
+  return isRole(role) ? landingPathForRole(role) : "/backstage/dashboard";
+}
 
 export default function AdminLoginPage() {
   const [, navigate] = useLocation();
@@ -19,7 +25,7 @@ export default function AdminLoginPage() {
   });
 
   if (!isLoading && session?.authenticated) {
-    navigate("/backstage/dashboard");
+    navigate(landingFor(session.role, session.mustChangePassword));
     return null;
   }
 
@@ -29,9 +35,9 @@ export default function AdminLoginPage() {
     login.mutate(
       { data: { username, password } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           qc.invalidateQueries({ queryKey: getGetAdminSessionQueryKey() });
-          navigate("/backstage/dashboard");
+          navigate(landingFor(data.role, data.mustChangePassword));
         },
         onError: () => setError("Ungültiger Benutzername oder Passwort"),
       }

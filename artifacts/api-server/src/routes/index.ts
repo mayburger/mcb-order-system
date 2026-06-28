@@ -10,6 +10,8 @@ import customerRouter from "./customer";
 import paymentRouter from "./payment";
 import crmRouter from "./crm";
 import dashboardRouter from "./dashboard";
+import usersRouter from "./users";
+import driverRouter from "./driver";
 
 const router: IRouter = Router();
 
@@ -24,5 +26,7 @@ router.use(customerRouter);
 router.use(paymentRouter);
 router.use(crmRouter);
 router.use(dashboardRouter);
+router.use(usersRouter);
+router.use(driverRouter);
 
 export default router;

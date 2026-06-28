@@ -47,6 +47,13 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "refunded",
   "failed",
 ]);
+export const userRoleEnum = pgEnum("user_role", [
+  "inhaber",
+  "administrator",
+  "kueche",
+  "kasse",
+  "fahrer",
+]);
 
 // ── CATEGORIES ──────────────────────────────────────────────────────────────
 export const categories = pgTable("restaurant_categories", {
@@ -258,6 +265,36 @@ export const orderDeletionLog = pgTable("restaurant_order_deletion_log", {
   reason: text("reason"),
   deletedBy: text("deleted_by"),
   deletedAt: timestamp("deleted_at").notNull().defaultNow(),
+});
+
+// ── USERS (staff accounts with roles) ────────────────────────────────────────
+// Replaces the former single settings-based admin login. Every staff member has
+// their own account with a role that determines their permissions. Accounts are
+// deactivated (active=false), never hard-deleted, so the audit trail stays intact.
+export const users = pgTable("restaurant_users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  role: userRoleEnum("role").notNull(),
+  active: boolean("active").notNull().default(true),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ── ACTIVITY LOG (audit trail for important actions) ─────────────────────────
+// Records security-relevant actions: order deleted, price changed, product
+// deactivated, coupon created, user created (and more). userId is set null on
+// user deletion but username is denormalized so the record stays readable.
+export const activityLog = pgTable("restaurant_activity_log", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  username: text("username"),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  details: text("details"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // ── ORDER ITEMS ───────────────────────────────────────────────────────────────

@@ -9,10 +9,10 @@ import {
   customerCrmNotes,
 } from "@workspace/db/schema";
 import { eq, desc, ilike, or, and, inArray, sql } from "drizzle-orm";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAuth, requirePermission } from "../middleware/auth";
 
 const router = Router();
-router.use("/admin/crm", requireAdmin);
+router.use("/admin/crm", requireAuth, requirePermission("customers.manage"));
 
 // ── helper: behavioral analysis from orders + items ──────────────────────────
 function analyzeBehavior(

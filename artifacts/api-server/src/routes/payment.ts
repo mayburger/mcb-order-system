@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { orders, orderItems, paymentMethodSettings } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAuth, requirePermission } from "../middleware/auth";
 import { serializeOrder } from "./orders";
 
 const router = Router();
@@ -44,7 +44,7 @@ router.get("/restaurant/payment-methods", async (req, res) => {
 
 // ── ADMIN ──────────────────────────────────────────────────────────────────────
 
-router.get("/admin/payment-methods", requireAdmin, async (req, res) => {
+router.get("/admin/payment-methods", requireAuth, requirePermission("payments.manage"), async (req, res) => {
   try {
     await ensureDefaults();
     const methods = await db
@@ -58,7 +58,7 @@ router.get("/admin/payment-methods", requireAdmin, async (req, res) => {
   }
 });
 
-router.put("/admin/payment-methods/:key", requireAdmin, async (req, res) => {
+router.put("/admin/payment-methods/:key", requireAuth, requirePermission("payments.manage"), async (req, res) => {
   try {
     const { key } = req.params as { key: string };
     const body = req.body as {
@@ -99,7 +99,7 @@ router.put("/admin/payment-methods/:key", requireAdmin, async (req, res) => {
   }
 });
 
-router.patch("/admin/orders/:id/payment-status", requireAdmin, async (req, res) => {
+router.patch("/admin/orders/:id/payment-status", requireAuth, requirePermission("payments.manage"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const { paymentStatus } = req.body as {

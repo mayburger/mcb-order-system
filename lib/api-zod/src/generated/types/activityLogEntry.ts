@@ -6,12 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminSession {
-  authenticated: boolean;
+export interface ActivityLogEntry {
+  id: number;
   /** @nullable */
   username?: string | null;
+  action: string;
   /** @nullable */
-  role?: string | null;
-  permissions?: string[];
-  mustChangePassword?: boolean;
+  entityType?: string | null;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  details?: string | null;
+  createdAt: Date;
 }

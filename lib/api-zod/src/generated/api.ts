@@ -433,7 +433,10 @@ export const AdminLoginBody = zod.object({
 
 export const AdminLoginResponse = zod.object({
   "authenticated": zod.boolean(),
-  "username": zod.string().nullish()
+  "username": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "permissions": zod.array(zod.string()).optional(),
+  "mustChangePassword": zod.boolean().optional()
 })
 
 
@@ -448,7 +451,217 @@ export const AdminLogoutResponse = zod.unknown()
  */
 export const GetAdminSessionResponse = zod.object({
   "authenticated": zod.boolean(),
-  "username": zod.string().nullish()
+  "username": zod.string().nullish(),
+  "role": zod.string().nullish(),
+  "permissions": zod.array(zod.string()).optional(),
+  "mustChangePassword": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Change the current user's own password
+ */
+export const changePasswordBodyNewPasswordMin = 8;
+
+
+
+export const ChangePasswordBody = zod.object({
+  "currentPassword": zod.string(),
+  "newPassword": zod.string().min(changePasswordBodyNewPasswordMin)
+})
+
+export const ChangePasswordResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary List staff users
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['inhaber', 'administrator', 'kueche', 'kasse', 'fahrer']),
+  "active": zod.boolean(),
+  "mustChangePassword": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
+ * @summary Create a staff user
+ */
+export const createUserBodyUsernameMin = 3;
+
+export const createUserBodyPasswordMin = 8;
+
+
+
+export const CreateUserBody = zod.object({
+  "username": zod.string().min(createUserBodyUsernameMin),
+  "password": zod.string().min(createUserBodyPasswordMin),
+  "role": zod.enum(['inhaber', 'administrator', 'kueche', 'kasse', 'fahrer'])
+})
+
+export const CreateUserResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['inhaber', 'administrator', 'kueche', 'kasse', 'fahrer']),
+  "active": zod.boolean(),
+  "mustChangePassword": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a staff user (role, active state, or reset password)
+ */
+export const UpdateUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateUserBodyPasswordMin = 8;
+
+
+
+export const UpdateUserBody = zod.object({
+  "role": zod.enum(['inhaber', 'administrator', 'kueche', 'kasse', 'fahrer']).optional(),
+  "active": zod.boolean().optional(),
+  "password": zod.string().min(updateUserBodyPasswordMin).optional()
+})
+
+export const UpdateUserResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "role": zod.enum(['inhaber', 'administrator', 'kueche', 'kasse', 'fahrer']),
+  "active": zod.boolean(),
+  "mustChangePassword": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List recent important actions (audit trail)
+ */
+export const ListActivityLogResponseItem = zod.object({
+  "id": zod.number(),
+  "username": zod.string().nullish(),
+  "action": zod.string(),
+  "entityType": zod.string().nullish(),
+  "entityId": zod.string().nullish(),
+  "details": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListActivityLogResponse = zod.array(ListActivityLogResponseItem)
+
+
+/**
+ * @summary List active delivery orders for the driver view
+ */
+export const ListDriverOrdersResponseItem = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "archivedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListDriverOrdersResponse = zod.array(ListDriverOrdersResponseItem)
+
+
+/**
+ * @summary Driver sets a delivery order's status (delivering or completed only)
+ */
+export const UpdateDriverOrderStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateDriverOrderStatusBody = zod.object({
+  "status": zod.enum(['delivering', 'completed'])
+})
+
+export const UpdateDriverOrderStatusResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "orderType": zod.enum(['delivery', 'pickup']),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['open', 'paid', 'refunded', 'failed']),
+  "customerId": zod.number().nullish(),
+  "paymentMethod": zod.enum(['cash', 'ec_pickup', 'ec_delivery', 'paypal', 'stripe', 'lieferando']).optional(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deliveryAddress": zod.string().nullish(),
+  "postalCode": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "discountAmount": zod.number(),
+  "total": zod.number(),
+  "couponCode": zod.string().nullish(),
+  "source": zod.enum(['online', 'phone', 'lieferando', 'takeaway', 'dine_in']).optional(),
+  "tableInfo": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "menuItemId": zod.number().nullish(),
+  "itemName": zod.string(),
+  "itemPrice": zod.number(),
+  "quantity": zod.number(),
+  "lineTotal": zod.number(),
+  "variantName": zod.string().nullish(),
+  "extrasSnapshot": zod.array(zod.object({
+  "name": zod.string(),
+  "price": zod.number()
+})).optional(),
+  "optionsSnapshot": zod.array(zod.object({
+  "groupId": zod.number(),
+  "groupName": zod.string(),
+  "optionItemId": zod.number(),
+  "optionItemName": zod.string(),
+  "price": zod.number()
+})).optional()
+})),
+  "archivedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
 })
 
 

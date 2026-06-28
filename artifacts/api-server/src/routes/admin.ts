@@ -24,12 +24,34 @@ import {
   stockMovements,
 } from "@workspace/db/schema";
 import { eq, desc, asc, gte, and, sql, count, inArray } from "drizzle-orm";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAuth, requirePermission } from "../middleware/auth";
+import { logActivity } from "../lib/activityLog";
 import { serializeOrder } from "./orders";
 import bcrypt from "bcryptjs";
 
 const router = Router();
-router.use("/admin", requireAdmin);
+
+// Every /admin route requires an authenticated, active staff account.
+router.use("/admin", requireAuth);
+
+// Per-resource permission gates (deny-by-default). Resources that map cleanly to
+// a single permission are gated by prefix here; routes with mixed permissions
+// (e.g. /admin/orders) are gated individually on each handler below.
+router.use("/admin/stats", requirePermission("dashboard.view"));
+router.use("/admin/categories", requirePermission("products.manage"));
+router.use("/admin/items", requirePermission("products.manage"));
+router.use("/admin/variants", requirePermission("products.manage"));
+router.use("/admin/extras", requirePermission("products.manage"));
+router.use("/admin/option-groups", requirePermission("products.manage"));
+router.use("/admin/option-items", requirePermission("products.manage"));
+router.use("/admin/category-option-groups", requirePermission("products.manage"));
+router.use("/admin/inventory", requirePermission("products.manage"));
+router.use("/admin/customers", requirePermission("customers.manage"));
+router.use("/admin/delivery-areas", requirePermission("deliveryAreas.manage"));
+router.use("/admin/opening-hours", requirePermission("openingHours.manage"));
+router.use("/admin/coupons", requirePermission("coupons.manage"));
+router.use("/admin/quick-order", requirePermission("quickOrders.create"));
+router.use("/admin/settings", requirePermission("settings.manage"));
 
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
@@ -181,10 +203,30 @@ router.patch("/admin/items/:id", async (req, res) => {
       name: string; description: string; price: number; categoryId: number;
       available: boolean; featured: boolean; imageUrl: string; sortOrder: number;
     }>;
+    const existing = await db.query.menuItems.findFirst({
+      where: (m, { eq: eqF }) => eqF(m.id, id),
+    });
+    if (!existing) return res.status(404).json({ error: "Not found" });
     const update: Record<string, unknown> = { ...body };
     if (body.price !== undefined) update["price"] = body.price.toFixed(2);
     const [row] = await db.update(menuItems).set(update).where(eq(menuItems.id, id)).returning();
     if (!row) return res.status(404).json({ error: "Not found" });
+
+    if (body.price !== undefined && Number(existing.price) !== body.price) {
+      await logActivity(req.authUser, "price_changed", {
+        entityType: "menu_item",
+        entityId: id,
+        details: `Preis "${existing.name}": ${Number(existing.price).toFixed(2)} € → ${body.price.toFixed(2)} €`,
+      });
+    }
+    if (body.available === false && existing.available !== false) {
+      await logActivity(req.authUser, "product_deactivated", {
+        entityType: "menu_item",
+        entityId: id,
+        details: `Produkt "${existing.name}" deaktiviert`,
+      });
+    }
+
     res.json({ ...row, price: Number(row.price) });
   } catch (err) {
     req.log.error(err);
@@ -525,7 +567,7 @@ router.put("/admin/items/:id/option-prices", async (req, res) => {
 });
 
 // ── ORDERS ────────────────────────────────────────────────────────────────────
-router.get("/admin/orders", async (req, res) => {
+router.get("/admin/orders", requirePermission("orders.view"), async (req, res) => {
   try {
     const { status, orderType, date, archived } = req.query as { status?: string; orderType?: string; date?: string; archived?: string };
     const wantArchived = archived === "true" || archived === "1";
@@ -559,7 +601,7 @@ router.get("/admin/orders", async (req, res) => {
   }
 });
 
-router.get("/admin/orders/:id", async (req, res) => {
+router.get("/admin/orders/:id", requirePermission("orders.view"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const order = await db.query.orders.findFirst({ where: (o, { eq: eqFn }) => eqFn(o.id, id) });
@@ -572,7 +614,7 @@ router.get("/admin/orders/:id", async (req, res) => {
   }
 });
 
-router.patch("/admin/orders/:id", async (req, res) => {
+router.patch("/admin/orders/:id", requirePermission("orders.status.update"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const { status, notes } = req.body as { status: string; notes?: string };
@@ -590,7 +632,7 @@ router.patch("/admin/orders/:id", async (req, res) => {
 });
 
 // Archive a completed or cancelled order (hidden from the normal list).
-router.post("/admin/orders/:id/archive", async (req, res) => {
+router.post("/admin/orders/:id/archive", requirePermission("orders.archiveDelete"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const existing = await db.query.orders.findFirst({ where: (o, { eq: eqFn }) => eqFn(o.id, id) });
@@ -608,7 +650,7 @@ router.post("/admin/orders/:id/archive", async (req, res) => {
 });
 
 // Restore an archived order back to the active list.
-router.post("/admin/orders/:id/restore", async (req, res) => {
+router.post("/admin/orders/:id/restore", requirePermission("orders.archiveDelete"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const [order] = await db.update(orders).set({ archivedAt: null }).where(eq(orders.id, id)).returning();
@@ -623,13 +665,13 @@ router.post("/admin/orders/:id/restore", async (req, res) => {
 
 // Permanently delete an order (with optional reason). Removes it from all lists/stats,
 // keeping only an audit record in the deletion log.
-router.post("/admin/orders/:id/delete", async (req, res) => {
+router.post("/admin/orders/:id/delete", requirePermission("orders.archiveDelete"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const { reason } = (req.body ?? {}) as { reason?: string };
     const existing = await db.query.orders.findFirst({ where: (o, { eq: eqFn }) => eqFn(o.id, id) });
     if (!existing) return res.status(404).json({ error: "Not found" });
-    const deletedBy = req.session.adminUsername ?? "admin";
+    const deletedBy = req.authUser?.username ?? "unknown";
     // Audit log + delete must be atomic so we never log a deletion that did not happen.
     await db.transaction(async (tx) => {
       await tx.insert(orderDeletionLog).values({
@@ -641,6 +683,13 @@ router.post("/admin/orders/:id/delete", async (req, res) => {
       });
       // orderItems cascade-delete via FK.
       await tx.delete(orders).where(eq(orders.id, id));
+    });
+    await logActivity(req.authUser, "order_deleted", {
+      entityType: "order",
+      entityId: id,
+      details: `Bestellung ${existing.orderNumber} gelöscht${
+        reason && reason.trim().length > 0 ? ` (Grund: ${reason.trim()})` : ""
+      }`,
     });
     res.json({ success: true });
   } catch (err) {
@@ -682,7 +731,7 @@ router.get("/admin/customers", async (req, res) => {
 });
 
 // ── CUSTOMER DETAIL ───────────────────────────────────────────────────────────
-router.get("/admin/customers/:id", requireAdmin, async (req, res) => {
+router.get("/admin/customers/:id", async (req, res) => {
   try {
     const idParam = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const id = parseInt(idParam, 10);
@@ -928,6 +977,11 @@ router.post("/admin/coupons", async (req, res) => {
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       maxUsage: body.maxUsage ?? null,
     }).returning();
+    await logActivity(req.authUser, "coupon_created", {
+      entityType: "coupon",
+      entityId: row!.id,
+      details: `Gutschein "${row!.code}" erstellt`,
+    });
     res.status(201).json({ ...row, discountValue: Number(row!.discountValue), minOrder: Number(row!.minOrder ?? 0) });
   } catch (err) {
     req.log.error(err);

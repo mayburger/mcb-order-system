@@ -3,10 +3,15 @@ import { db } from "@workspace/db";
 import { orders, orderItems } from "@workspace/db/schema";
 import { eq, gte, sql } from "drizzle-orm";
 import { serializeOrder } from "./orders";
+import { requireAuth, requirePermission } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/kitchen/orders", async (req, res) => {
+// The kitchen tablet logs in like any other staff member; only "kueche" (and the
+// owner) may view or advance kitchen orders.
+router.use("/kitchen", requireAuth);
+
+router.get("/kitchen/orders", requirePermission("kitchen.view"), async (req, res) => {
   try {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const allOrders = await db.query.orders.findMany({
@@ -44,7 +49,7 @@ router.get("/kitchen/orders", async (req, res) => {
   }
 });
 
-router.patch("/kitchen/orders/:id/status", async (req, res) => {
+router.patch("/kitchen/orders/:id/status", requirePermission("kitchen.status.update"), async (req, res) => {
   try {
     const id = Number(req.params["id"]);
     const { status } = req.body as { status: string };

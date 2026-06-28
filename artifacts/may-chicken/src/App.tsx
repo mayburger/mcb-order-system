@@ -30,8 +30,14 @@ import AdminInventory from "@/pages/admin/inventory";
 import AdminQuickOrder from "@/pages/admin/quick-order";
 import AdminPrintSettings from "@/pages/admin/print-settings";
 import AdminPayments from "@/pages/admin/payments";
+import AdminUsers from "@/pages/admin/users";
+import AdminActivityLog from "@/pages/admin/activity-log";
+import AdminDriver from "@/pages/admin/driver";
+import ChangePasswordPage from "@/pages/admin/change-password";
 
 import KitchenPage from "@/pages/kitchen";
+
+import { ProtectedRoute } from "@/lib/admin-auth";
 
 import AccountLoginPage from "@/pages/account/login";
 import AccountProfilePage from "@/pages/account/profile";
@@ -71,25 +77,109 @@ function Router() {
       </Route>
 
       {/* Kitchen display */}
-      <Route path="/kitchen" component={KitchenPage} />
+      <Route path="/kitchen">
+        <ProtectedRoute permission="kitchen.view">
+          <KitchenPage />
+        </ProtectedRoute>
+      </Route>
 
       {/* Admin routes */}
       <Route path="/backstage" component={AdminLoginPage} />
-      <Route path="/backstage/dashboard" component={AdminDashboard} />
-      <Route path="/backstage/orders" component={AdminOrders} />
-      <Route path="/backstage/archive" component={AdminArchive} />
-      <Route path="/backstage/products" component={AdminProducts} />
-      <Route path="/backstage/categories" component={AdminCategories} />
-      <Route path="/backstage/customers" component={AdminCustomers} />
-      <Route path="/backstage/delivery-areas" component={AdminDeliveryAreas} />
-      <Route path="/backstage/opening-hours" component={AdminOpeningHours} />
-      <Route path="/backstage/coupons" component={AdminCoupons} />
-      <Route path="/backstage/settings" component={AdminSettings} />
-      <Route path="/backstage/option-groups" component={AdminOptionGroups} />
-      <Route path="/backstage/inventory" component={AdminInventory} />
-      <Route path="/backstage/quick-order" component={AdminQuickOrder} />
-      <Route path="/backstage/print-settings" component={AdminPrintSettings} />
-      <Route path="/backstage/payments" component={AdminPayments} />
+      <Route path="/backstage/change-password">
+        <ProtectedRoute permission="password.change">
+          <ChangePasswordPage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/dashboard">
+        <ProtectedRoute permission="dashboard.view">
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/orders">
+        <ProtectedRoute permission="orders.view">
+          <AdminOrders />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/archive">
+        <ProtectedRoute permission="orders.archiveDelete">
+          <AdminArchive />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/products">
+        <ProtectedRoute permission="products.manage">
+          <AdminProducts />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/categories">
+        <ProtectedRoute permission="products.manage">
+          <AdminCategories />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/customers">
+        <ProtectedRoute permission="customers.manage">
+          <AdminCustomers />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/delivery-areas">
+        <ProtectedRoute permission="deliveryAreas.manage">
+          <AdminDeliveryAreas />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/opening-hours">
+        <ProtectedRoute permission="openingHours.manage">
+          <AdminOpeningHours />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/coupons">
+        <ProtectedRoute permission="coupons.manage">
+          <AdminCoupons />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/settings">
+        <ProtectedRoute permission="settings.manage">
+          <AdminSettings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/option-groups">
+        <ProtectedRoute permission="products.manage">
+          <AdminOptionGroups />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/inventory">
+        <ProtectedRoute permission="products.manage">
+          <AdminInventory />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/quick-order">
+        <ProtectedRoute permission="quickOrders.create">
+          <AdminQuickOrder />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/print-settings">
+        <ProtectedRoute permission="printSettings.manage">
+          <AdminPrintSettings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/payments">
+        <ProtectedRoute permission="payments.manage">
+          <AdminPayments />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/driver">
+        <ProtectedRoute permission="driver.orders.view">
+          <AdminDriver />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/activity-log">
+        <ProtectedRoute permission="activityLog.view">
+          <AdminActivityLog />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/users">
+        <ProtectedRoute permission="users.manage">
+          <AdminUsers />
+        </ProtectedRoute>
+      </Route>
 
       <Route component={NotFound} />
     </Switch>

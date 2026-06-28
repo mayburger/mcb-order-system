@@ -790,6 +790,77 @@ export interface AdminSession {
   authenticated: boolean;
   /** @nullable */
   username?: string | null;
+  /** @nullable */
+  role?: string | null;
+  permissions?: string[];
+  mustChangePassword?: boolean;
+}
+
+export type Role = typeof Role[keyof typeof Role];
+
+
+export const Role = {
+  inhaber: 'inhaber',
+  administrator: 'administrator',
+  kueche: 'kueche',
+  kasse: 'kasse',
+  fahrer: 'fahrer',
+} as const;
+
+export interface User {
+  id: number;
+  username: string;
+  role: Role;
+  active: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
+}
+
+export interface UserCreate {
+  /** @minLength 3 */
+  username: string;
+  /** @minLength 8 */
+  password: string;
+  role: Role;
+}
+
+export interface UserUpdate {
+  role?: Role;
+  active?: boolean;
+  /** @minLength 8 */
+  password?: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  /** @minLength 8 */
+  newPassword: string;
+}
+
+export interface ActivityLogEntry {
+  id: number;
+  /** @nullable */
+  username?: string | null;
+  action: string;
+  /** @nullable */
+  entityType?: string | null;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  details?: string | null;
+  createdAt: string;
+}
+
+export type DriverStatusUpdateStatus = typeof DriverStatusUpdateStatus[keyof typeof DriverStatusUpdateStatus];
+
+
+export const DriverStatusUpdateStatus = {
+  delivering: 'delivering',
+  completed: 'completed',
+} as const;
+
+export interface DriverStatusUpdate {
+  status: DriverStatusUpdateStatus;
 }
 
 export interface AppSettings {
@@ -1140,6 +1211,10 @@ export type ListMenuItemsParams = {
 categoryId?: number;
 available?: boolean;
 featured?: boolean;
+};
+
+export type ChangePassword200 = {
+  ok: boolean;
 };
 
 export type ListAdminItemsParams = {

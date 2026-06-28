@@ -6,10 +6,10 @@ import {
   customers,
   stockItems,
 } from "@workspace/db/schema";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAuth, requirePermission } from "../middleware/auth";
 
 const router = Router();
-router.use("/admin", requireAdmin);
+router.use("/admin/dashboard", requireAuth, requirePermission("dashboard.view"));
 
 router.get("/admin/dashboard", async (req, res) => {
   try {

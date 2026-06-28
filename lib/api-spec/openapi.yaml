@@ -268,6 +268,160 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminSession"
 
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      tags: [auth]
+      summary: Change the current user's own password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "400":
+          description: Invalid input
+        "401":
+          description: Not authenticated or wrong current password
+
+  # ── ADMIN – USERS (owner only) ────────────────────────────────────────────
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      summary: List staff users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [admin]
+      summary: Create a staff user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid input
+        "409":
+          description: Username already exists
+
+  /admin/users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [admin]
+      summary: Update a staff user (role, active state, or reset password)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid input or last-owner protection
+        "404":
+          description: Not found
+
+  # ── ADMIN – ACTIVITY LOG (owner only) ─────────────────────────────────────
+  /admin/activity-log:
+    get:
+      operationId: listActivityLog
+      tags: [admin]
+      summary: List recent important actions (audit trail)
+      responses:
+        "200":
+          description: Activity log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityLogEntry"
+
+  # ── ADMIN – DRIVER (delivery orders only) ─────────────────────────────────
+  /admin/driver/orders:
+    get:
+      operationId: listDriverOrders
+      tags: [admin]
+      summary: List active delivery orders for the driver view
+      responses:
+        "200":
+          description: Delivery orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /admin/driver/orders/{id}/status:
+    patch:
+      operationId: updateDriverOrderStatus
+      tags: [admin]
+      summary: Driver sets a delivery order's status (delivering or completed only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid status transition
+        "404":
+          description: Not found
+
   # ── ADMIN – STATS ─────────────────────────────────────────────────────────
   /admin/stats:
     get:
@@ -2965,6 +3119,99 @@ components:
           type: boolean
         username:
           type: ["string", "null"]
+        role:
+          type: ["string", "null"]
+        permissions:
+          type: array
+          items:
+            type: string
+        mustChangePassword:
+          type: boolean
+
+    # ── USERS & ROLES ─────────────────────────────────────────────────────
+    Role:
+      type: string
+      enum: [inhaber, administrator, kueche, kasse, fahrer]
+
+    User:
+      type: object
+      required: [id, username, role, active, mustChangePassword, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        active:
+          type: boolean
+        mustChangePassword:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    UserCreate:
+      type: object
+      required: [username, password, role]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 8
+        role:
+          $ref: "#/components/schemas/Role"
+
+    UserUpdate:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/Role"
+        active:
+          type: boolean
+        password:
+          type: string
+          minLength: 8
+
+    ChangePasswordInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    ActivityLogEntry:
+      type: object
+      required: [id, action, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: ["string", "null"]
+        action:
+          type: string
+        entityType:
+          type: ["string", "null"]
+        entityId:
+          type: ["string", "null"]
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    DriverStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [delivering, completed]
 
     # ── SETTINGS ─────────────────────────────────────────────────────────
     AppSettings:

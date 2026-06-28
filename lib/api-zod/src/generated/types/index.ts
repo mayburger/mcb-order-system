@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activityLogEntry';
 export * from './adminCredentials';
 export * from './adminSession';
 export * from './adminStats';
@@ -14,6 +15,8 @@ export * from './category';
 export * from './categoryInput';
 export * from './categoryOptionGroupLink';
 export * from './categoryUpdate';
+export * from './changePassword200';
+export * from './changePasswordInput';
 export * from './coupon';
 export * from './couponDiscountType';
 export * from './couponInput';
@@ -53,6 +56,8 @@ export * from './deleteOrder200';
 export * from './deliveryArea';
 export * from './deliveryAreaInput';
 export * from './deliveryAreaUpdate';
+export * from './driverStatusUpdate';
+export * from './driverStatusUpdateStatus';
 export * from './favoriteOrder';
 export * from './favoriteOrderInput';
 export * from './favoriteOrderItem';
@@ -122,6 +127,7 @@ export * from './quickOrderRequestOrderType';
 export * from './quickOrderRequestPaymentMethod';
 export * from './quickOrderRequestSource';
 export * from './restaurantInfo';
+export * from './role';
 export * from './selectedExtra';
 export * from './settingsUpdate';
 export * from './sortOrderUpdate';
@@ -131,3 +137,6 @@ export * from './stockMovement';
 export * from './stockMovementCreate';
 export * from './stockMovementCreateMovementType';
 export * from './stockMovementMovementType';
+export * from './user';
+export * from './userCreate';
+export * from './userUpdate';
