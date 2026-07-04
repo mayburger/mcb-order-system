@@ -2281,12 +2281,12 @@ export const ListInventoryResponse = zod.array(ListInventoryResponseItem)
 export const CreateStockItemBody = zod.object({
   "menuItemId": zod.number().optional(),
   "name": zod.string(),
-  "category": zod.string().optional(),
+  "category": zod.string().nullish(),
   "currentStock": zod.number().optional(),
   "minStock": zod.number().optional(),
   "unit": zod.string().optional(),
-  "purchasePrice": zod.number().optional(),
-  "supplier": zod.string().optional(),
+  "purchasePrice": zod.number().nullish(),
+  "supplier": zod.string().nullish(),
   "active": zod.boolean().optional(),
   "trackStock": zod.boolean().optional()
 })
@@ -2319,12 +2319,12 @@ export const UpdateStockItemParams = zod.object({
 export const UpdateStockItemBody = zod.object({
   "menuItemId": zod.number().optional(),
   "name": zod.string(),
-  "category": zod.string().optional(),
+  "category": zod.string().nullish(),
   "currentStock": zod.number().optional(),
   "minStock": zod.number().optional(),
   "unit": zod.string().optional(),
-  "purchasePrice": zod.number().optional(),
-  "supplier": zod.string().optional(),
+  "purchasePrice": zod.number().nullish(),
+  "supplier": zod.string().nullish(),
   "active": zod.boolean().optional(),
   "trackStock": zod.boolean().optional()
 })

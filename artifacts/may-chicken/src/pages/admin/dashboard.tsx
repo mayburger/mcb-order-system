@@ -554,6 +554,12 @@ export default function AdminDashboard() {
                         Bestand: {w.currentStock} {w.unit} · Min: {w.minStock}{" "}
                         {w.unit}
                       </p>
+                      {w.servings != null && (
+                        <p className="text-xs text-yellow-400/90 font-medium mt-0.5">
+                          Reicht noch für ca. {w.servings}
+                          {w.servingsProduct ? ` × ${w.servingsProduct}` : ""}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}

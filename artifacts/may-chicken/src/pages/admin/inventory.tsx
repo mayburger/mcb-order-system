@@ -33,9 +33,9 @@ import {
   useDeleteStockItem,
   useListStockMovements,
   useCreateStockMovement,
-  useListAdminItems,
+  getListInventoryQueryKey,
 } from "@workspace/api-client-react";
-import type { StockItem, StockMovement, MenuItem } from "@workspace/api-client-react";
+import type { StockItem, StockMovement } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -52,20 +52,19 @@ import { de } from "date-fns/locale";
 
 const MOVEMENT_LABELS: Record<string, string> = {
   sale: "Verkauf",
-  restock: "Nachfüllung",
+  restock: "Wareneingang",
   correction: "Korrektur",
-  loss: "Verlust",
-  consumption: "Verbrauch",
-  cancellation: "Stornierung",
+  loss: "Verlust / Schwund",
+  consumption: "Eigenverbrauch",
+  cancellation: "Storno",
 };
 
-const UNITS = ["Stück", "Liter", "kg", "Portion", "Päckchen", "Flasche"];
+const UNITS = ["Stück", "kg", "g", "Liter", "ml", "Packung"];
 
 export default function AdminInventory() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const { data: items = [], isLoading } = useListInventory();
-  const { data: menuItems = [] } = useListAdminItems();
   const createItem = useCreateStockItem();
   const updateItem = useUpdateStockItem();
   const deleteItem = useDeleteStockItem();
@@ -80,9 +79,13 @@ export default function AdminInventory() {
   const [form, setForm] = useState({
     menuItemId: "",
     name: "",
+    category: "",
     currentStock: "0",
     minStock: "5",
     unit: "Stück",
+    purchasePrice: "",
+    supplier: "",
+    active: true,
     trackStock: true,
   });
 
@@ -99,7 +102,7 @@ export default function AdminInventory() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm({ menuItemId: "", name: "", currentStock: "0", minStock: "5", unit: "Stück", trackStock: true });
+    setForm({ menuItemId: "", name: "", category: "", currentStock: "0", minStock: "5", unit: "Stück", purchasePrice: "", supplier: "", active: true, trackStock: true });
     setShowItemDialog(true);
   };
 
@@ -108,9 +111,13 @@ export default function AdminInventory() {
     setForm({
       menuItemId: si.menuItemId ? String(si.menuItemId) : "",
       name: si.name,
+      category: si.category ?? "",
       currentStock: String(si.currentStock),
       minStock: String(si.minStock),
       unit: si.unit,
+      purchasePrice: si.purchasePrice != null ? String(si.purchasePrice) : "",
+      supplier: si.supplier ?? "",
+      active: si.active,
       trackStock: si.trackStock,
     });
     setShowItemDialog(true);
@@ -131,9 +138,13 @@ export default function AdminInventory() {
     const payload = {
       name: form.name.trim(),
       menuItemId: form.menuItemId ? Number(form.menuItemId) : undefined,
+      category: form.category.trim() || null,
       currentStock: Number(form.currentStock),
       minStock: Number(form.minStock),
       unit: form.unit,
+      purchasePrice: form.purchasePrice.trim() ? Number(form.purchasePrice) : null,
+      supplier: form.supplier.trim() || null,
+      active: form.active,
       trackStock: form.trackStock,
     };
     if (!payload.name) { toast({ title: "Name erforderlich", variant: "destructive" }); return; }
@@ -145,7 +156,7 @@ export default function AdminInventory() {
           onSuccess: () => {
             toast({ title: "Lagereintrag aktualisiert" });
             setShowItemDialog(false);
-            qc.invalidateQueries({ queryKey: ["listInventory"] });
+            qc.invalidateQueries({ queryKey: getListInventoryQueryKey() });
           },
         }
       );
@@ -156,7 +167,7 @@ export default function AdminInventory() {
           onSuccess: () => {
             toast({ title: "Lagereintrag erstellt" });
             setShowItemDialog(false);
-            qc.invalidateQueries({ queryKey: ["listInventory"] });
+            qc.invalidateQueries({ queryKey: getListInventoryQueryKey() });
           },
         }
       );
@@ -180,7 +191,7 @@ export default function AdminInventory() {
         onSuccess: () => {
           toast({ title: "Lagerbewegung gebucht" });
           setShowMovementDialog(false);
-          qc.invalidateQueries({ queryKey: ["listInventory"] });
+          qc.invalidateQueries({ queryKey: getListInventoryQueryKey() });
         },
       }
     );
@@ -193,7 +204,7 @@ export default function AdminInventory() {
       {
         onSuccess: () => {
           toast({ title: "Gelöscht" });
-          qc.invalidateQueries({ queryKey: ["listInventory"] });
+          qc.invalidateQueries({ queryKey: getListInventoryQueryKey() });
         },
       }
     );
@@ -235,11 +246,13 @@ export default function AdminInventory() {
           <Table>
             <TableHeader>
               <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                <TableHead className="text-muted-foreground">Artikel</TableHead>
-                <TableHead className="text-muted-foreground">Menüartikel</TableHead>
+                <TableHead className="text-muted-foreground">Zutat / Artikel</TableHead>
+                <TableHead className="text-muted-foreground">Kategorie</TableHead>
                 <TableHead className="text-muted-foreground text-right">Bestand</TableHead>
                 <TableHead className="text-muted-foreground text-right">Mindest</TableHead>
                 <TableHead className="text-muted-foreground">Einheit</TableHead>
+                <TableHead className="text-muted-foreground text-right">EK-Preis</TableHead>
+                <TableHead className="text-muted-foreground">Lieferant</TableHead>
                 <TableHead className="text-muted-foreground">Tracking</TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
                 <TableHead />
@@ -248,25 +261,24 @@ export default function AdminInventory() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
                     Lade Lagerdaten…
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
                     Noch keine Lagereinträge — klicke „Neuer Eintrag" um loszulegen
                   </TableCell>
                 </TableRow>
               )}
               {items.map((si) => {
-                const linked = menuItems.find((m) => m.id === si.menuItemId);
                 return (
-                  <TableRow key={si.id} className="hover:bg-secondary/20">
+                  <TableRow key={si.id} className={`hover:bg-secondary/20 ${si.active ? "" : "opacity-50"}`}>
                     <TableCell className="font-medium text-white">{si.name}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {linked ? linked.name : <span className="italic">–</span>}
+                      {si.category ? si.category : <span className="italic">–</span>}
                     </TableCell>
                     <TableCell className="text-right font-mono">
                       <span className={si.isLow ? "text-amber-400 font-semibold" : "text-white"}>
@@ -277,13 +289,21 @@ export default function AdminInventory() {
                       {si.minStock.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{si.unit}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">
+                      {si.purchasePrice != null ? `${si.purchasePrice.toFixed(2)} €` : <span className="italic">–</span>}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {si.supplier ? si.supplier : <span className="italic">–</span>}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={si.trackStock ? "default" : "secondary"} className={si.trackStock ? "bg-emerald-700 text-white" : ""}>
                         {si.trackStock ? "Aktiv" : "Pausiert"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {si.isLow ? (
+                      {!si.active ? (
+                        <Badge className="bg-secondary text-muted-foreground">Inaktiv</Badge>
+                      ) : si.isLow ? (
                         <Badge className="bg-amber-700 text-white gap-1">
                           <AlertTriangle className="w-3 h-3" /> Niedrig
                         </Badge>
@@ -334,20 +354,13 @@ export default function AdminInventory() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-muted-foreground">Verknüpfter Menüartikel (optional)</Label>
-              <Select value={form.menuItemId} onValueChange={(v) => setForm((f) => ({ ...f, menuItemId: v === "none" ? "" : v }))}>
-                <SelectTrigger className="bg-secondary border-border text-white">
-                  <SelectValue placeholder="Kein Menüartikel" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  <SelectItem value="none">Kein Menüartikel</SelectItem>
-                  {menuItems.map((m: MenuItem) => (
-                    <SelectItem key={m.id} value={String(m.id)}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-muted-foreground">Kategorie (optional)</Label>
+              <Input
+                value={form.category}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                placeholder="z.B. Fleisch, Gemüse, Getränke"
+                className="bg-secondary border-border text-white"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -371,25 +384,55 @@ export default function AdminInventory() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">Einheit</Label>
+                <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
+                  <SelectTrigger className="bg-secondary border-border text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {(UNITS.includes(form.unit) ? UNITS : [form.unit, ...UNITS]).map((u) => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-muted-foreground">EK-Preis / Einheit (optional)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.purchasePrice}
+                  onChange={(e) => setForm((f) => ({ ...f, purchasePrice: e.target.value }))}
+                  placeholder="z.B. 4.50"
+                  className="bg-secondary border-border text-white"
+                />
+              </div>
+            </div>
             <div className="space-y-1">
-              <Label className="text-muted-foreground">Einheit</Label>
-              <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
-                <SelectTrigger className="bg-secondary border-border text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  {UNITS.map((u) => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-muted-foreground">Lieferant (optional)</Label>
+              <Input
+                value={form.supplier}
+                onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))}
+                placeholder="z.B. Metro, Großmarkt XY"
+                className="bg-secondary border-border text-white"
+              />
             </div>
             <div className="flex items-center gap-3">
               <Switch
                 checked={form.trackStock}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, trackStock: v }))}
               />
-              <Label className="text-muted-foreground cursor-pointer">Tracking aktiv (automatischer Abzug)</Label>
+              <Label className="text-muted-foreground cursor-pointer">Tracking aktiv (automatischer Abzug bei Bestellungen)</Label>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={form.active}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, active: v }))}
+              />
+              <Label className="text-muted-foreground cursor-pointer">Zutat aktiv (inaktive erscheinen nicht in Warnungen)</Label>
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1 border-border" onClick={() => setShowItemDialog(false)}>

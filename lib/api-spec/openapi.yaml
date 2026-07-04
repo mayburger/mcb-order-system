@@ -3576,7 +3576,7 @@ components:
         name:
           type: string
         category:
-          type: string
+          type: ["string", "null"]
         currentStock:
           type: number
         minStock:
@@ -3584,9 +3584,9 @@ components:
         unit:
           type: string
         purchasePrice:
-          type: number
+          type: ["number", "null"]
         supplier:
-          type: string
+          type: ["string", "null"]
         active:
           type: boolean
         trackStock:

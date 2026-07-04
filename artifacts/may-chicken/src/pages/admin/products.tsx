@@ -11,10 +11,15 @@ import {
   useListAdminOptionGroups, getListAdminOptionGroupsQueryKey,
   useLinkMenuItemToOptionGroup, useUnlinkMenuItemFromOptionGroup,
   useBulkSortMenuItems,
+  useGetItemRecipe, getGetItemRecipeQueryKey, useUpdateItemRecipe,
+  useListInventory,
   MenuItem,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronRight,
@@ -162,6 +167,117 @@ function ExtrasEditor({ itemId }: { itemId: number }) {
           if (!newName.trim()) { toast({ title: "Name erforderlich", variant: "destructive" }); return; }
           create.mutate({ id: itemId, data: { name: newName.trim(), price: parseFloat(newPrice) || 0, sortOrder: extras?.length ?? 0 } }, { onSuccess: () => { invalidate(); setNewName(""); setNewPrice("0"); } });
         }} disabled={create.isPending}><Plus className="h-3 w-3 mr-1" />Hinzufügen</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Recipe Editor ─────────────────────────────────────────────────────────────
+function RecipeEditor({ itemId }: { itemId: number }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const qKey = getGetItemRecipeQueryKey(itemId);
+  const { data: recipe } = useGetItemRecipe(itemId, { query: { queryKey: qKey } });
+  const { data: inventory } = useListInventory();
+  const update = useUpdateItemRecipe();
+  const [newIngredientId, setNewIngredientId] = useState("");
+  const [newQuantity, setNewQuantity] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editQuantity, setEditQuantity] = useState("");
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: qKey });
+  const lines = recipe ?? [];
+  const usedIds = new Set(lines.map((l) => l.stockItemId));
+  const availableIngredients = (inventory ?? []).filter((i) => i.active && !usedIds.has(i.id));
+  const selectedIngredient = (inventory ?? []).find((i) => String(i.id) === newIngredientId);
+
+  const saveLines = (
+    nextLines: { stockItemId: number; quantity: number }[],
+    onDone?: () => void,
+  ) => {
+    update.mutate(
+      { id: itemId, data: { lines: nextLines } },
+      {
+        onSuccess: () => { invalidate(); onDone?.(); },
+        onError: () => toast({ title: "Fehler beim Speichern der Rezeptur", variant: "destructive" }),
+      },
+    );
+  };
+
+  const baseLines = () => lines.map((l) => ({ stockItemId: l.stockItemId, quantity: l.quantity }));
+
+  const handleAdd = () => {
+    const sid = parseInt(newIngredientId, 10);
+    const q = parseFloat(newQuantity);
+    if (!sid || isNaN(q) || q <= 0) {
+      toast({ title: "Zutat und Menge (> 0) erforderlich", variant: "destructive" });
+      return;
+    }
+    saveLines([...baseLines(), { stockItemId: sid, quantity: q }], () => {
+      setNewIngredientId("");
+      setNewQuantity("");
+    });
+  };
+
+  const handleEditSave = (stockItemId: number) => {
+    const q = parseFloat(editQuantity);
+    if (isNaN(q) || q <= 0) { toast({ title: "Menge muss > 0 sein", variant: "destructive" }); return; }
+    saveLines(
+      baseLines().map((l) => (l.stockItemId === stockItemId ? { ...l, quantity: q } : l)),
+      () => setEditId(null),
+    );
+  };
+
+  const handleDelete = (stockItemId: number) => {
+    saveLines(baseLines().filter((l) => l.stockItemId !== stockItemId));
+  };
+
+  return (
+    <div className="space-y-2">
+      {lines.length === 0 && (
+        <p className="text-xs text-muted-foreground italic py-2">
+          Noch keine Zutaten hinterlegt. Beim Verkauf wird dann nichts automatisch vom Lager abgezogen.
+        </p>
+      )}
+      {lines.map((l) => (
+        <div key={l.id} className="flex items-center gap-2 bg-secondary/30 border border-border p-2">
+          {editId === l.id ? (
+            <>
+              <span className="text-white font-medium text-sm flex-1">{l.stockItemName ?? `#${l.stockItemId}`}</span>
+              <Input value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} type="number" step="0.01" min="0" className="h-7 text-sm rounded-none border-border bg-background text-white w-24" />
+              <span className="text-muted-foreground text-sm w-12">{l.unit ?? ""}</span>
+              <Button size="sm" className="h-7 text-xs rounded-none bg-primary" onClick={() => handleEditSave(l.stockItemId)} disabled={update.isPending}>OK</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditId(null)}>✕</Button>
+            </>
+          ) : (
+            <>
+              <span className="text-white font-medium text-sm flex-1">{l.stockItemName ?? `#${l.stockItemId}`}</span>
+              <span className="text-primary font-bold text-sm">{l.quantity} {l.unit ?? ""}</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => { setEditId(l.id); setEditQuantity(String(l.quantity)); }}><Pencil className="h-3 w-3" /></Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(l.stockItemId)} disabled={update.isPending}><Trash2 className="h-3 w-3" /></Button>
+            </>
+          )}
+        </div>
+      ))}
+      <div className="flex items-center gap-2 pt-1">
+        <Select value={newIngredientId} onValueChange={setNewIngredientId}>
+          <SelectTrigger className="h-8 text-sm rounded-none border-border bg-background text-white flex-1">
+            <SelectValue placeholder="Zutat auswählen…" />
+          </SelectTrigger>
+          <SelectContent className="bg-card border-border">
+            {availableIngredients.length === 0 && (
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">Keine weiteren Zutaten verfügbar</div>
+            )}
+            {availableIngredients.map((i) => (
+              <SelectItem key={i.id} value={String(i.id)}>
+                {i.name}{i.category ? ` · ${i.category}` : ""} ({i.unit})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} type="number" step="0.01" min="0" placeholder="Menge" className="h-8 text-sm rounded-none border-border bg-background text-white w-28" />
+        <span className="text-muted-foreground text-sm w-12">{selectedIngredient?.unit ?? ""}</span>
+        <Button size="sm" className="h-8 rounded-none bg-primary text-xs" onClick={handleAdd} disabled={update.isPending}><Plus className="h-3 w-3 mr-1" />Hinzufügen</Button>
       </div>
     </div>
   );
@@ -323,11 +439,11 @@ function SortableProductRow({
         <tr>
           <td colSpan={7} className="bg-secondary/10 border-b border-border px-6 py-4">
             <div className="flex gap-4 mb-4 border-b border-border">
-              {(["variants", "extras", "options"] as const).map((tab) => (
+              {(["variants", "extras", "options", "recipe"] as const).map((tab) => (
                 <button key={tab} onClick={() => onSetExpandedTab(tab)}
                   className={`pb-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${expandedTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-white"}`}
                 >
-                  {tab === "variants" ? "Größen / Varianten" : tab === "extras" ? "Extras / Zutaten" : "Optionsgruppen"}
+                  {tab === "variants" ? "Größen / Varianten" : tab === "extras" ? "Extras / Zutaten" : tab === "options" ? "Optionsgruppen" : "Rezeptur"}
                 </button>
               ))}
             </div>
@@ -344,6 +460,12 @@ function SortableProductRow({
               </div>
             )}
             {expandedTab === "options" && <OptionGroupsTab item={item} />}
+            {expandedTab === "recipe" && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-3">Lege fest, welche Zutaten pro Verkauf dieses Produkts vom Lager abgezogen werden. Die Mengen beziehen sich auf die Einheit der jeweiligen Zutat.</p>
+                <RecipeEditor itemId={item.id} />
+              </div>
+            )}
           </td>
         </tr>
       )}

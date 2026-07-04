@@ -1029,12 +1029,15 @@ export interface StockItem {
 export interface StockItemCreate {
   menuItemId?: number;
   name: string;
-  category?: string;
+  /** @nullable */
+  category?: string | null;
   currentStock?: number;
   minStock?: number;
   unit?: string;
-  purchasePrice?: number;
-  supplier?: string;
+  /** @nullable */
+  purchasePrice?: number | null;
+  /** @nullable */
+  supplier?: string | null;
   active?: boolean;
   trackStock?: boolean;
 }
