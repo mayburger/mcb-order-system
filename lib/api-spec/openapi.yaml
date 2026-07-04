@@ -2064,6 +2064,146 @@ paths:
               schema:
                 $ref: "#/components/schemas/Order"
 
+  # ── ADMIN – KASSE (Tageskasse, Bewegungen, Abschlüsse) ────────────────────
+  /admin/cash/today:
+    get:
+      operationId: getCashToday
+      tags: [admin]
+      summary: Tageskasse – Einnahmen nach Zahlungsart, Trinkgeld, Stornos, Bewegungen
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+          description: Tag im Format YYYY-MM-DD (Standard heute)
+      responses:
+        "200":
+          description: Tageskassen-Übersicht
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashTodaySummary"
+
+  /admin/cash/movements:
+    post:
+      operationId: createCashMovement
+      tags: [admin]
+      summary: Kassenbewegung anlegen (Einlage/Entnahme/Trinkgeld/Rückerstattung/Korrektur)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashMovementInput"
+      responses:
+        "201":
+          description: Angelegte Bewegung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashMovement"
+
+  /admin/cash/movements/{id}:
+    delete:
+      operationId: deleteCashMovement
+      tags: [admin]
+      summary: Kassenbewegung löschen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Gelöscht
+
+  /admin/cash/closings:
+    get:
+      operationId: listCashClosings
+      tags: [admin]
+      summary: Kassenabschlüsse auflisten
+      responses:
+        "200":
+          description: Liste der Abschlüsse
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CashClosing"
+    post:
+      operationId: createCashClosing
+      tags: [admin]
+      summary: Kassenabschluss durchführen (nur Administratoren)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CashClosingInput"
+      responses:
+        "201":
+          description: Erstellter Abschluss
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashClosing"
+
+  /admin/cash/closings/{id}:
+    get:
+      operationId: getCashClosing
+      tags: [admin]
+      summary: Einzelnen Kassenabschluss laden (für Druck/PDF)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Abschluss
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashClosing"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCashClosing
+      tags: [admin]
+      summary: Kassenabschluss löschen (nur Administratoren)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Gelöscht
+
+  /admin/reports:
+    get:
+      operationId: getReports
+      tags: [admin]
+      summary: Berichte – Umsatz heute/Woche/Monat, nach Kategorie, Filiale, Zahlungsart
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [today, week, month]
+          description: Zeitraum für die Detailauswertung (Standard month)
+      responses:
+        "200":
+          description: Berichtsdaten
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportsData"
+
 components:
   schemas:
     HealthStatus:
@@ -2072,6 +2212,298 @@ components:
       properties:
         status:
           type: string
+
+    # ── KASSE ─────────────────────────────────────────────────────────────
+    IncomeByMethod:
+      type: object
+      required: [method, label, count, revenue]
+      properties:
+        method:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        revenue:
+          type: number
+
+    CashMovement:
+      type: object
+      required: [id, type, typeLabel, amount, createdAt]
+      properties:
+        id:
+          type: integer
+        branchId:
+          type: ["integer", "null"]
+        type:
+          type: string
+          enum: [deposit, payout, tip, refund, correction]
+        typeLabel:
+          type: string
+        amount:
+          type: number
+        note:
+          type: ["string", "null"]
+        createdByUsername:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CashMovementInput:
+      type: object
+      required: [type, amount]
+      properties:
+        type:
+          type: string
+          enum: [deposit, payout, tip, refund, correction]
+        amount:
+          type: number
+        note:
+          type: string
+        branchId:
+          type: integer
+
+    CashTodaySummary:
+      type: object
+      required:
+        - date
+        - branchId
+        - ordersCount
+        - totalRevenue
+        - cashRevenue
+        - discountsTotal
+        - cancellationsCount
+        - cancellationsTotal
+        - tips
+        - refunds
+        - deposits
+        - payouts
+        - corrections
+        - expectedCashBase
+        - incomeByMethod
+        - movements
+      properties:
+        date:
+          type: string
+        branchId:
+          type: integer
+        ordersCount:
+          type: integer
+        totalRevenue:
+          type: number
+        cashRevenue:
+          type: number
+        discountsTotal:
+          type: number
+        cancellationsCount:
+          type: integer
+        cancellationsTotal:
+          type: number
+        tips:
+          type: number
+        refunds:
+          type: number
+        deposits:
+          type: number
+        payouts:
+          type: number
+        corrections:
+          type: number
+        expectedCashBase:
+          type: number
+        incomeByMethod:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomeByMethod"
+        movements:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashMovement"
+        lastClosingAt:
+          type: ["string", "null"]
+
+    CashClosing:
+      type: object
+      required:
+        - id
+        - type
+        - periodStart
+        - periodEnd
+        - openingFloat
+        - countedCash
+        - expectedCash
+        - difference
+        - totalRevenue
+        - cashRevenue
+        - tipsTotal
+        - refundsTotal
+        - depositsTotal
+        - payoutsTotal
+        - cancellationsCount
+        - cancellationsTotal
+        - ordersCount
+        - incomeByMethod
+        - closedAt
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [day, shift]
+        branchId:
+          type: ["integer", "null"]
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        openingFloat:
+          type: number
+        countedCash:
+          type: number
+        expectedCash:
+          type: number
+        difference:
+          type: number
+        totalRevenue:
+          type: number
+        cashRevenue:
+          type: number
+        tipsTotal:
+          type: number
+        refundsTotal:
+          type: number
+        depositsTotal:
+          type: number
+        payoutsTotal:
+          type: number
+        cancellationsCount:
+          type: integer
+        cancellationsTotal:
+          type: number
+        ordersCount:
+          type: integer
+        incomeByMethod:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomeByMethod"
+        notes:
+          type: ["string", "null"]
+        closedByUsername:
+          type: ["string", "null"]
+        closedAt:
+          type: string
+          format: date-time
+
+    CashClosingInput:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [day, shift]
+        openingFloat:
+          type: number
+        countedCash:
+          type: number
+        notes:
+          type: string
+        branchId:
+          type: integer
+
+    ReportsData:
+      type: object
+      required:
+        - period
+        - start
+        - end
+        - headline
+        - summary
+        - byCategory
+        - byBranch
+        - byPaymentMethod
+        - byDay
+      properties:
+        period:
+          type: string
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        headline:
+          type: object
+          required: [today, week, month]
+          properties:
+            today:
+              type: number
+            week:
+              type: number
+            month:
+              type: number
+        summary:
+          type: object
+          required: [total, orderCount, avgOrderValue]
+          properties:
+            total:
+              type: number
+            orderCount:
+              type: integer
+            avgOrderValue:
+              type: number
+        byCategory:
+          type: array
+          items:
+            type: object
+            required: [name, revenue, qty]
+            properties:
+              name:
+                type: string
+              revenue:
+                type: number
+              qty:
+                type: integer
+        byBranch:
+          type: array
+          items:
+            type: object
+            required: [name, revenue, orderCount]
+            properties:
+              branchId:
+                type: ["integer", "null"]
+              name:
+                type: string
+              revenue:
+                type: number
+              orderCount:
+                type: integer
+        byPaymentMethod:
+          type: array
+          items:
+            type: object
+            required: [method, label, revenue, count]
+            properties:
+              method:
+                type: string
+              label:
+                type: string
+              revenue:
+                type: number
+              count:
+                type: integer
+        byDay:
+          type: array
+          items:
+            type: object
+            required: [date, revenue]
+            properties:
+              date:
+                type: string
+              revenue:
+                type: number
 
     # ── CATEGORY ──────────────────────────────────────────────────────────
     Category:

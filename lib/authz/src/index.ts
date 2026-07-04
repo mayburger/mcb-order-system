@@ -32,6 +32,9 @@ export const PERMISSIONS = [
   "quickOrders.create",
   "payments.manage",
   "printSettings.manage",
+  // Cash register & closings
+  "cashRegister.view",
+  "cashClosing.manage",
   // Kitchen monitor
   "kitchen.view",
   "kitchen.status.update",
@@ -66,13 +69,20 @@ const ADMINISTRATOR_PERMISSIONS: readonly Permission[] = [
   "quickOrders.create",
   "payments.manage",
   "printSettings.manage",
+  "cashRegister.view",
+  "cashClosing.manage",
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   inhaber: [...PERMISSIONS],
   administrator: [...ADMINISTRATOR_PERMISSIONS, ...SELF_PERMISSIONS],
   kueche: ["kitchen.view", "kitchen.status.update", ...SELF_PERMISSIONS],
-  kasse: ["orders.view", "quickOrders.create", ...SELF_PERMISSIONS],
+  kasse: [
+    "orders.view",
+    "quickOrders.create",
+    "cashRegister.view",
+    ...SELF_PERMISSIONS,
+  ],
   fahrer: ["driver.orders.view", "driver.status.update", ...SELF_PERMISSIONS],
 };
 
@@ -131,6 +141,9 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
   "/backstage/quick-order": "quickOrders.create",
   "/backstage/print-settings": "printSettings.manage",
   "/backstage/payments": "payments.manage",
+  "/backstage/cash-register": "cashRegister.view",
+  "/backstage/cash-closing": "cashClosing.manage",
+  "/backstage/reports": "dashboard.view",
   "/backstage/settings": "settings.manage",
   "/backstage/users": "users.manage",
   "/backstage/activity-log": "activityLog.view",

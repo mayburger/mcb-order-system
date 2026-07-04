@@ -54,6 +54,17 @@ export const userRoleEnum = pgEnum("user_role", [
   "kasse",
   "fahrer",
 ]);
+export const cashMovementTypeEnum = pgEnum("cash_movement_type", [
+  "deposit", // Einlage
+  "payout", // Entnahme
+  "tip", // Trinkgeld
+  "refund", // Rückerstattung (bar)
+  "correction", // Korrektur (vorzeichenbehaftet)
+]);
+export const cashClosingTypeEnum = pgEnum("cash_closing_type", [
+  "day", // Tagesabschluss
+  "shift", // Schichtabschluss
+]);
 
 // ── CATEGORIES ──────────────────────────────────────────────────────────────
 export const categories = pgTable("restaurant_categories", {
@@ -222,6 +233,20 @@ export const customerCrmNotes = pgTable("restaurant_customer_crm_notes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ── BRANCHES (Filialen) ───────────────────────────────────────────────────────
+// Vorbereitung für Mehrfilialen-Betrieb. Aktuell existiert genau eine Standard-
+// Filiale ("Hauptfiliale", isDefault=true). Bestellungen, Kassenbewegungen und
+// Kassenabschlüsse referenzieren optional eine Filiale (nullable = Hauptfiliale).
+export const branches = pgTable("restaurant_branches", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address"),
+  phone: text("phone"),
+  active: boolean("active").notNull().default(true),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // ── ORDERS ────────────────────────────────────────────────────────────────────
 export const orders = pgTable("restaurant_orders", {
   id: serial("id").primaryKey(),
@@ -249,6 +274,9 @@ export const orders = pgTable("restaurant_orders", {
   couponCode: text("coupon_code"),
   source: orderSourceEnum("source").notNull().default("online"),
   tableInfo: text("table_info"),
+  branchId: integer("branch_id").references(() => branches.id, {
+    onDelete: "set null",
+  }),
   archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -460,6 +488,83 @@ export const settings = pgTable("restaurant_settings", {
   id: serial("id").primaryKey(),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
+});
+
+// ── CASH MOVEMENTS (Kassenbewegungen) ─────────────────────────────────────────
+// Manuelle Bar-Bewegungen der Kasse: Einlage, Entnahme, Trinkgeld, Rückerstattung,
+// Korrektur. Bewusst getrennt von Bestellungen/Checkout gehalten, damit das
+// Kassenmodul in sich geschlossen ist und keine anderen Module verändert.
+export const cashMovements = pgTable("restaurant_cash_movements", {
+  id: serial("id").primaryKey(),
+  branchId: integer("branch_id").references(() => branches.id, {
+    onDelete: "set null",
+  }),
+  type: cashMovementTypeEnum("type").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  note: text("note"),
+  createdByUserId: integer("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdByUsername: text("created_by_username"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ── CASH CLOSINGS (Kassenabschlüsse) ──────────────────────────────────────────
+// Tages- oder Schichtabschluss. Snapshot des Zeitraums: erwarteter vs. gezählter
+// Bar-Bestand, Differenz, Einnahmen nach Zahlungsart, Trinkgeld, Rückerstattungen,
+// Stornos. Nur Administratoren dürfen Abschlüsse anlegen/löschen (RBAC).
+export const cashClosings = pgTable("restaurant_cash_closings", {
+  id: serial("id").primaryKey(),
+  type: cashClosingTypeEnum("type").notNull(),
+  branchId: integer("branch_id").references(() => branches.id, {
+    onDelete: "set null",
+  }),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  openingFloat: numeric("opening_float", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  countedCash: numeric("counted_cash", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  expectedCash: numeric("expected_cash", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  difference: numeric("difference", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  totalRevenue: numeric("total_revenue", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  cashRevenue: numeric("cash_revenue", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  tipsTotal: numeric("tips_total", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  refundsTotal: numeric("refunds_total", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  depositsTotal: numeric("deposits_total", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  payoutsTotal: numeric("payouts_total", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  cancellationsCount: integer("cancellations_count").notNull().default(0),
+  cancellationsTotal: numeric("cancellations_total", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  ordersCount: integer("orders_count").notNull().default(0),
+  incomeByMethod: jsonb("income_by_method").$type<
+    Array<{ method: string; label: string; count: number; revenue: number }>
+  >(),
+  notes: text("notes"),
+  closedByUserId: integer("closed_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  closedByUsername: text("closed_by_username"),
+  closedAt: timestamp("closed_at").notNull().defaultNow(),
 });
 
 // ── RELATIONS ─────────────────────────────────────────────────────────────────

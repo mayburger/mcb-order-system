@@ -3372,3 +3372,247 @@ export const UpdateKitchenOrderStatusResponse = zod.object({
 })
 
 
+/**
+ * @summary Tageskasse – Einnahmen nach Zahlungsart, Trinkgeld, Stornos, Bewegungen
+ */
+export const GetCashTodayQueryParams = zod.object({
+  "date": zod.coerce.string().optional().describe('Tag im Format YYYY-MM-DD (Standard heute)')
+})
+
+export const GetCashTodayResponse = zod.object({
+  "date": zod.string(),
+  "branchId": zod.number(),
+  "ordersCount": zod.number(),
+  "totalRevenue": zod.number(),
+  "cashRevenue": zod.number(),
+  "discountsTotal": zod.number(),
+  "cancellationsCount": zod.number(),
+  "cancellationsTotal": zod.number(),
+  "tips": zod.number(),
+  "refunds": zod.number(),
+  "deposits": zod.number(),
+  "payouts": zod.number(),
+  "corrections": zod.number(),
+  "expectedCashBase": zod.number(),
+  "incomeByMethod": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "revenue": zod.number()
+})),
+  "movements": zod.array(zod.object({
+  "id": zod.number(),
+  "branchId": zod.number().nullish(),
+  "type": zod.enum(['deposit', 'payout', 'tip', 'refund', 'correction']),
+  "typeLabel": zod.string(),
+  "amount": zod.number(),
+  "note": zod.string().nullish(),
+  "createdByUsername": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})),
+  "lastClosingAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Kassenbewegung anlegen (Einlage/Entnahme/Trinkgeld/Rückerstattung/Korrektur)
+ */
+export const CreateCashMovementBody = zod.object({
+  "type": zod.enum(['deposit', 'payout', 'tip', 'refund', 'correction']),
+  "amount": zod.number(),
+  "note": zod.string().optional(),
+  "branchId": zod.number().optional()
+})
+
+export const CreateCashMovementResponse = zod.object({
+  "id": zod.number(),
+  "branchId": zod.number().nullish(),
+  "type": zod.enum(['deposit', 'payout', 'tip', 'refund', 'correction']),
+  "typeLabel": zod.string(),
+  "amount": zod.number(),
+  "note": zod.string().nullish(),
+  "createdByUsername": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Kassenbewegung löschen
+ */
+export const DeleteCashMovementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCashMovementResponse = zod.unknown()
+
+
+/**
+ * @summary Kassenabschlüsse auflisten
+ */
+export const ListCashClosingsResponseItem = zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['day', 'shift']),
+  "branchId": zod.number().nullish(),
+  "periodStart": zod.coerce.date(),
+  "periodEnd": zod.coerce.date(),
+  "openingFloat": zod.number(),
+  "countedCash": zod.number(),
+  "expectedCash": zod.number(),
+  "difference": zod.number(),
+  "totalRevenue": zod.number(),
+  "cashRevenue": zod.number(),
+  "tipsTotal": zod.number(),
+  "refundsTotal": zod.number(),
+  "depositsTotal": zod.number(),
+  "payoutsTotal": zod.number(),
+  "cancellationsCount": zod.number(),
+  "cancellationsTotal": zod.number(),
+  "ordersCount": zod.number(),
+  "incomeByMethod": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "revenue": zod.number()
+})),
+  "notes": zod.string().nullish(),
+  "closedByUsername": zod.string().nullish(),
+  "closedAt": zod.coerce.date()
+})
+export const ListCashClosingsResponse = zod.array(ListCashClosingsResponseItem)
+
+
+/**
+ * @summary Kassenabschluss durchführen (nur Administratoren)
+ */
+export const CreateCashClosingBody = zod.object({
+  "type": zod.enum(['day', 'shift']),
+  "openingFloat": zod.number().optional(),
+  "countedCash": zod.number().optional(),
+  "notes": zod.string().optional(),
+  "branchId": zod.number().optional()
+})
+
+export const CreateCashClosingResponse = zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['day', 'shift']),
+  "branchId": zod.number().nullish(),
+  "periodStart": zod.coerce.date(),
+  "periodEnd": zod.coerce.date(),
+  "openingFloat": zod.number(),
+  "countedCash": zod.number(),
+  "expectedCash": zod.number(),
+  "difference": zod.number(),
+  "totalRevenue": zod.number(),
+  "cashRevenue": zod.number(),
+  "tipsTotal": zod.number(),
+  "refundsTotal": zod.number(),
+  "depositsTotal": zod.number(),
+  "payoutsTotal": zod.number(),
+  "cancellationsCount": zod.number(),
+  "cancellationsTotal": zod.number(),
+  "ordersCount": zod.number(),
+  "incomeByMethod": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "revenue": zod.number()
+})),
+  "notes": zod.string().nullish(),
+  "closedByUsername": zod.string().nullish(),
+  "closedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Einzelnen Kassenabschluss laden (für Druck/PDF)
+ */
+export const GetCashClosingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCashClosingResponse = zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['day', 'shift']),
+  "branchId": zod.number().nullish(),
+  "periodStart": zod.coerce.date(),
+  "periodEnd": zod.coerce.date(),
+  "openingFloat": zod.number(),
+  "countedCash": zod.number(),
+  "expectedCash": zod.number(),
+  "difference": zod.number(),
+  "totalRevenue": zod.number(),
+  "cashRevenue": zod.number(),
+  "tipsTotal": zod.number(),
+  "refundsTotal": zod.number(),
+  "depositsTotal": zod.number(),
+  "payoutsTotal": zod.number(),
+  "cancellationsCount": zod.number(),
+  "cancellationsTotal": zod.number(),
+  "ordersCount": zod.number(),
+  "incomeByMethod": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "count": zod.number(),
+  "revenue": zod.number()
+})),
+  "notes": zod.string().nullish(),
+  "closedByUsername": zod.string().nullish(),
+  "closedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Kassenabschluss löschen (nur Administratoren)
+ */
+export const DeleteCashClosingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCashClosingResponse = zod.unknown()
+
+
+/**
+ * @summary Berichte – Umsatz heute/Woche/Monat, nach Kategorie, Filiale, Zahlungsart
+ */
+export const GetReportsQueryParams = zod.object({
+  "period": zod.enum(['today', 'week', 'month']).optional().describe('Zeitraum für die Detailauswertung (Standard month)')
+})
+
+export const GetReportsResponse = zod.object({
+  "period": zod.string(),
+  "start": zod.coerce.date(),
+  "end": zod.coerce.date(),
+  "headline": zod.object({
+  "today": zod.number(),
+  "week": zod.number(),
+  "month": zod.number()
+}),
+  "summary": zod.object({
+  "total": zod.number(),
+  "orderCount": zod.number(),
+  "avgOrderValue": zod.number()
+}),
+  "byCategory": zod.array(zod.object({
+  "name": zod.string(),
+  "revenue": zod.number(),
+  "qty": zod.number()
+})),
+  "byBranch": zod.array(zod.object({
+  "branchId": zod.number().nullish(),
+  "name": zod.string(),
+  "revenue": zod.number(),
+  "orderCount": zod.number()
+})),
+  "byPaymentMethod": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "revenue": zod.number(),
+  "count": zod.number()
+})),
+  "byDay": zod.array(zod.object({
+  "date": zod.string(),
+  "revenue": zod.number()
+}))
+})
+
+

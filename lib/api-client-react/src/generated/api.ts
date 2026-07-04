@@ -25,6 +25,11 @@ import type {
   AdminSession,
   AdminStats,
   AppSettings,
+  CashClosing,
+  CashClosingInput,
+  CashMovement,
+  CashMovementInput,
+  CashTodaySummary,
   Category,
   CategoryInput,
   CategoryOptionGroupLink,
@@ -58,6 +63,8 @@ import type {
   DriverStatusUpdate,
   FavoriteOrder,
   FavoriteOrderInput,
+  GetCashTodayParams,
+  GetReportsParams,
   HealthStatus,
   ItemExtra,
   ItemExtraInput,
@@ -94,6 +101,7 @@ import type {
   QuickOrderRequest,
   RecipeLine,
   RecipeUpdate,
+  ReportsData,
   RestaurantInfo,
   SettingsUpdate,
   SortOrderUpdate,
@@ -7980,4 +7988,606 @@ export const useUpdateKitchenOrderStatus = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getUpdateKitchenOrderStatusMutationOptions(options));
     }
+
+export const getGetCashTodayUrl = (params?: GetCashTodayParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/cash/today?${stringifiedParams}` : `/api/admin/cash/today`
+}
+
+/**
+ * @summary Tageskasse – Einnahmen nach Zahlungsart, Trinkgeld, Stornos, Bewegungen
+ */
+export const getCashToday = async (params?: GetCashTodayParams, options?: RequestInit): Promise<CashTodaySummary> => {
+
+  return customFetch<CashTodaySummary>(getGetCashTodayUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCashTodayQueryKey = (params?: GetCashTodayParams,) => {
+    return [
+    `/api/admin/cash/today`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCashTodayQueryOptions = <TData = Awaited<ReturnType<typeof getCashToday>>, TError = ErrorType<unknown>>(params?: GetCashTodayParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashToday>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCashTodayQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCashToday>>> = ({ signal }) => getCashToday(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCashToday>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCashTodayQueryResult = NonNullable<Awaited<ReturnType<typeof getCashToday>>>
+export type GetCashTodayQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Tageskasse – Einnahmen nach Zahlungsart, Trinkgeld, Stornos, Bewegungen
+ */
+
+export function useGetCashToday<TData = Awaited<ReturnType<typeof getCashToday>>, TError = ErrorType<unknown>>(
+ params?: GetCashTodayParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashToday>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCashTodayQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCashMovementUrl = () => {
+
+
+
+
+  return `/api/admin/cash/movements`
+}
+
+/**
+ * @summary Kassenbewegung anlegen (Einlage/Entnahme/Trinkgeld/Rückerstattung/Korrektur)
+ */
+export const createCashMovement = async (cashMovementInput: CashMovementInput, options?: RequestInit): Promise<CashMovement> => {
+
+  return customFetch<CashMovement>(getCreateCashMovementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cashMovementInput)
+  }
+);}
+
+
+
+
+export const getCreateCashMovementMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCashMovement>>, TError,{data: BodyType<CashMovementInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCashMovement>>, TError,{data: BodyType<CashMovementInput>}, TContext> => {
+
+const mutationKey = ['createCashMovement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCashMovement>>, {data: BodyType<CashMovementInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCashMovement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCashMovementMutationResult = NonNullable<Awaited<ReturnType<typeof createCashMovement>>>
+    export type CreateCashMovementMutationBody = BodyType<CashMovementInput>
+    export type CreateCashMovementMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Kassenbewegung anlegen (Einlage/Entnahme/Trinkgeld/Rückerstattung/Korrektur)
+ */
+export const useCreateCashMovement = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCashMovement>>, TError,{data: BodyType<CashMovementInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCashMovement>>,
+        TError,
+        {data: BodyType<CashMovementInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCashMovementMutationOptions(options));
+    }
+
+export const getDeleteCashMovementUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/cash/movements/${id}`
+}
+
+/**
+ * @summary Kassenbewegung löschen
+ */
+export const deleteCashMovement = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCashMovementUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCashMovementMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCashMovement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCashMovement>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCashMovement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCashMovement>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCashMovement(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCashMovementMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCashMovement>>>
+
+    export type DeleteCashMovementMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Kassenbewegung löschen
+ */
+export const useDeleteCashMovement = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCashMovement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCashMovement>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCashMovementMutationOptions(options));
+    }
+
+export const getListCashClosingsUrl = () => {
+
+
+
+
+  return `/api/admin/cash/closings`
+}
+
+/**
+ * @summary Kassenabschlüsse auflisten
+ */
+export const listCashClosings = async ( options?: RequestInit): Promise<CashClosing[]> => {
+
+  return customFetch<CashClosing[]>(getListCashClosingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCashClosingsQueryKey = () => {
+    return [
+    `/api/admin/cash/closings`
+    ] as const;
+    }
+
+
+export const getListCashClosingsQueryOptions = <TData = Awaited<ReturnType<typeof listCashClosings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCashClosings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCashClosingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCashClosings>>> = ({ signal }) => listCashClosings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCashClosings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCashClosingsQueryResult = NonNullable<Awaited<ReturnType<typeof listCashClosings>>>
+export type ListCashClosingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Kassenabschlüsse auflisten
+ */
+
+export function useListCashClosings<TData = Awaited<ReturnType<typeof listCashClosings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCashClosings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCashClosingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCashClosingUrl = () => {
+
+
+
+
+  return `/api/admin/cash/closings`
+}
+
+/**
+ * @summary Kassenabschluss durchführen (nur Administratoren)
+ */
+export const createCashClosing = async (cashClosingInput: CashClosingInput, options?: RequestInit): Promise<CashClosing> => {
+
+  return customFetch<CashClosing>(getCreateCashClosingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cashClosingInput)
+  }
+);}
+
+
+
+
+export const getCreateCashClosingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCashClosing>>, TError,{data: BodyType<CashClosingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCashClosing>>, TError,{data: BodyType<CashClosingInput>}, TContext> => {
+
+const mutationKey = ['createCashClosing'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCashClosing>>, {data: BodyType<CashClosingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCashClosing(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCashClosingMutationResult = NonNullable<Awaited<ReturnType<typeof createCashClosing>>>
+    export type CreateCashClosingMutationBody = BodyType<CashClosingInput>
+    export type CreateCashClosingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Kassenabschluss durchführen (nur Administratoren)
+ */
+export const useCreateCashClosing = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCashClosing>>, TError,{data: BodyType<CashClosingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCashClosing>>,
+        TError,
+        {data: BodyType<CashClosingInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCashClosingMutationOptions(options));
+    }
+
+export const getGetCashClosingUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/cash/closings/${id}`
+}
+
+/**
+ * @summary Einzelnen Kassenabschluss laden (für Druck/PDF)
+ */
+export const getCashClosing = async (id: number, options?: RequestInit): Promise<CashClosing> => {
+
+  return customFetch<CashClosing>(getGetCashClosingUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCashClosingQueryKey = (id: number,) => {
+    return [
+    `/api/admin/cash/closings/${id}`
+    ] as const;
+    }
+
+
+export const getGetCashClosingQueryOptions = <TData = Awaited<ReturnType<typeof getCashClosing>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashClosing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCashClosingQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCashClosing>>> = ({ signal }) => getCashClosing(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCashClosing>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCashClosingQueryResult = NonNullable<Awaited<ReturnType<typeof getCashClosing>>>
+export type GetCashClosingQueryError = ErrorType<void>
+
+
+/**
+ * @summary Einzelnen Kassenabschluss laden (für Druck/PDF)
+ */
+
+export function useGetCashClosing<TData = Awaited<ReturnType<typeof getCashClosing>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCashClosing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCashClosingQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteCashClosingUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/cash/closings/${id}`
+}
+
+/**
+ * @summary Kassenabschluss löschen (nur Administratoren)
+ */
+export const deleteCashClosing = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCashClosingUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCashClosingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCashClosing>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCashClosing>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCashClosing'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCashClosing>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCashClosing(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCashClosingMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCashClosing>>>
+
+    export type DeleteCashClosingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Kassenabschluss löschen (nur Administratoren)
+ */
+export const useDeleteCashClosing = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCashClosing>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCashClosing>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCashClosingMutationOptions(options));
+    }
+
+export const getGetReportsUrl = (params?: GetReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/reports?${stringifiedParams}` : `/api/admin/reports`
+}
+
+/**
+ * @summary Berichte – Umsatz heute/Woche/Monat, nach Kategorie, Filiale, Zahlungsart
+ */
+export const getReports = async (params?: GetReportsParams, options?: RequestInit): Promise<ReportsData> => {
+
+  return customFetch<ReportsData>(getGetReportsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReportsQueryKey = (params?: GetReportsParams,) => {
+    return [
+    `/api/admin/reports`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetReportsQueryOptions = <TData = Awaited<ReturnType<typeof getReports>>, TError = ErrorType<unknown>>(params?: GetReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReportsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReports>>> = ({ signal }) => getReports(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getReports>>>
+export type GetReportsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Berichte – Umsatz heute/Woche/Monat, nach Kategorie, Filiale, Zahlungsart
+ */
+
+export function useGetReports<TData = Awaited<ReturnType<typeof getReports>>, TError = ErrorType<unknown>>(
+ params?: GetReportsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReportsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

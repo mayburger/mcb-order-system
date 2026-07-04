@@ -9,6 +9,179 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface IncomeByMethod {
+  method: string;
+  label: string;
+  count: number;
+  revenue: number;
+}
+
+export type CashMovementType = typeof CashMovementType[keyof typeof CashMovementType];
+
+
+export const CashMovementType = {
+  deposit: 'deposit',
+  payout: 'payout',
+  tip: 'tip',
+  refund: 'refund',
+  correction: 'correction',
+} as const;
+
+export interface CashMovement {
+  id: number;
+  /** @nullable */
+  branchId?: number | null;
+  type: CashMovementType;
+  typeLabel: string;
+  amount: number;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  createdByUsername?: string | null;
+  createdAt: string;
+}
+
+export type CashMovementInputType = typeof CashMovementInputType[keyof typeof CashMovementInputType];
+
+
+export const CashMovementInputType = {
+  deposit: 'deposit',
+  payout: 'payout',
+  tip: 'tip',
+  refund: 'refund',
+  correction: 'correction',
+} as const;
+
+export interface CashMovementInput {
+  type: CashMovementInputType;
+  amount: number;
+  note?: string;
+  branchId?: number;
+}
+
+export interface CashTodaySummary {
+  date: string;
+  branchId: number;
+  ordersCount: number;
+  totalRevenue: number;
+  cashRevenue: number;
+  discountsTotal: number;
+  cancellationsCount: number;
+  cancellationsTotal: number;
+  tips: number;
+  refunds: number;
+  deposits: number;
+  payouts: number;
+  corrections: number;
+  expectedCashBase: number;
+  incomeByMethod: IncomeByMethod[];
+  movements: CashMovement[];
+  /** @nullable */
+  lastClosingAt?: string | null;
+}
+
+export type CashClosingType = typeof CashClosingType[keyof typeof CashClosingType];
+
+
+export const CashClosingType = {
+  day: 'day',
+  shift: 'shift',
+} as const;
+
+export interface CashClosing {
+  id: number;
+  type: CashClosingType;
+  /** @nullable */
+  branchId?: number | null;
+  periodStart: string;
+  periodEnd: string;
+  openingFloat: number;
+  countedCash: number;
+  expectedCash: number;
+  difference: number;
+  totalRevenue: number;
+  cashRevenue: number;
+  tipsTotal: number;
+  refundsTotal: number;
+  depositsTotal: number;
+  payoutsTotal: number;
+  cancellationsCount: number;
+  cancellationsTotal: number;
+  ordersCount: number;
+  incomeByMethod: IncomeByMethod[];
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  closedByUsername?: string | null;
+  closedAt: string;
+}
+
+export type CashClosingInputType = typeof CashClosingInputType[keyof typeof CashClosingInputType];
+
+
+export const CashClosingInputType = {
+  day: 'day',
+  shift: 'shift',
+} as const;
+
+export interface CashClosingInput {
+  type: CashClosingInputType;
+  openingFloat?: number;
+  countedCash?: number;
+  notes?: string;
+  branchId?: number;
+}
+
+export type ReportsDataHeadline = {
+  today: number;
+  week: number;
+  month: number;
+};
+
+export type ReportsDataSummary = {
+  total: number;
+  orderCount: number;
+  avgOrderValue: number;
+};
+
+export type ReportsDataByCategoryItem = {
+  name: string;
+  revenue: number;
+  qty: number;
+};
+
+export type ReportsDataByBranchItem = {
+  /** @nullable */
+  branchId?: number | null;
+  name: string;
+  revenue: number;
+  orderCount: number;
+};
+
+export type ReportsDataByPaymentMethodItem = {
+  method: string;
+  label: string;
+  revenue: number;
+  count: number;
+};
+
+export type ReportsDataByDayItem = {
+  date: string;
+  revenue: number;
+};
+
+export interface ReportsData {
+  period: string;
+  start: string;
+  end: string;
+  headline: ReportsDataHeadline;
+  summary: ReportsDataSummary;
+  byCategory: ReportsDataByCategoryItem[];
+  byBranch: ReportsDataByBranchItem[];
+  byPaymentMethod: ReportsDataByPaymentMethodItem[];
+  byDay: ReportsDataByDayItem[];
+}
+
 export interface Category {
   id: number;
   name: string;
@@ -1305,4 +1478,27 @@ export type ListCrmCustomersParams = {
  */
 search?: string;
 };
+
+export type GetCashTodayParams = {
+/**
+ * Tag im Format YYYY-MM-DD (Standard heute)
+ */
+date?: string;
+};
+
+export type GetReportsParams = {
+/**
+ * Zeitraum für die Detailauswertung (Standard month)
+ */
+period?: GetReportsPeriod;
+};
+
+export type GetReportsPeriod = typeof GetReportsPeriod[keyof typeof GetReportsPeriod];
+
+
+export const GetReportsPeriod = {
+  today: 'today',
+  week: 'week',
+  month: 'month',
+} as const;
 

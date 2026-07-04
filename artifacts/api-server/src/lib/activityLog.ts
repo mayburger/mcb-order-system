@@ -8,7 +8,9 @@ export type ActivityAction =
   | "price_changed"
   | "product_deactivated"
   | "coupon_created"
-  | "user_created";
+  | "user_created"
+  | "cash_closing_created"
+  | "cash_closing_deleted";
 
 interface ActivityOptions {
   entityType?: string;
