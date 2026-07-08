@@ -24,6 +24,9 @@ import {
   ScrollText,
   ShieldCheck,
   KeyRound,
+  Calculator,
+  FileCheck,
+  BarChart3,
 } from "lucide-react";
 import { useAdminLogout } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -49,6 +52,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/backstage/opening-hours", label: "Öffnungszeiten", icon: Clock, perm: "openingHours.manage" },
   { href: "/backstage/coupons", label: "Gutscheine", icon: TicketPercent, perm: "coupons.manage" },
   { href: "/backstage/inventory", label: "Lager", icon: Package, perm: "products.manage" },
+  { href: "/backstage/cash-register", label: "Tageskasse", icon: Calculator, perm: "cashRegister.view" },
+  { href: "/backstage/cash-closing", label: "Kassenabschluss", icon: FileCheck, perm: "cashClosing.manage" },
+  { href: "/backstage/reports", label: "Berichte", icon: BarChart3, perm: "dashboard.view" },
   { href: "/backstage/quick-order", label: "Schnellbestellung", icon: PhoneCall, perm: "quickOrders.create" },
   { href: "/kitchen", label: "Küchenmonitor", icon: ChefHat, perm: "kitchen.view" },
   { href: "/backstage/driver", label: "Fahrer-Ansicht", icon: Truck, perm: "driver.orders.view" },

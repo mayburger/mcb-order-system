@@ -2584,7 +2584,8 @@ export const CustomerRegisterResponse = zod.object({
   "lastName": zod.string(),
   "phone": zod.string(),
   "createdAt": zod.coerce.date()
-}).optional()
+}).optional(),
+  "token": zod.string().optional().describe('Bearer-Token für Mobile-Clients (nur bei Login\/Register mit Header \'x-client: mobile\')')
 })
 
 
@@ -2605,7 +2606,8 @@ export const CustomerLoginResponse = zod.object({
   "lastName": zod.string(),
   "phone": zod.string(),
   "createdAt": zod.coerce.date()
-}).optional()
+}).optional(),
+  "token": zod.string().optional().describe('Bearer-Token für Mobile-Clients (nur bei Login\/Register mit Header \'x-client: mobile\')')
 })
 
 
@@ -2627,7 +2629,8 @@ export const GetCustomerSessionResponse = zod.object({
   "lastName": zod.string(),
   "phone": zod.string(),
   "createdAt": zod.coerce.date()
-}).optional()
+}).optional(),
+  "token": zod.string().optional().describe('Bearer-Token für Mobile-Clients (nur bei Login\/Register mit Header \'x-client: mobile\')')
 })
 
 

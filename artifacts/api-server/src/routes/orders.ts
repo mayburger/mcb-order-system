@@ -13,6 +13,7 @@ import {
 import { eq, inArray } from "drizzle-orm";
 import { getSettingsMap } from "./restaurant";
 import { deductStockForOrder } from "../lib/stockDeduction";
+import { resolveCustomerId } from "../lib/customerAuth";
 
 const router = Router();
 
@@ -287,7 +288,7 @@ router.post("/restaurant/orders", async (req, res) => {
       .values({
         orderNumber,
         orderType: body.orderType,
-        customerId: req.session.customerId ?? null,
+        customerId: (await resolveCustomerId(req)) ?? null,
         customerName: body.customerName,
         customerPhone: body.customerPhone,
         customerEmail: body.customerEmail ?? null,

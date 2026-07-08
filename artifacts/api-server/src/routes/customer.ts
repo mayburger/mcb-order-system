@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import {
   customers,
@@ -10,14 +10,22 @@ import {
 import { eq, desc, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { serializeOrder } from "./orders";
-
-declare module "express-session" {
-  interface SessionData {
-    customerId?: number;
-  }
-}
+import {
+  issueCustomerToken,
+  revokeCustomerToken,
+  resolveCustomerId,
+} from "../lib/customerAuth";
 
 const router = Router();
+
+/**
+ * Mobile-Clients (Expo) senden den Header `x-client: mobile` — sie können
+ * keine Cookies nutzen und bekommen bei Login/Register zusätzlich ein
+ * Bearer-Token zurück. Web-Clients laufen weiter über die Cookie-Session.
+ */
+function wantsToken(req: Request): boolean {
+  return req.headers["x-client"] === "mobile";
+}
 
 function serializeCustomer(c: typeof customers.$inferSelect) {
   return {
@@ -30,8 +38,8 @@ function serializeCustomer(c: typeof customers.$inferSelect) {
   };
 }
 
-function requireCustomer(req: Parameters<Parameters<typeof router.get>[1]>[0], res: Parameters<Parameters<typeof router.get>[1]>[1]): number | null {
-  const id = req.session.customerId;
+async function requireCustomer(req: Request, res: Response): Promise<number | null> {
+  const id = await resolveCustomerId(req);
   if (!id) {
     res.status(401).json({ error: "Not authenticated" });
     return null;
@@ -77,7 +85,12 @@ router.post("/customer/register", async (req, res) => {
     if (!customer) return res.status(500).json({ error: "Registrierung fehlgeschlagen" });
 
     req.session.customerId = customer.id;
-    res.status(201).json({ authenticated: true, customer: serializeCustomer(customer) });
+    const token = wantsToken(req) ? await issueCustomerToken(customer.id) : undefined;
+    res.status(201).json({
+      authenticated: true,
+      customer: serializeCustomer(customer),
+      ...(token ? { token } : {}),
+    });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -99,7 +112,12 @@ router.post("/customer/login", async (req, res) => {
     if (!valid) return res.status(401).json({ error: "Ungültige Anmeldedaten" });
 
     req.session.customerId = customer.id;
-    res.json({ authenticated: true, customer: serializeCustomer(customer) });
+    const token = wantsToken(req) ? await issueCustomerToken(customer.id) : undefined;
+    res.json({
+      authenticated: true,
+      customer: serializeCustomer(customer),
+      ...(token ? { token } : {}),
+    });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -107,14 +125,19 @@ router.post("/customer/login", async (req, res) => {
 });
 
 // ── Logout ─────────────────────────────────────────────────────────────────────
-router.post("/customer/logout", (req, res) => {
+router.post("/customer/logout", async (req, res) => {
+  try {
+    await revokeCustomerToken(req);
+  } catch (err) {
+    req.log.error(err);
+  }
   req.session.customerId = undefined;
   res.json({ ok: true });
 });
 
 // ── Me ─────────────────────────────────────────────────────────────────────────
 router.get("/customer/me", async (req, res) => {
-  const customerId = req.session.customerId;
+  const customerId = await resolveCustomerId(req);
   if (!customerId) return res.json({ authenticated: false, customer: null });
 
   const customer = await db.query.customers.findFirst({
@@ -130,7 +153,7 @@ router.get("/customer/me", async (req, res) => {
 // ── Update Profile ─────────────────────────────────────────────────────────────
 router.patch("/customer/me", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const { firstName, lastName, phone } = req.body as {
@@ -165,7 +188,7 @@ router.patch("/customer/me", async (req, res) => {
 // ── Order History ──────────────────────────────────────────────────────────────
 router.get("/customer/orders", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const customerOrders = await db
@@ -189,7 +212,7 @@ router.get("/customer/orders", async (req, res) => {
 // ── Single Order ───────────────────────────────────────────────────────────────
 router.get("/customer/orders/:id", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const id = Number(req.params["id"]);
@@ -209,7 +232,7 @@ router.get("/customer/orders/:id", async (req, res) => {
 // ── Favorites ──────────────────────────────────────────────────────────────────
 router.get("/customer/favorites", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const favs = await db
@@ -227,7 +250,7 @@ router.get("/customer/favorites", async (req, res) => {
 
 router.post("/customer/favorites", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const { name, items } = req.body as { name: string; items: unknown[] };
@@ -250,7 +273,7 @@ router.post("/customer/favorites", async (req, res) => {
 
 router.delete("/customer/favorites/:id", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const id = Number(req.params["id"]);
@@ -267,7 +290,7 @@ router.delete("/customer/favorites/:id", async (req, res) => {
 // ── Notes ──────────────────────────────────────────────────────────────────────
 router.get("/customer/notes", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const notes = await db
@@ -285,7 +308,7 @@ router.get("/customer/notes", async (req, res) => {
 
 router.post("/customer/notes", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const { text } = req.body as { text: string };
@@ -306,7 +329,7 @@ router.post("/customer/notes", async (req, res) => {
 
 router.delete("/customer/notes/:id", async (req, res) => {
   try {
-    const customerId = requireCustomer(req, res);
+    const customerId = await requireCustomer(req, res);
     if (!customerId) return;
 
     const id = Number(req.params["id"]);

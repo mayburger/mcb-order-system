@@ -34,6 +34,9 @@ import AdminUsers from "@/pages/admin/users";
 import AdminActivityLog from "@/pages/admin/activity-log";
 import AdminDriver from "@/pages/admin/driver";
 import ChangePasswordPage from "@/pages/admin/change-password";
+import AdminCashRegister from "@/pages/admin/cash-register";
+import AdminCashClosing from "@/pages/admin/cash-closing";
+import AdminReports from "@/pages/admin/reports";
 
 import KitchenPage from "@/pages/kitchen";
 
@@ -143,6 +146,21 @@ function Router() {
       <Route path="/backstage/option-groups">
         <ProtectedRoute permission="products.manage">
           <AdminOptionGroups />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/cash-register">
+        <ProtectedRoute permission="cashRegister.view">
+          <AdminCashRegister />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/cash-closing">
+        <ProtectedRoute permission="cashClosing.manage">
+          <AdminCashClosing />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backstage/reports">
+        <ProtectedRoute permission="dashboard.view">
+          <AdminReports />
         </ProtectedRoute>
       </Route>
       <Route path="/backstage/inventory">

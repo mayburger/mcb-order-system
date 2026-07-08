@@ -3795,6 +3795,9 @@ components:
           type: boolean
         customer:
           $ref: "#/components/schemas/CustomerProfile"
+        token:
+          type: string
+          description: "Bearer-Token für Mobile-Clients (nur bei Login/Register mit Header 'x-client: mobile')"
 
     CustomerProfileUpdate:
       type: object

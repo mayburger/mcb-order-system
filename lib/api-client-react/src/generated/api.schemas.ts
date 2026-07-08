@@ -1090,6 +1090,8 @@ export interface CustomerProfile {
 export interface CustomerSession {
   authenticated: boolean;
   customer?: CustomerProfile;
+  /** Bearer-Token für Mobile-Clients (nur bei Login/Register mit Header 'x-client: mobile') */
+  token?: string;
 }
 
 export interface CustomerProfileUpdate {

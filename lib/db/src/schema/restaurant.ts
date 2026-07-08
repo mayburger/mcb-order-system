@@ -233,6 +233,19 @@ export const customerCrmNotes = pgTable("restaurant_customer_crm_notes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ── CUSTOMER AUTH TOKENS (Mobile-App) ─────────────────────────────────────────
+// Bearer-Tokens für die Mobile-App (SecureStore). Es wird nur der SHA-256-Hash
+// gespeichert; das Klartext-Token verlässt den Server einmalig bei Login/Register.
+export const customerAuthTokens = pgTable("restaurant_customer_auth_tokens", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at").notNull().defaultNow(),
+});
+
 // ── BRANCHES (Filialen) ───────────────────────────────────────────────────────
 // Vorbereitung für Mehrfilialen-Betrieb. Aktuell existiert genau eine Standard-
 // Filiale ("Hauptfiliale", isDefault=true). Bestellungen, Kassenbewegungen und

@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import colors from "@/constants/colors";
 import { AuthProvider, getStoredToken } from "@/lib/auth-context";
+import { CartProvider } from "@/lib/cart-context";
 
 // Expo bundles run outside the web proxy — the API needs an absolute URL.
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -74,12 +75,14 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <StatusBar style="light" />
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+            <CartProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <StatusBar style="light" />
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </CartProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
