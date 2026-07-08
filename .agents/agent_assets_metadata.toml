@@ -24,6 +24,12 @@ uri = "file://artifacts/may-chicken/public/fries.png"
 type = "image"
 title = "Loaded french fries"
 
+[[generated]]
+id = "Uae8GmIuPdhFhLK2gkxFz"
+uri = "file://artifacts/may-chicken-mobile/assets/images/icon.png"
+type = "image"
+title = "May Chicken app icon"
+
 [[outputs]]
 id = "Gm8LGc31mhUurlPACyt6y"
 uri = "file://ROADMAP.md"

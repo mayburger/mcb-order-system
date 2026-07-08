@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/mobile/"
+title = "May Chicken Mobile"
+version = "1.0.0"
+id = "artifacts/may-chicken-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/mobile/" ]
+localPort = 24000
+
+[services.development]
+run = "pnpm --filter @workspace/may-chicken-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/may-chicken-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/may-chicken-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "24000"
+BASE_PATH = "/mobile/"

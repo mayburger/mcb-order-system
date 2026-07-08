@@ -1,3 +1,4 @@
 - [Admin router auth bug](admin-router-auth.md) — `router.use(requireAdmin)` ohne Pfad blockiert alle Routen inkl. /customer/*; fix: `router.use("/admin", requireAdmin)`
 - [must_change_password enforcement](rbac-mustchangepassword.md) — enforce forced password change in `requireAuth` (server-side), but exempt `/auth/change-password` or you deadlock the seeded owner
+- [Replit-iOS-App-Sperre](replit-ios-app-restrictions.md) — createArtifact(expo) scheitert bei Sitzungen aus der Replit-iOS-App; User muss aus dem Browser (replit.com) schreiben
 - [Orval query keys](orval-query-keys.md) — invalidate with generated get<Name>QueryKey(); hand-written string keys like ['listInventory'] silently no-op
