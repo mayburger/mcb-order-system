@@ -1,5 +1,6 @@
 - [Admin router auth bug](admin-router-auth.md) — `router.use(requireAdmin)` ohne Pfad blockiert alle Routen inkl. /customer/*; fix: `router.use("/admin", requireAdmin)`
 - [must_change_password enforcement](rbac-mustchangepassword.md) — enforce forced password change in `requireAuth` (server-side), but exempt `/auth/change-password` or you deadlock the seeded owner
 - [Kunden-Bearer-Auth](customer-bearer-auth.md) — Kundenrouten nie direkt `req.session.customerId` lesen, immer Resolver (Session→Bearer); plus drizzle-push Name-Truncation-Falle
+- [GitHub-Push über Connector](github-push-connector.md) — normales `git push origin` scheitert; Token via Connector-Proxy holen; 401 heißt meist Verbindung "not_added" → erst verknüpfen
 - [Replit-iOS-App-Sperre](replit-ios-app-restrictions.md) — createArtifact(expo) scheitert bei Sitzungen aus der Replit-iOS-App; User muss aus dem Browser (replit.com) schreiben
 - [Orval query keys](orval-query-keys.md) — invalidate with generated get<Name>QueryKey(); hand-written string keys like ['listInventory'] silently no-op
