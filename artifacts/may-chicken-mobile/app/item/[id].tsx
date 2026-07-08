@@ -59,11 +59,13 @@ export default function ItemDetailScreen() {
   const effectiveSelections = useMemo(() => {
     const map = new Map<number, number[]>();
     for (const group of optionGroups) {
-      const chosen = selections.get(group.id);
-      if (chosen !== undefined) {
+      const availableItems = group.items.filter((o) => o.available !== false);
+      const availableIds = new Set(availableItems.map((o) => o.id));
+      const chosen = selections.get(group.id)?.filter((oid) => availableIds.has(oid));
+      if (chosen !== undefined && chosen.length > 0) {
         map.set(group.id, chosen);
-      } else if (group.inputType === "single" && group.items.length > 0) {
-        map.set(group.id, [group.items[0].id]);
+      } else if (group.inputType === "single" && availableItems.length > 0) {
+        map.set(group.id, [availableItems[0].id]);
       } else {
         map.set(group.id, []);
       }

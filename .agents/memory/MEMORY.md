@@ -4,3 +4,4 @@
 - [GitHub-Push über Connector](github-push-connector.md) — normales `git push origin` scheitert; Token via Connector-Proxy holen; 401 heißt meist Verbindung "not_added" → erst verknüpfen
 - [Replit-iOS-App-Sperre](replit-ios-app-restrictions.md) — createArtifact(expo) scheitert bei Sitzungen aus der Replit-iOS-App; User muss aus dem Browser (replit.com) schreiben
 - [Orval query keys](orval-query-keys.md) — invalidate with generated get<Name>QueryKey(); hand-written string keys like ['listInventory'] silently no-op
+- [Optionspreis-Quellen](option-pricing-sources.md) — absolute Größenpreise liegen in itemOptionPrices (nicht optionItems.defaultPrice=0); Order-Route muss Gruppen gegen Item autorisieren

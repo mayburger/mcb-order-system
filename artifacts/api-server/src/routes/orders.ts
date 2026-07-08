@@ -9,6 +9,10 @@ import {
   coupons,
   optionItems,
   optionGroups,
+  itemOptionPrices,
+  itemExtras,
+  categoryOptionGroups,
+  itemOptionGroups,
 } from "@workspace/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getSettingsMap } from "./restaurant";
@@ -172,6 +176,45 @@ router.post("/restaurant/orders", async (req, res) => {
     const optionItemMap = new Map(dbOptionItems.map((i) => [i.id, i]));
     const optionGroupMap = new Map(dbOptionGroups.map((g) => [g.id, g]));
 
+    // Per-item absolute option prices (e.g. pizza size price per menu item)
+    const dbItemOptionPrices = allOptionItemIds.length > 0
+      ? await db.select().from(itemOptionPrices).where(inArray(itemOptionPrices.menuItemId, itemIds))
+      : [];
+    const itemOptionPriceMap = new Map<string, number>();
+    for (const p of dbItemOptionPrices) {
+      itemOptionPriceMap.set(`${p.menuItemId}:${p.optionItemId}`, Number(p.price));
+    }
+
+    // Legacy extras: resolve prices from DB (never trust client prices)
+    const anyLegacyExtras = body.items.some((i) => (i.selectedExtras ?? []).length > 0);
+    const legacyExtraRows = anyLegacyExtras
+      ? await db.select().from(itemExtras)
+      : [];
+
+    // Authorized option groups per menu item (category links + item links, like menu.ts)
+    const orderedItemCategoryIds = [...new Set(dbItems.map((i) => i.categoryId))];
+    const catGroupLinks = allGroupIds.length > 0 && orderedItemCategoryIds.length > 0
+      ? await db.select().from(categoryOptionGroups).where(inArray(categoryOptionGroups.categoryId, orderedItemCategoryIds))
+      : [];
+    const itemGroupLinks = allGroupIds.length > 0
+      ? await db.select().from(itemOptionGroups).where(inArray(itemOptionGroups.menuItemId, itemIds))
+      : [];
+    const catToGroupIds = new Map<number, Set<number>>();
+    for (const l of catGroupLinks) {
+      const set = catToGroupIds.get(l.categoryId) ?? new Set<number>();
+      set.add(l.groupId);
+      catToGroupIds.set(l.categoryId, set);
+    }
+    const itemToGroupIds = new Map<number, Set<number>>();
+    for (const l of itemGroupLinks) {
+      const set = itemToGroupIds.get(l.menuItemId) ?? new Set<number>();
+      set.add(l.groupId);
+      itemToGroupIds.set(l.menuItemId, set);
+    }
+    const isGroupAllowedForItem = (menuItemId: number, categoryId: number, groupId: number) =>
+      (itemToGroupIds.get(menuItemId)?.has(groupId) ?? false) ||
+      (catToGroupIds.get(categoryId)?.has(groupId) ?? false);
+
     const itemMap = new Map(dbItems.map((i) => [i.id, i]));
     let subtotal = 0;
     const resolvedItems: Array<{
@@ -195,22 +238,50 @@ router.post("/restaurant/orders", async (req, res) => {
       const extras = ordered.selectedExtras ?? [];
       const optionsSel = ordered.selectedOptions ?? [];
 
+      // Server-side authoritative option prices (client prices are ignored)
+      const resolvedOptionPrices = new Map<number, number>();
+
       if (optionsSel.length > 0) {
+        // Validate all selected options against the DB
+        for (const o of optionsSel) {
+          const optItem = optionItemMap.get(o.optionItemId);
+          const grp = optionGroupMap.get(o.groupId);
+          if (!optItem || !grp || optItem.groupId !== o.groupId) {
+            return res.status(400).json({ error: `Ungültige Option ${o.optionItemId} für ${dbItem.name}` });
+          }
+          if (!isGroupAllowedForItem(ordered.menuItemId, dbItem.categoryId, o.groupId)) {
+            return res.status(400).json({ error: `Optionsgruppe "${grp.name}" ist für ${dbItem.name} nicht zulässig` });
+          }
+          if (optItem.available === false) {
+            return res.status(400).json({ error: `${optItem.name} ist nicht verfügbar` });
+          }
+        }
+
         // New option groups system: find absolute price option (sets the base price)
         const absoluteOpt = optionsSel.find((o) => {
           const grp = optionGroupMap.get(o.groupId);
           return grp?.priceType === "absolute";
         });
         if (absoluteOpt) {
-          price = absoluteOpt.price;
-          const absItem = optionItemMap.get(absoluteOpt.optionItemId);
-          if (absItem) variantName = absItem.name;
+          const absItem = optionItemMap.get(absoluteOpt.optionItemId)!;
+          price =
+            itemOptionPriceMap.get(`${ordered.menuItemId}:${absoluteOpt.optionItemId}`) ??
+            Number(absItem.defaultPrice);
+          variantName = absItem.name;
+          resolvedOptionPrices.set(absoluteOpt.optionItemId, price);
         }
-        // Add additive options
-        const additivesTotal = optionsSel
-          .filter((o) => optionGroupMap.get(o.groupId)?.priceType === "additive")
-          .reduce((s, o) => s + o.price, 0);
-        price += additivesTotal;
+        // Add additive options: price from DB, variant-dependent if configured
+        for (const o of optionsSel) {
+          if (optionGroupMap.get(o.groupId)?.priceType !== "additive") continue;
+          const optItem = optionItemMap.get(o.optionItemId)!;
+          const byVariant = optItem.priceByVariant as Record<string, number> | null;
+          const optPrice =
+            variantName && byVariant && byVariant[variantName] !== undefined
+              ? Number(byVariant[variantName])
+              : Number(optItem.defaultPrice);
+          resolvedOptionPrices.set(o.optionItemId, optPrice);
+          price += optPrice;
+        }
       } else if (ordered.variantId) {
         // Legacy: use variant price
         const variant = dbItem.variants.find((v) => v.id === ordered.variantId);
@@ -221,8 +292,23 @@ router.post("/restaurant/orders", async (req, res) => {
         variantName = sorted[0]!.name;
       }
 
-      // Add legacy extras
-      const extrasTotal = extras.reduce((sum, e) => sum + e.price, 0);
+      // Add legacy extras — prices resolved server-side from DB (client price ignored)
+      let extrasTotal = 0;
+      const resolvedExtras: Array<{ name: string; price: number }> = [];
+      for (const e of extras) {
+        const dbExtra = legacyExtraRows.find(
+          (x) =>
+            x.name === e.name &&
+            x.available &&
+            (x.menuItemId === ordered.menuItemId || (x.categoryId !== null && x.categoryId === dbItem.categoryId)),
+        );
+        if (!dbExtra) {
+          return res.status(400).json({ error: `Ungültiges Extra "${e.name}" für ${dbItem.name}` });
+        }
+        const extraPrice = Number(dbExtra.price);
+        extrasTotal += extraPrice;
+        resolvedExtras.push({ name: dbExtra.name, price: extraPrice });
+      }
       const unitPrice = price + extrasTotal;
       const lineTotal = unitPrice * ordered.quantity;
       subtotal += lineTotal;
@@ -233,7 +319,7 @@ router.post("/restaurant/orders", async (req, res) => {
         groupName: optionGroupMap.get(o.groupId)?.name ?? `Group ${o.groupId}`,
         optionItemId: o.optionItemId,
         optionItemName: optionItemMap.get(o.optionItemId)?.name ?? `Item ${o.optionItemId}`,
-        price: o.price,
+        price: resolvedOptionPrices.get(o.optionItemId) ?? o.price,
       }));
 
       resolvedItems.push({
@@ -243,7 +329,7 @@ router.post("/restaurant/orders", async (req, res) => {
         quantity: ordered.quantity,
         lineTotal,
         variantName,
-        extrasSnapshot: extras,
+        extrasSnapshot: resolvedExtras,
         optionsSnapshot,
       });
     }
