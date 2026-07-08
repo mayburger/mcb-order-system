@@ -16,6 +16,16 @@ export interface StockItem {
   currentStock: number;
   minStock: number;
   unit: string;
+  /**
+     * Reicht noch für ca. X Portionen (kleinste Portionszahl über alle Rezepte mit dieser Zutat)
+     * @nullable
+     */
+  servings: number | null;
+  /**
+     * Produktname zur Portions-Schätzung
+     * @nullable
+     */
+  servingsProduct: string | null;
   /** @nullable */
   purchasePrice?: number | null;
   /** @nullable */

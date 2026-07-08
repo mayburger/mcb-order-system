@@ -3966,7 +3966,7 @@ components:
     # ── INVENTORY ──────────────────────────────────────────────────────────
     StockItem:
       type: object
-      required: [id, name, currentStock, minStock, unit, active, trackStock, isLow, createdAt, updatedAt]
+      required: [id, name, currentStock, minStock, unit, active, trackStock, isLow, servings, servingsProduct, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -3982,6 +3982,12 @@ components:
           type: number
         unit:
           type: string
+        servings:
+          type: ["integer", "null"]
+          description: "Reicht noch für ca. X Portionen (kleinste Portionszahl über alle Rezepte mit dieser Zutat)"
+        servingsProduct:
+          type: ["string", "null"]
+          description: "Produktname zur Portions-Schätzung"
         purchasePrice:
           type: ["number", "null"]
         supplier:
@@ -4015,6 +4021,7 @@ components:
           type: number
         unit:
           type: string
+          enum: [Stück, kg, g, Liter, ml, Packung]
         purchasePrice:
           type: ["number", "null"]
         supplier:

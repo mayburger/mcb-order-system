@@ -5,6 +5,7 @@
  * May Chicken & Burger Restaurant API
  * OpenAPI spec version: 0.1.0
  */
+import type { StockItemCreateUnit } from './stockItemCreateUnit';
 
 export interface StockItemCreate {
   menuItemId?: number;
@@ -13,7 +14,7 @@ export interface StockItemCreate {
   category?: string | null;
   currentStock?: number;
   minStock?: number;
-  unit?: string;
+  unit?: StockItemCreateUnit;
   /** @nullable */
   purchasePrice?: number | null;
   /** @nullable */

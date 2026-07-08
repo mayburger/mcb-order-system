@@ -1188,6 +1188,16 @@ export interface StockItem {
   currentStock: number;
   minStock: number;
   unit: string;
+  /**
+     * Reicht noch für ca. X Portionen (kleinste Portionszahl über alle Rezepte mit dieser Zutat)
+     * @nullable
+     */
+  servings: number | null;
+  /**
+     * Produktname zur Portions-Schätzung
+     * @nullable
+     */
+  servingsProduct: string | null;
   /** @nullable */
   purchasePrice?: number | null;
   /** @nullable */
@@ -1199,6 +1209,18 @@ export interface StockItem {
   updatedAt: string;
 }
 
+export type StockItemCreateUnit = typeof StockItemCreateUnit[keyof typeof StockItemCreateUnit];
+
+
+export const StockItemCreateUnit = {
+  Stück: 'Stück',
+  kg: 'kg',
+  g: 'g',
+  Liter: 'Liter',
+  ml: 'ml',
+  Packung: 'Packung',
+} as const;
+
 export interface StockItemCreate {
   menuItemId?: number;
   name: string;
@@ -1206,7 +1228,7 @@ export interface StockItemCreate {
   category?: string | null;
   currentStock?: number;
   minStock?: number;
-  unit?: string;
+  unit?: StockItemCreateUnit;
   /** @nullable */
   purchasePrice?: number | null;
   /** @nullable */

@@ -156,6 +156,7 @@ export * from './settingsUpdate';
 export * from './sortOrderUpdate';
 export * from './stockItem';
 export * from './stockItemCreate';
+export * from './stockItemCreateUnit';
 export * from './stockMovement';
 export * from './stockMovementCreate';
 export * from './stockMovementCreateMovementType';

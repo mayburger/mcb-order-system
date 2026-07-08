@@ -35,7 +35,7 @@ import {
   useCreateStockMovement,
   getListInventoryQueryKey,
 } from "@workspace/api-client-react";
-import type { StockItem, StockMovement } from "@workspace/api-client-react";
+import type { StockItem, StockMovement, StockItemCreateUnit } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -141,7 +141,7 @@ export default function AdminInventory() {
       category: form.category.trim() || null,
       currentStock: Number(form.currentStock),
       minStock: Number(form.minStock),
-      unit: form.unit,
+      unit: form.unit as StockItemCreateUnit,
       purchasePrice: form.purchasePrice.trim() ? Number(form.purchasePrice) : null,
       supplier: form.supplier.trim() || null,
       active: form.active,
@@ -304,9 +304,17 @@ export default function AdminInventory() {
                       {!si.active ? (
                         <Badge className="bg-secondary text-muted-foreground">Inaktiv</Badge>
                       ) : si.isLow ? (
-                        <Badge className="bg-amber-700 text-white gap-1">
-                          <AlertTriangle className="w-3 h-3" /> Niedrig
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge className="bg-amber-700 text-white gap-1 w-fit">
+                            <AlertTriangle className="w-3 h-3" /> Niedrig
+                          </Badge>
+                          {si.servings != null && (
+                            <span className="text-xs text-red-400 font-medium whitespace-nowrap">
+                              Reicht nur noch für ca. {si.servings}
+                              {si.servingsProduct ? ` × ${si.servingsProduct}` : " Portionen"}
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <Badge className="bg-emerald-700/80 text-white">OK</Badge>
                       )}

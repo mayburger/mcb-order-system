@@ -1023,8 +1023,19 @@ router.delete("/admin/coupons/:id", async (req, res) => {
 });
 
 // ── INVENTORY ────────────────────────────────────────────────────────────────
-function serializeStockItem(si: typeof stockItems.$inferSelect) {
+const ALLOWED_UNITS = ["Stück", "kg", "g", "Liter", "ml", "Packung"] as const;
+
+function isAllowedUnit(u: string): boolean {
+  return (ALLOWED_UNITS as readonly string[]).includes(u);
+}
+
+function serializeStockItem(
+  si: typeof stockItems.$inferSelect,
+  extra?: { servings: number | null; servingsProduct: string | null },
+) {
   return {
+    servings: extra?.servings ?? null,
+    servingsProduct: extra?.servingsProduct ?? null,
     id: si.id,
     menuItemId: si.menuItemId ?? null,
     name: si.name,
@@ -1060,8 +1071,35 @@ function serializeStockMovement(sm: typeof stockMovements.$inferSelect) {
 
 router.get("/admin/inventory", async (req, res) => {
   try {
-    const items = await db.select().from(stockItems).orderBy(asc(stockItems.name));
-    res.json(items.map(serializeStockItem));
+    const [items, allRecipes, allMenuItems] = await Promise.all([
+      db.select().from(stockItems).orderBy(asc(stockItems.name)),
+      db.select().from(recipes),
+      db.select({ id: menuItems.id, name: menuItems.name }).from(menuItems),
+    ]);
+    const menuItemNameById = new Map(allMenuItems.map((m) => [m.id, m.name]));
+    const recipesByStockItem = new Map<number, typeof allRecipes>();
+    for (const r of allRecipes) {
+      const list = recipesByStockItem.get(r.stockItemId) ?? [];
+      list.push(r);
+      recipesByStockItem.set(r.stockItemId, list);
+    }
+    res.json(items.map((si) => {
+      // "reicht für X": kleinste mögliche Portionszahl über alle Rezepte,
+      // die diese Zutat verwenden (floor(Bestand / Rezeptmenge)).
+      const current = Number(si.currentStock);
+      let servings: number | null = null;
+      let servingsProduct: string | null = null;
+      for (const r of recipesByStockItem.get(si.id) ?? []) {
+        const qty = Number(r.quantity);
+        if (qty <= 0) continue;
+        const possible = Math.max(0, Math.floor(current / qty));
+        if (servings === null || possible < servings) {
+          servings = possible;
+          servingsProduct = menuItemNameById.get(r.menuItemId) ?? null;
+        }
+      }
+      return serializeStockItem(si, { servings, servingsProduct });
+    }));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -1069,6 +1107,10 @@ router.post("/admin/inventory", async (req, res) => {
   try {
     const body = req.body as { menuItemId?: number; name: string; category?: string; currentStock?: number; minStock?: number; unit?: string; purchasePrice?: number; supplier?: string; active?: boolean; trackStock?: boolean };
     if (!body.name?.trim()) { res.status(400).json({ error: "Name required" }); return; }
+    if (body.unit !== undefined && !isAllowedUnit(body.unit)) {
+      res.status(400).json({ error: `Ungültige Einheit. Erlaubt: ${ALLOWED_UNITS.join(", ")}` });
+      return;
+    }
     const [si] = await db.insert(stockItems).values({
       menuItemId: body.menuItemId ?? null,
       name: body.name.trim(),
@@ -1094,7 +1136,13 @@ router.patch("/admin/inventory/:id", async (req, res) => {
     if (body.category !== undefined) update["category"] = body.category?.trim() || null;
     if (body.currentStock !== undefined) update["currentStock"] = body.currentStock.toFixed(2);
     if (body.minStock !== undefined) update["minStock"] = body.minStock.toFixed(2);
-    if (body.unit !== undefined) update["unit"] = body.unit;
+    if (body.unit !== undefined) {
+      if (!isAllowedUnit(body.unit)) {
+        res.status(400).json({ error: `Ungültige Einheit. Erlaubt: ${ALLOWED_UNITS.join(", ")}` });
+        return;
+      }
+      update["unit"] = body.unit;
+    }
     if (body.purchasePrice !== undefined) update["purchasePrice"] = body.purchasePrice === null ? null : body.purchasePrice.toFixed(2);
     if (body.supplier !== undefined) update["supplier"] = body.supplier?.trim() || null;
     if (body.active !== undefined) update["active"] = body.active;
