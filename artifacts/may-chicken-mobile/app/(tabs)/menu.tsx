@@ -4,6 +4,8 @@ import {
   useListMenuItems,
   type MenuItem,
 } from "@workspace/api-client-react";
+import { Image } from "expo-image";
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -167,61 +169,86 @@ export default function MenuScreen() {
                           Keine Artikel in dieser Kategorie.
                         </Text>
                       ) : (
-                        catItems.map((item) => (
-                          <View
-                            key={item.id}
-                            style={[
-                              styles.itemRow,
-                              { backgroundColor: colors.card, borderColor: colors.border },
-                            ]}
-                            testID={`menu-item-${item.id}`}
-                          >
-                            <View style={{ flex: 1, gap: 2 }}>
-                              <Text
-                                style={[styles.itemName, { color: colors.foreground }]}
-                              >
-                                {item.name}
-                              </Text>
-                              {item.description ? (
-                                <Text
-                                  style={[
-                                    styles.categoryDesc,
-                                    { color: colors.mutedForeground },
-                                  ]}
-                                  numberOfLines={2}
-                                >
-                                  {item.description}
-                                </Text>
-                              ) : null}
-                              <Text style={[styles.itemPrice, { color: colors.primary }]}>
-                                {formatEuro(item.price)}
-                              </Text>
-                            </View>
+                        catItems.map((item) => {
+                          const hasOptions =
+                            (item.optionGroups?.length ?? 0) > 0;
+                          return (
                             <Pressable
-                              onPress={() =>
-                                addItem({
-                                  menuItemId: item.id,
-                                  name: item.name,
-                                  price: item.price,
-                                })
-                              }
+                              key={item.id}
+                              onPress={() => router.push(`/item/${item.id}`)}
                               style={({ pressed }) => [
-                                styles.addButton,
+                                styles.itemRow,
                                 {
-                                  backgroundColor: colors.primary,
-                                  opacity: pressed ? 0.8 : 1,
+                                  backgroundColor: colors.card,
+                                  borderColor: colors.border,
+                                  opacity: pressed ? 0.85 : 1,
                                 },
                               ]}
-                              testID={`menu-add-${item.id}`}
+                              testID={`menu-item-${item.id}`}
                             >
-                              <Feather
-                                name="plus"
-                                size={18}
-                                color={colors.primaryForeground}
-                              />
+                              {item.imageUrl ? (
+                                <Image
+                                  source={{ uri: item.imageUrl }}
+                                  style={styles.itemImage}
+                                  contentFit="cover"
+                                  transition={150}
+                                />
+                              ) : null}
+                              <View style={{ flex: 1, gap: 2 }}>
+                                <Text
+                                  style={[styles.itemName, { color: colors.foreground }]}
+                                >
+                                  {item.name}
+                                </Text>
+                                {item.description ? (
+                                  <Text
+                                    style={[
+                                      styles.categoryDesc,
+                                      { color: colors.mutedForeground },
+                                    ]}
+                                    numberOfLines={2}
+                                  >
+                                    {item.description}
+                                  </Text>
+                                ) : null}
+                                <Text style={[styles.itemPrice, { color: colors.primary }]}>
+                                  {hasOptions
+                                    ? `ab ${formatEuro(item.price)}`
+                                    : formatEuro(item.price)}
+                                </Text>
+                              </View>
+                              <Pressable
+                                onPress={() => {
+                                  if (hasOptions) {
+                                    // Erst Größe/Extras wählen — zur Detailseite.
+                                    router.push(`/item/${item.id}`);
+                                  } else {
+                                    addItem({
+                                      id: item.id,
+                                      name: item.name,
+                                      price: item.price,
+                                      imageUrl: item.imageUrl,
+                                    });
+                                  }
+                                }}
+                                style={({ pressed }) => [
+                                  styles.addButton,
+                                  {
+                                    backgroundColor: colors.primary,
+                                    opacity: pressed ? 0.8 : 1,
+                                  },
+                                ]}
+                                testID={`menu-add-${item.id}`}
+                              >
+                                <Feather
+                                  name={hasOptions ? "chevron-right" : "plus"}
+                                  size={18}
+                                  color={colors.primaryForeground}
+                                />
+                              </Pressable>
                             </Pressable>
-                          </View>
-                        ))
+                          );
+                        })
                       )}
                     </View>
                   ) : null}
@@ -303,6 +330,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     marginLeft: 12,
+  },
+  itemImage: {
+    width: 56,
+    height: 56,
   },
   itemName: {
     fontFamily: "Inter_600SemiBold",

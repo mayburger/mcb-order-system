@@ -15,7 +15,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/lib/auth-context";
-import { formatEuro, useCart } from "@/lib/cart-context";
+import {
+  cartLineDisplayName,
+  cartLineExtras,
+  formatEuro,
+  useCart,
+} from "@/lib/cart-context";
 
 type OrderType = "pickup" | "delivery";
 
@@ -23,7 +28,8 @@ export default function CartScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === "web" ? 67 : insets.top;
-  const { items, total, addItem, decrementItem, removeItem, clearCart } = useCart();
+  const { items, total, incrementLine, decrementLine, removeLine, clearCart } =
+    useCart();
   const { user } = useAuth();
 
   const [orderType, setOrderType] = useState<OrderType>("pickup");
@@ -82,6 +88,15 @@ export default function CartScreen() {
           items: items.map((i) => ({
             menuItemId: i.menuItemId,
             quantity: i.quantity,
+            ...(i.selectedOptions.length > 0
+              ? {
+                  selectedOptions: i.selectedOptions.map((o) => ({
+                    groupId: o.groupId,
+                    optionItemId: o.optionItemId,
+                    price: o.price,
+                  })),
+                }
+              : {}),
           })),
         },
       },
@@ -169,57 +184,63 @@ export default function CartScreen() {
         </View>
       ) : (
         <View style={{ paddingHorizontal: 20, gap: 10 }}>
-          {items.map((item) => (
-            <View
-              key={item.menuItemId}
-              style={[
-                styles.cartRow,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-              testID={`cart-item-${item.menuItemId}`}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.itemName, { color: colors.foreground }]}>
-                  {item.name}
-                </Text>
-                <Text style={[styles.itemPrice, { color: colors.mutedForeground }]}>
-                  {formatEuro(item.price)} · Summe {formatEuro(item.price * item.quantity)}
-                </Text>
+          {items.map((line) => {
+            const extras = cartLineExtras(line);
+            return (
+              <View
+                key={line.cartKey}
+                style={[
+                  styles.cartRow,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+                testID={`cart-item-${line.menuItemId}`}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[styles.itemName, { color: colors.foreground }]}>
+                    {cartLineDisplayName(line)}
+                  </Text>
+                  {extras ? (
+                    <Text
+                      style={[styles.itemPrice, { color: colors.mutedForeground }]}
+                      numberOfLines={2}
+                    >
+                      {extras}
+                    </Text>
+                  ) : null}
+                  <Text style={[styles.itemPrice, { color: colors.mutedForeground }]}>
+                    {formatEuro(line.unitPrice)} · Summe{" "}
+                    {formatEuro(line.unitPrice * line.quantity)}
+                  </Text>
+                </View>
+                <View style={styles.qtyBox}>
+                  <Pressable
+                    onPress={() => decrementLine(line.cartKey)}
+                    style={[styles.qtyButton, { backgroundColor: colors.secondary }]}
+                    testID={`cart-dec-${line.menuItemId}`}
+                  >
+                    <Feather name="minus" size={16} color={colors.foreground} />
+                  </Pressable>
+                  <Text style={[styles.qtyText, { color: colors.foreground }]}>
+                    {line.quantity}
+                  </Text>
+                  <Pressable
+                    onPress={() => incrementLine(line.cartKey)}
+                    style={[styles.qtyButton, { backgroundColor: colors.secondary }]}
+                    testID={`cart-inc-${line.menuItemId}`}
+                  >
+                    <Feather name="plus" size={16} color={colors.foreground} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => removeLine(line.cartKey)}
+                    style={styles.removeButton}
+                    testID={`cart-remove-${line.menuItemId}`}
+                  >
+                    <Feather name="trash-2" size={16} color={colors.destructive} />
+                  </Pressable>
+                </View>
               </View>
-              <View style={styles.qtyBox}>
-                <Pressable
-                  onPress={() => decrementItem(item.menuItemId)}
-                  style={[styles.qtyButton, { backgroundColor: colors.secondary }]}
-                  testID={`cart-dec-${item.menuItemId}`}
-                >
-                  <Feather name="minus" size={16} color={colors.foreground} />
-                </Pressable>
-                <Text style={[styles.qtyText, { color: colors.foreground }]}>
-                  {item.quantity}
-                </Text>
-                <Pressable
-                  onPress={() =>
-                    addItem({
-                      menuItemId: item.menuItemId,
-                      name: item.name,
-                      price: item.price,
-                    })
-                  }
-                  style={[styles.qtyButton, { backgroundColor: colors.secondary }]}
-                  testID={`cart-inc-${item.menuItemId}`}
-                >
-                  <Feather name="plus" size={16} color={colors.foreground} />
-                </Pressable>
-                <Pressable
-                  onPress={() => removeItem(item.menuItemId)}
-                  style={styles.removeButton}
-                  testID={`cart-remove-${item.menuItemId}`}
-                >
-                  <Feather name="trash-2" size={16} color={colors.destructive} />
-                </Pressable>
-              </View>
-            </View>
-          ))}
+            );
+          })}
 
           <View
             style={[
