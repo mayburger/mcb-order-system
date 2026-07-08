@@ -29,3 +29,9 @@ id = "Gm8LGc31mhUurlPACyt6y"
 uri = "file://ROADMAP.md"
 type = "text"
 title = "Entwicklungs-Roadmap May Chicken Bestellsystem"
+
+[[outputs]]
+id = "iiB1A30lv7oK0YEZCYhYy"
+uri = "file://MOBILE_APP_PLAN.md"
+type = "text"
+title = "Plan: Mobile May Chicken App (iOS + Android)"
