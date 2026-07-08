@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "UL7mZPjDVLbqLnT8QFfDF"
@@ -24,3 +23,9 @@ id = "HesU0mRd59tdFz7Uk8wU8"
 uri = "file://artifacts/may-chicken/public/fries.png"
 type = "image"
 title = "Loaded french fries"
+
+[[outputs]]
+id = "Gm8LGc31mhUurlPACyt6y"
+uri = "file://ROADMAP.md"
+type = "text"
+title = "Entwicklungs-Roadmap May Chicken Bestellsystem"
