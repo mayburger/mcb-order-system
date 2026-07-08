@@ -1,144 +1,114 @@
-# Plan: Mobile May Chicken App (iOS + Android)
+# Technischer Umsetzungsplan: Mobile May Chicken App — Version 2 (kostensparende Phasen)
 
-Stand: 08.07.2026 · Nur Analyse & Planung, keine Umsetzung.
-**Grundprinzip: Das bestehende System wird NICHT neu gebaut — die App ist ein zusätzlicher Client auf der vorhandenen API.**
-
----
-
-## 1. Analyse des Ist-Systems
-
-### 1.1 Aktuelles Frontend
-- React + Vite Web-App (`artifacts/may-chicken`), dunkles Design, shadcn/ui-Komponenten
-- Kundenbereich: Startseite, Menü, Warenkorb, Checkout, Bestellstatus, Konto (Profil, Bestellungen, Favoriten, Notizen)
-- Adminbereich: 20 Seiten unter `/backstage/...` (Dashboard, Bestellungen, Produkte, Küche, Fahrer, …)
-- Warenkorb-Logik lebt im Client (`cart-context`) — wiederverwendbares Muster für die App
-
-### 1.2 Routing
-- `wouter` mit Basis-Pfad; Admin-Routen über `ProtectedRoute` mit Berechtigungsprüfung (`permission`-Prop)
-- Rollen/Berechtigungen zentral in `@workspace/authz` — Server ist die Quelle der Wahrheit, Client spiegelt nur
-
-### 1.3 Login / Authentifizierung
-- **Beide Logins (Admin + Kunde) laufen über Server-Sessions mit Cookies** (`express-session`)
-- Admin: Session mit Rolle + Berechtigungen, Passwortwechsel-Zwang unterstützt
-- Kunde: eigene Session (`customerId`), Registrierung + Login vorhanden
-- **Konsequenz für Mobile:** Cookies sind in nativen Apps unzuverlässig → die App braucht **Token-Login (Bearer)** als *zusätzlichen* Weg. Der API-Client ist dafür bereits vorbereitet (`setAuthTokenGetter` hängt automatisch `Authorization: Bearer …` an — laut Code-Kommentar explizit „für Expo“ gedacht). Web bleibt unverändert bei Cookies.
-
-### 1.4 API-Struktur
-- Express 5 API (`artifacts/api-server`) unter `/api`, vollständig per **OpenAPI** beschrieben
-- Client-Hooks werden generiert (`@workspace/api-client-react`) — **dieselben Hooks funktionieren in React Native**, inkl. `setBaseUrl()` für den Zugriff vom Handy auf den Server
-- Alle Fachbereiche vorhanden: Menü, Bestellungen, Kunde, Admin, Küche, Fahrer, Kasse, Berichte
-
-**Fazit der Analyse:** Die Architektur ist ideal für eine Mobile App vorbereitet. Es fehlen nur: (a) Token-Login-Endpunkte, (b) Push-Infrastruktur, (c) die App selbst.
+Stand: 08.07.2026 · Nur Planung, keine Umsetzung.
+**Grundprinzip: Bestehendes System bleibt unverändert — die App ist ein zusätzlicher Client auf der vorhandenen API.**
 
 ---
 
-## 2. Zielarchitektur
+## 1. Was sich gegenüber Plan V1 ändert
 
-```
-┌─────────────────┐     ┌──────────────────┐
-│  Web-App (Vite) │     │ Mobile App (Expo) │  ← NEU: ein Codebase für iOS + Android
-│  Cookies/Session│     │ Bearer-Token      │
-└────────┬────────┘     └────────┬─────────┘
-         │   gleiche generierte API-Hooks    │
-         └────────────┬───────────┘
-                ┌─────▼─────┐
-                │  API      │  ← bleibt, nur additive Erweiterungen
-                │  Postgres │
-                └───────────┘
-```
-
-- **Neues Artefakt** `artifacts/may-chicken-mobile` (Expo / React Native, ein Code für iOS **und** Android)
-- Wiederverwendet ohne Änderung: `@workspace/api-client-react` (Hooks), `@workspace/authz` (Rollen/Rechte), gesamte Geschäftslogik der API
-- Kein bestehendes Modul wird verändert — nur additive API-Erweiterungen
-
----
-
-## 3. Notwendige Backend-Erweiterungen (additiv)
-
-### 3.1 Token-Login für Mobile
-**Neue Tabelle** `restaurant_api_tokens`: id, Typ (staff/customer), user_id bzw. customer_id, Token-Hash, Gerätename, erstellt/läuft ab/zuletzt benutzt, widerrufen.
-
-**Neue Endpunkte** (bestehende Session-Endpunkte bleiben unberührt):
-- `POST /auth/token` — Admin/Personal-Login → Token
-- `POST /customer/auth/token` — Kunden-Login → Token
-- `POST /auth/token/refresh`, `POST /auth/token/revoke` (Logout/Gerät abmelden)
-- Bestehende Auth-Middleware wird ergänzt: akzeptiert Session **oder** gültigen Bearer-Token (eine kleine, rückwärtskompatible Erweiterung)
-
-### 3.2 Push Notifications
-**Technik:** Expo Push Notifications (ein Dienst für iOS **und** Android, kein eigenes APNs/FCM-Setup nötig).
-
-**Neue Tabelle** `restaurant_push_tokens`: id, Typ (staff/customer), Benutzer-/Kundenreferenz, Expo-Push-Token, Plattform (ios/android), aktiv, Benachrichtigungs-Einstellungen (jsonb), Zeitstempel.
-
-**Neue Endpunkte:**
-- `POST /push/register` (Token registrieren), `DELETE /push/unregister`
-- `PATCH /push/preferences` (welche Benachrichtigungen gewünscht)
-
-**Versand-Auslöser (Server-seitig, in neue Hilfsfunktion gekapselt):**
-| Ereignis | Empfänger |
-|---|---|
-| Bestellstatus ändert sich (bestätigt → in Zubereitung → unterwegs → fertig) | Kunde |
-| Neue Bestellung eingegangen | Admin/Kasse/Küche (je Rolle) |
-| Bestellung storniert | Admin |
-| Fahrer: neue Lieferung zugewiesen | Fahrer |
-| Optional später: Angebote/Marketing (nur mit Opt-in) | Kunde |
-
-### 3.3 Sonstiges
-- Keine weiteren API-Änderungen nötig — alle Daten-Endpunkte existieren bereits.
-
----
-
-## 4. Die Mobile App — Aufbau & Bildschirme
-
-### 4.1 Grundgerüst
-- Expo + expo-router (Tab-Navigation), TypeScript
-- Design: dunkles Theme wie die Web-App (Markenkonsistenz), touch-optimiert
-- Login-Wahl beim Start: **Kunde** (Standard) oder **Mitarbeiter** (versteckter Zugang über Einstellungen)
-- Token sicher gespeichert (expo-secure-store), automatischer Re-Login
-
-### 4.2 Kundenbereich (Phase A)
-| Bildschirm | Inhalt (nutzt vorhandene API) |
-|---|---|
-| Start | Highlights, Öffnungsstatus, schneller Einstieg |
-| Speisekarte | Kategorien, Produkte, Varianten/Optionen/Extras |
-| Warenkorb & Checkout | Lieferung/Abholung, Liefergebiete, Gutscheine, Zahlungsart |
-| Bestellstatus | Live-Status + **Push bei jeder Statusänderung** |
-| Konto | Registrieren/Login, Profil, Bestellhistorie, Favoriten (Nachbestellen mit 1 Tipp) |
-| Einstellungen | Push-Einstellungen, Abmelden |
-
-### 4.3 Adminbereich (Phase B) — bewusst fokussiert, nicht 1:1 die 20 Web-Seiten
-Mobile ergänzt das Web-Backoffice, ersetzt es nicht. Fokus auf unterwegs-relevante Funktionen:
-| Bildschirm | Inhalt | Recht |
+| | Plan V1 | Plan V2 (dieser Plan) |
 |---|---|---|
-| Bestellungen live | Eingehende Bestellungen, Status ändern, **Push bei neuer Bestellung** | `orders.view` |
-| Tagesübersicht | Umsatz heute, Bestellanzahl, Kassen-Kurzblick | `dashboard.view` / `cashRegister.view` |
-| Küchen-Ansicht | Kompakte Bon-Liste, Status wechseln | `kitchen.view` |
-| Fahrer-Ansicht | Zugewiesene Lieferungen, Navigation-Link, Status | `driver.orders.view` |
-| Produkt-Schnellzugriff | Produkt ausverkauft/verfügbar schalten | `products.manage` |
-- Rollensteuerung identisch zum Web: Anzeige nur bei vorhandener Berechtigung (Server prüft zusätzlich)
+| Umfang Start | Kunden-App + Mitarbeiter-Teil + Push | **Nur Kunden-App** |
+| Push Notifications | ab Start | **später** (Architektur vorbereitet) |
+| Mitarbeiter/Fahrer/Kasse | Phase B | **später** (Architektur vorbereitet) |
+| Backend-Vorbereitung | Token + Push-Tabellen | **nur Kunden-Token-Login** (minimal) |
+| Aufwand bis erste nutzbare App | ~9–12 Tage | **~5–6,5 Tage, in 5 kleinen Teilphasen** |
 
-### 4.4 iOS & Android Besonderheiten
-- Push-Berechtigung wird beim ersten sinnvollen Moment abgefragt (nicht sofort beim Start)
-- App-Icons, Splashscreen, Store-Metadaten in beiden Stores
-- Veröffentlichung: über Expo-Build-Dienst (EAS) für App Store + Play Store; alternativ zunächst interne Verteilung/Testflight
+Jede Teilphase liefert ein prüfbares Ergebnis — es kann nach jeder Phase pausiert werden, ohne halbfertige Baustellen.
 
 ---
 
-## 5. Umsetzungsphasen & Aufwand
+## 2. Phase 1 — Kunden-App (einziger aktueller Auftrag)
 
-| Phase | Inhalt | Aufwand (ca.) |
+### Phase 1.0 — Backend: Kunden-Token-Login (≈ 0,5–1 Tag)
+
+Das einzige, was der API fehlt: Login ohne Cookies (native Apps brauchen Bearer-Token; der generierte API-Client unterstützt das bereits über `setAuthTokenGetter`).
+
+**Neue Tabelle (additiv):** `restaurant_api_tokens`
+- id, **owner_type** (`customer` | `staff` — Staff-Wert schon jetzt vorgesehen, später ohne Schemaänderung nutzbar), owner_id, token_hash (nur Hash, nie Klartext), device_name, created_at, expires_at, last_used_at, revoked_at
+
+**Neue Endpunkte (Session-Login bleibt unangetastet):**
+- `POST /customer/auth/token` — E-Mail + Passwort → { token, customer } (nutzt vorhandene Passwortprüfung)
+- `POST /customer/auth/token/revoke` — Logout des Geräts
+- Registrierung: vorhandener `POST /customer/auth/register` wird wiederverwendet, danach Token-Ausstellung
+
+**Middleware-Erweiterung (rückwärtskompatibel):** Kunden-Auth akzeptiert Session-Cookie **oder** `Authorization: Bearer` — eine kleine Ergänzung an einer Stelle; Web-Verhalten bleibt identisch.
+
+**OpenAPI + Codegen:** neue Endpunkte in die Spezifikation, Client-Hooks generieren (gleicher Workflow wie bisher).
+
+✅ Prüfbar: Token-Login per API-Test, Web-Login weiterhin unverändert.
+
+---
+
+### Phase 1.1 — Expo-Grundgerüst + API-Verbindung (≈ 0,5 Tag)
+
+- Neues Artefakt `artifacts/may-chicken-mobile` (Expo + expo-router, TypeScript, eigener Workflow — Web-App und API bleiben unberührt)
+- Anbindung: `setBaseUrl(<API-Adresse>)` aus `@workspace/api-client-react` — **dieselben generierten Hooks wie im Web, kein doppelter API-Code**
+- Dunkles Theme passend zur Marke (Farben/Schriften aus der Web-App übernommen)
+- Erster Screen: Speisekarten-Kategorien laden (Beweis, dass API-Verbindung steht)
+
+**Vorbereitung für später (kostet jetzt nichts):**
+- Ordnerstruktur mit Routen-Gruppe `(customer)/` — eine spätere Gruppe `(staff)/` kann daneben ergänzt werden, ohne Bestehendes umzubauen
+- Zentrale `auth`-Schicht mit `ownerType`-Feld (heute immer `customer`)
+
+✅ Prüfbar: App startet, Kategorien erscheinen.
+
+---
+
+### Phase 1.2 — Token-Login & Kundenkonto-Grundlage (≈ 1 Tag)
+
+- Login- und Registrierungs-Screen (nutzen die neuen Token-Endpunkte)
+- Token sicher gespeichert (`expo-secure-store`), automatischer Re-Login beim App-Start, `setAuthTokenGetter` verdrahtet
+- Auth-Context wie im Web (`isAuthenticated`, `customer`, `logout`)
+- Gast-Nutzung bleibt möglich (Bestellen ohne Konto, wie im Web)
+
+✅ Prüfbar: Registrieren, anmelden, App neu starten → weiterhin angemeldet, abmelden.
+
+---
+
+### Phase 1.3 — Menü & Warenkorb (≈ 1,5 Tage)
+
+- **Menü:** Kategorien-Tabs, Produktliste, Produktdetail mit Varianten/Optionsgruppen/Extras (gleiche Preislogik wie Web — die Berechnungslogik aus `cart-context` wird als Vorlage portiert)
+- **Warenkorb:** lokal auf dem Gerät (AsyncStorage), Menge ändern, Optionen bearbeiten, Zwischensumme
+- Öffnungszeiten-Hinweis (geschlossen → Hinweis wie im Web)
+
+✅ Prüfbar: Produkt mit Optionen in den Warenkorb, Preise stimmen mit Web überein.
+
+---
+
+### Phase 1.4 — Checkout, Konto & Bestellhistorie (≈ 1,5 Tage)
+
+- **Checkout:** Lieferung/Abholung, Adresse + Liefergebietsprüfung, Gutschein-Einlösung, Zahlungsarten (dieselben wie Web: Bar/EC etc. — Online-Zahlung ist bewusst NICHT Teil dieser Phase), Bestellung absenden über vorhandenen Endpunkt
+- **Bestellstatus:** Statusseite mit Aktualisierung durch regelmäßiges Nachladen (Polling) — *bewusst ohne Push; wenn Push später kommt, ersetzt es nur das Polling*
+- **Kundenkonto:** Profil anzeigen/bearbeiten, **Bestellhistorie** (vorhandene Endpunkte), Favoriten mit „Nochmal bestellen“
+- Angemeldete Kunden: Checkout-Felder vorausgefüllt
+
+✅ Prüfbar: kompletter Bestellablauf Ende-zu-Ende, Bestellung erscheint im Admin-Web + in der App-Historie.
+
+---
+
+**Phase-1-Gesamtaufwand: ≈ 5–6,5 Tage** (V1: 9–12 Tage für den größeren Umfang)
+
+---
+
+## 3. Bewusst NICHT in Phase 1 (aber architektonisch vorbereitet)
+
+| Später-Modul | Vorbereitung in Phase 1 (kostenlos mitgedacht) | Was später dazukommt |
 |---|---|---|
-| **0. Backend-Vorbereitung** | Token-Login, Push-Tabellen + Endpunkte, Versand-Trigger | 1,5–2 Tage |
-| **A. Kunden-App** | Grundgerüst, Menü, Warenkorb, Checkout, Konto, Bestellstatus + Push | 4–5 Tage |
-| **B. Mitarbeiter-Teil** | Login-Umschaltung, Bestellungen live, Küche, Fahrer, Tagesübersicht | 2–3 Tage |
-| **C. Feinschliff & Stores** | Icons, Splash, Push-Feintuning, Store-Einreichung | 1–2 Tage |
-| **Gesamt** | | **≈ 9–12 Tage** |
+| **Push Notifications** | Bestellstatus als eigener Datenlade-Baustein (Polling) — austauschbar | Push-Token-Tabelle + Registrier-Endpunkte, Versand-Trigger im Server, `expo-notifications` |
+| **Mitarbeiter-App** | `owner_type='staff'` in der Token-Tabelle schon vorgesehen; Routen-Gruppe `(staff)/` einplanbar; Rechte-Paket `@workspace/authz` ist bereits im Monorepo nutzbar | Staff-Token-Endpunkt, Login-Umschaltung, Bestellungen-live/Küche-Screens |
+| **Fahrer-App** | wie Mitarbeiter-App (gleiche Auth, gleiche Struktur) | Fahrer-Screens + Navigation-Links |
+| **Kasse mobil** | Kassen-API existiert bereits vollständig (Roadmap Modul 1) | nur Screens |
+| **Online-Zahlung** | Checkout-Zahlarten kommen dynamisch vom Server | erscheint automatisch, sobald Roadmap-Modul 5 umgesetzt ist |
 
-### Abhängigkeiten & Risiken
-- Push auf echten Geräten erst nach Store-/EAS-Konfiguration voll testbar (im Simulator eingeschränkt)
-- Online-Zahlungen (Roadmap-Modul 5) sind unabhängig; solange nicht umgesetzt, bietet die App dieselben Zahlarten wie das Web (Bar/EC etc.)
-- App-Store-Freigaben brauchen Apple-/Google-Entwicklerkonten (Kosten: Apple 99 €/Jahr, Google 25 € einmalig)
+**Keine dieser Vorbereitungen erfordert jetzt Mehraufwand** — es sind Struktur-Entscheidungen (Tabellen-Feld, Ordnerstruktur, austauschbare Bausteine), kein zusätzlicher Code.
 
-### Leitplanken (wie bisher)
-- Bestehende Module und das Web-Frontend werden **nicht verändert**
-- Alle Backend-Erweiterungen additiv (neue Tabellen/Endpunkte, Session-Login bleibt)
-- API weiterhin über OpenAPI + generierte Hooks — Web und App teilen sich denselben Client
+---
+
+## 4. Leitplanken & Risiken
+
+- **Unverändert bleiben:** Web-Frontend, alle bestehenden API-Endpunkte, Session-Login, Datenbanktabellen (nur additiv: 1 neue Tabelle)
+- **Ein API-Client für Web + App:** alles über OpenAPI + generierte Hooks
+- Entwicklung/Test zunächst über Expo-Vorschau (im Browser/Expo Go auf dem eigenen Handy) — **keine Store-Kosten in Phase 1**; App-Store-/Play-Store-Einreichung ist eine eigene spätere Entscheidung (Apple 99 €/Jahr, Google 25 € einmalig)
+- Risiko klein: größter Einzelposten ist die Portierung der Options-/Preislogik ins Produktdetail (Phase 1.3) — Vorlage existiert im Web-Code
